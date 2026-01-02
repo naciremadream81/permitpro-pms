@@ -126,11 +126,15 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
           documents: data.data.documents.map((doc: any) => ({
             ...doc,
             uploadedAt: new Date(doc.uploadedAt).toISOString(),
+            createdAt: new Date(doc.createdAt).toISOString(),
+            updatedAt: new Date(doc.updatedAt).toISOString(),
           })),
           tasks: data.data.tasks.map((task: any) => ({
             ...task,
             dueDate: task.dueDate ? new Date(task.dueDate).toISOString() : null,
             completedAt: task.completedAt ? new Date(task.completedAt).toISOString() : null,
+            createdAt: new Date(task.createdAt).toISOString(),
+            updatedAt: new Date(task.updatedAt).toISOString(),
           })),
           activityLogs: data.data.activityLogs.map((log: any) => ({
             ...log,
