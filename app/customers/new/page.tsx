@@ -32,6 +32,10 @@ export default function NewCustomerPage() {
   /**
    * Format phone number as user types
    * Formats to: (XXX) XXX-XXXX
+   * 
+   * Only formats when we have at least 4 digits (area code) to prevent
+   * incomplete formats like "(5" or "(555" from being saved to the database.
+   * For 1-3 digits, returns the digits without formatting.
    */
   const formatPhoneNumber = (value: string): string => {
     // Remove all non-digit characters
@@ -42,10 +46,17 @@ export default function NewCustomerPage() {
     
     // Format based on length
     if (limitedDigits.length === 0) return ''
-    if (limitedDigits.length <= 3) return `(${limitedDigits}`
+    
+    // For 1-3 digits, return digits without formatting to prevent incomplete formats
+    // This ensures we don't save "(5" or "(555" to the database
+    if (limitedDigits.length <= 3) return limitedDigits
+    
+    // Start formatting when we have at least 4 digits (area code)
     if (limitedDigits.length <= 6) {
       return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3)}`
     }
+    
+    // Full format for 7-10 digits
     return `(${limitedDigits.slice(0, 3)}) ${limitedDigits.slice(3, 6)}-${limitedDigits.slice(6)}`
   }
 
