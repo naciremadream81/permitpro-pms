@@ -27,6 +27,9 @@ export async function GET(
         customer: true,
         contractor: true,
         documents: {
+          include: {
+            uploadedByUser: { select: { id: true, name: true, email: true } },
+          },
           orderBy: { uploadedAt: 'desc' },
         },
         tasks: {

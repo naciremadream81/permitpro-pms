@@ -23,4 +23,3 @@ export const prisma =
 
 // In development, store the instance globally to prevent multiple instances
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
-

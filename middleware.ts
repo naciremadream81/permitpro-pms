@@ -1,31 +1,44 @@
 /**
- * Next.js Middleware (NextAuth v5)
+ * Next.js Middleware
  * 
- * Protects routes that require authentication by redirecting unauthenticated
- * users to the login page.
- * 
- * In NextAuth v5, middleware uses the `auth()` function as a wrapper.
- * The middleware receives the request with an `auth` property that contains
- * the session information.
- */
-
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { auth } from '@/auth'
-
-/**
- * Middleware function that runs on every request
+ * Simple route filtering middleware that doesn't require Prisma/Edge runtime compatibility.
  * 
  * This middleware:
  * - Allows public routes (login, API auth) to pass through
  * - Allows all API routes to pass through (they handle their own auth)
  * - For protected pages, authentication is checked in the page component itself
  * 
- * In NextAuth v5, the `auth()` function can be used as middleware wrapper.
- * It provides the request with an `auth` property containing session data.
+ * IMPORTANT: We're not using NextAuth's auth() wrapper here because:
+ * 1. It would require loading Prisma Client, which doesn't work in Edge runtime
+ * 2. Since we're using JWT strategy, authentication is handled at the page/API route level
+ * 
+ * If you need to use NextAuth v5's auth() wrapper in middleware in the future:
+ * - The wrapper provides the request with an `auth` property (not a destructurable field)
+ * - Correct pattern: `export default auth((req) => { const session = req.auth; ... })`
+ * - Incorrect pattern: `const { nextUrl, auth } = req` (auth will be undefined)
+ * - The session is available as `req.auth`, not as a destructured variable
  */
-export default auth((req) => {
-  const { nextUrl, auth } = req
+
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+
+/**
+ * Middleware function that runs on every request
+ * 
+ * This is a lightweight middleware that only handles route filtering.
+ * Actual authentication checks happen in:
+ * - API routes: using getSession() from lib/auth-helpers
+ * - Server components: using getSession() from lib/auth-helpers
+ * - Client components: using useSession() from next-auth/react
+ * 
+ * Note: We only destructure `nextUrl` from the request. If using NextAuth's auth()
+ * wrapper, the session would be available as `req.auth` (a property), not as a
+ * destructurable field. Attempting to destructure `auth` would result in `undefined`.
+ */
+export function middleware(request: NextRequest) {
+  // Only destructure nextUrl - do NOT attempt to destructure 'auth' from request
+  // If using NextAuth v5's auth() wrapper, access session via req.auth property
+  const { nextUrl } = request
 
   // Public routes that don't require authentication
   const publicRoutes = ['/login', '/api/auth']
@@ -43,11 +56,10 @@ export default auth((req) => {
     return NextResponse.next()
   }
 
-  // For protected pages, authentication is checked in the page component
+  // For protected pages, authentication is checked in the page component itself
   // This allows for more granular control and better error handling
-  // The auth object is available here if needed: const isLoggedIn = !!auth
   return NextResponse.next()
-})
+}
 
 /**
  * Middleware configuration

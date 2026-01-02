@@ -44,7 +44,45 @@ A comprehensive web application for permit coordination and document management,
 - npm or yarn
 - SQLite (included with Node.js)
 
-### Installation
+### Quick Setup (Automated)
+
+The easiest way to set up the database is using the automated setup script:
+
+```bash
+# Make the script executable (if needed)
+
+
+# Run the setup script
+./setup-db.sh
+
+# Or use npm script
+npm run db:setup
+```
+
+This script will:
+1. ✅ Check prerequisites (Node.js, npm)
+2. ✅ Install all dependencies
+3. ✅ Create `.env` file with auto-generated secrets
+4. ✅ Run database migrations
+5. ✅ Generate Prisma Client
+6. ✅ Seed the database with sample data
+7. ✅ Create storage directory
+
+After running the script, start the development server:
+
+```bash
+npm run dev
+```
+
+Then open [http://localhost:3000](http://localhost:3000) in your browser.
+
+**Demo Login Credentials:**
+- **Admin**: admin@permitco.com / admin123
+- **User**: user@permitco.com / user123
+
+### Manual Setup (Alternative)
+
+If you prefer to set up manually or the script doesn't work for you:
 
 1. **Clone the repository** (or navigate to the project directory)
 
@@ -315,12 +353,19 @@ const storageAdapter: StorageAdapter = new S3StorageAdapter({
 
 ## Scripts
 
+### Development
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm start` - Start production server
 - `npm run lint` - Run ESLint
+
+### Database
+- `npm run db:setup` - Run automated database setup script (recommended for first-time setup)
 - `npm run db:seed` - Seed database with sample data
 - `npm run db:reset` - Reset database and reseed
+- `npm run db:migrate` - Run database migrations
+- `npm run db:generate` - Generate Prisma Client
+- `npm run db:studio` - Open Prisma Studio (database GUI)
 
 ## Development
 
