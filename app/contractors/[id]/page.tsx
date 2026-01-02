@@ -45,6 +45,7 @@ export default async function ContractorDetailPage({
   // Convert dates to ISO strings for client component
   const contractorData = {
     ...contractor,
+    specialties: contractor.specialties || null,
     workersCompExpirationDate: contractor.workersCompExpirationDate
       ? contractor.workersCompExpirationDate.toISOString()
       : null,

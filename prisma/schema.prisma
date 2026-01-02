@@ -64,6 +64,7 @@ model Contractor {
   email                 String?
   address               String?
   preferredContactMethod String?  // phone, email, text
+  specialties          String?    // Comma-separated list of specialties
   workersCompExpirationDate DateTime?
   liabilityExpirationDate DateTime?
   notes                 String?

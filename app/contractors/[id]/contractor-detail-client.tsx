@@ -35,6 +35,7 @@ interface ContractorData {
   email: string | null
   address: string | null
   preferredContactMethod: string | null
+  specialties: string | null
   workersCompExpirationDate: string | null
   liabilityExpirationDate: string | null
   notes: string | null
@@ -94,6 +95,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
         const data = await response.json()
         const updatedContractor = {
           ...data.data,
+          specialties: data.data.specialties || null,
           workersCompExpirationDate: data.data.workersCompExpirationDate
             ? new Date(data.data.workersCompExpirationDate).toISOString()
             : null,
@@ -430,6 +432,45 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
                     size="sm"
                     variant="ghost"
                     onClick={() => startEdit('preferredContactMethod', contractor.preferredContactMethod)}
+                  >
+                    Edit
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Specialties */}
+            <div className="md:col-span-2">
+              <p className="text-sm font-medium text-gray-500">Specialties</p>
+              {editingField === 'specialties' ? (
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    placeholder="e.g., Electrical, Plumbing, HVAC"
+                    autoFocus
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter specialties separated by commas
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    <Button size="sm" onClick={() => saveField('specialties')} disabled={loading}>
+                      Save
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={cancelEdit}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-sm">{contractor.specialties || '-'}</p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => startEdit('specialties', contractor.specialties)}
                   >
                     Edit
                   </Button>

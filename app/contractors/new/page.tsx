@@ -19,6 +19,17 @@ export default function NewContractorPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Available specialties (matching permit types)
+  const availableSpecialties = [
+    'Building',
+    'Electrical',
+    'Plumbing',
+    'Mechanical',
+    'Roofing',
+    'HVAC',
+    'Structural',
+  ]
+
   // Form state
   const [formData, setFormData] = useState({
     companyName: '',
@@ -27,6 +38,8 @@ export default function NewContractorPage() {
     email: '',
     address: '',
     preferredContactMethod: '' as 'phone' | 'email' | 'text' | '',
+    specialties: [] as string[],
+    otherSpecialty: '',
     workersCompExpirationDate: '',
     liabilityExpirationDate: '',
     notes: '',
@@ -83,12 +96,39 @@ export default function NewContractorPage() {
     }
   }
 
+  const handleSpecialtyChange = (specialty: string, checked: boolean) => {
+    setFormData((prev) => {
+      if (checked) {
+        return {
+          ...prev,
+          specialties: [...prev.specialties, specialty],
+        }
+      } else {
+        return {
+          ...prev,
+          specialties: prev.specialties.filter((s) => s !== specialty),
+        }
+      }
+    })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
     try {
+      // Validate that at least one specialty is selected
+      const specialtiesList = [
+        ...formData.specialties,
+        ...(formData.otherSpecialty.trim() ? [formData.otherSpecialty.trim()] : []),
+      ]
+      if (specialtiesList.length === 0) {
+        setError('Please select at least one specialty')
+        setLoading(false)
+        return
+      }
+
       // Prepare submit data - only include fields that have values
       const submitData: any = {
         companyName: formData.companyName,
@@ -100,6 +140,10 @@ export default function NewContractorPage() {
       if (formData.email) submitData.email = formData.email
       if (formData.address) submitData.address = formData.address
       if (formData.preferredContactMethod) submitData.preferredContactMethod = formData.preferredContactMethod
+      
+      // Combine specialties and other specialty into comma-separated string
+      submitData.specialties = specialtiesList.join(', ')
+      
       if (formData.workersCompExpirationDate) {
         submitData.workersCompExpirationDate = new Date(formData.workersCompExpirationDate).toISOString()
       }
@@ -248,6 +292,47 @@ export default function NewContractorPage() {
                   <option value="email">Email</option>
                   <option value="text">Text</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Specialties *
+                </label>
+                <p className="text-xs text-gray-500 mb-3">
+                  Select all specialties that apply to this contractor
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {availableSpecialties.map((specialty) => (
+                    <label
+                      key={specialty}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.specialties.includes(specialty)}
+                        onChange={(e) =>
+                          handleSpecialtyChange(specialty, e.target.checked)
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{specialty}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="mt-3">
+                  <label htmlFor="otherSpecialty" className="block text-sm font-medium text-gray-700 mb-1">
+                    Other Specialty
+                  </label>
+                  <input
+                    type="text"
+                    id="otherSpecialty"
+                    name="otherSpecialty"
+                    value={formData.otherSpecialty}
+                    onChange={handleChange}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Enter other specialty (optional)"
+                  />
+                </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
