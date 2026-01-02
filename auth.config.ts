@@ -26,6 +26,9 @@ import type { NextAuthConfig } from 'next-auth'
  * during sign-in, not in middleware, so this is safe.
  */
 export const authConfig: NextAuthConfig = {
+  // Trust the host in development (required for NextAuth v5)
+  // This ensures cookies are set correctly
+  trustHost: true,
   providers: [
     Credentials({
       name: 'Credentials',

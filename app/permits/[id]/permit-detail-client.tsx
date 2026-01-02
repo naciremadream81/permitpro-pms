@@ -329,6 +329,8 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
         method: 'POST',
         credentials: 'include', // Include cookies for authentication
         body: formData,
+        // Note: Do NOT set Content-Type header when using FormData
+        // The browser will automatically set it with the correct boundary
       })
 
       console.log('Upload response status:', response.status)
@@ -336,6 +338,12 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
         console.error('Upload error:', errorData)
+        
+        // If unauthorized, suggest refreshing the page or logging in again
+        if (response.status === 401) {
+          throw new Error('Your session has expired. Please refresh the page and try again.')
+        }
+        
         throw new Error(errorData.error || 'Failed to upload document')
       }
 
