@@ -173,6 +173,10 @@ export default function NewPermitPage() {
 
       const result = await response.json()
       
+      // Reset loading state before redirect
+      // This ensures the button state is correct if user navigates back
+      setLoading(false)
+      
       // Redirect to the new permit detail page
       router.push(`/permits/${result.data.id}`)
       router.refresh()

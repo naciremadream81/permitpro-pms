@@ -3,13 +3,6 @@
  * 
  * Handles GET requests to download all documents for a permit package as a ZIP file.
  * This is useful for submitting permit packages or emailing them.
- */
-
-/**
- * Download All Documents as ZIP API Route Handler
- * 
- * Handles GET requests to download all documents for a permit package as a ZIP file.
- * This is useful for submitting permit packages or emailing them.
  * 
  * The ZIP file will contain all documents organized by category, with descriptive filenames
  * that include the document category for easy identification.
@@ -71,6 +64,7 @@ export async function GET(
     })
 
     // Create a promise to wait for archive completion
+    // This promise resolves when the 'end' event is emitted with the final buffer
     const archivePromise = new Promise<Buffer>((resolve, reject) => {
       archive.on('end', () => {
         const zipBuffer = Buffer.concat(chunks)
@@ -104,10 +98,14 @@ export async function GET(
       }
     }
 
-    // Finalize the archive (this triggers the 'end' event)
-    archive.finalize()
+    // Finalize the archive and await the promise
+    // finalize() returns a Promise that resolves when the archiving process completes
+    // We await it to properly handle any errors that might occur during finalization
+    // This prevents unhandled promise rejections and ensures proper error handling
+    await archive.finalize()
 
-    // Wait for the archive to complete
+    // Wait for the archive to complete and get the final buffer
+    // The 'end' event will be emitted after finalize() completes successfully
     const zipBuffer = await archivePromise
 
     // Generate a safe filename for the ZIP

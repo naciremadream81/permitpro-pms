@@ -99,6 +99,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
   // File upload state
   const [showUploadForm, setShowUploadForm] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadSuccess, setUploadSuccess] = useState(false)
   const [uploadForm, setUploadForm] = useState({
     file: null as File | null,
     category: 'Application',
@@ -112,7 +113,9 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
   // Refresh permit data
   const refreshPermit = async () => {
     try {
-      const response = await fetch(`/api/permits/${permit.id}`)
+      const response = await fetch(`/api/permits/${permit.id}`, {
+        credentials: 'include', // Include cookies for authentication
+      })
       if (response.ok) {
         const data = await response.json()
         const updatedPermit = {
@@ -145,7 +148,18 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
   // Start editing a field
   const startEdit = (field: string, currentValue: string | null) => {
     setEditingField(field)
-    setEditValue(currentValue || '')
+    
+    // Convert ISO date strings to YYYY-MM-DD format for HTML date inputs
+    if (field === 'targetIssueDate' && currentValue) {
+      // Parse ISO string and format as YYYY-MM-DD for date input
+      const date = new Date(currentValue)
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      setEditValue(`${year}-${month}-${day}`)
+    } else {
+      setEditValue(currentValue || '')
+    }
   }
 
   // Cancel editing
@@ -171,6 +185,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
 
       const response = await fetch(`/api/permits/${permit.id}`, {
         method: 'PATCH',
+        credentials: 'include', // Include cookies for authentication
         headers: {
           'Content-Type': 'application/json',
         },
@@ -209,6 +224,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
 
       const response = await fetch(`/api/permits/${permit.id}/tasks`, {
         method: 'POST',
+        credentials: 'include', // Include cookies for authentication
         headers: {
           'Content-Type': 'application/json',
         },
@@ -241,6 +257,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
     try {
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
+        credentials: 'include', // Include cookies for authentication
         headers: {
           'Content-Type': 'application/json',
         },
@@ -261,6 +278,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
     try {
       const response = await fetch(`/api/documents/${documentId}`, {
         method: 'PATCH',
+        credentials: 'include', // Include cookies for authentication
         headers: {
           'Content-Type': 'application/json',
         },
@@ -282,6 +300,8 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
   // Upload document
   const uploadDocument = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('Upload form submitted', { file: uploadForm.file, category: uploadForm.category })
+    
     if (!uploadForm.file) {
       setError('Please select a file to upload')
       return
@@ -299,25 +319,47 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
       }
       formData.append('isRequired', uploadForm.isRequired.toString())
 
+      console.log('Sending upload request to:', `/api/permits/${permit.id}/documents`)
+      
       const response = await fetch(`/api/permits/${permit.id}/documents`, {
         method: 'POST',
+        credentials: 'include', // Include cookies for authentication
         body: formData,
       })
 
+      console.log('Upload response status:', response.status)
+
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Upload error:', errorData)
         throw new Error(errorData.error || 'Failed to upload document')
       }
 
-      await refreshPermit()
-      setShowUploadForm(false)
+      const result = await response.json()
+      console.log('Upload successful:', result)
+
+      // Show success message
+      setUploadSuccess(true)
+      setError('') // Clear any previous errors
+      
+      // Reset form
       setUploadForm({
         file: null,
         category: 'Application',
         notes: '',
         isRequired: false,
       })
+      
+      // Refresh permit data
+      await refreshPermit()
+      
+      // Hide form and success message after a delay
+      setTimeout(() => {
+        setShowUploadForm(false)
+        setUploadSuccess(false)
+      }, 2000)
     } catch (err) {
+      console.error('Upload error:', err)
       setError(err instanceof Error ? err.message : 'Failed to upload document')
     } finally {
       setUploading(false)
@@ -712,12 +754,48 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                 size="sm" 
                 variant="default"
                 disabled={downloadingZip}
-                onClick={() => {
+                onClick={async () => {
                   setDownloadingZip(true)
-                  // Trigger download - the browser will handle the file download
-                  window.location.href = `/api/permits/${permit.id}/documents/download-all`
-                  // Reset loading state after a delay (download happens asynchronously)
-                  setTimeout(() => setDownloadingZip(false), 2000)
+                  try {
+                    // Fetch the ZIP file as a blob
+                    const response = await fetch(`/api/permits/${permit.id}/documents/download-all`, {
+                      credentials: 'include', // Include cookies for authentication
+                    })
+                    
+                    if (!response.ok) {
+                      throw new Error('Failed to download ZIP file')
+                    }
+                    
+                    // Get the blob from the response
+                    const blob = await response.blob()
+                    
+                    // Create a temporary URL for the blob
+                    const url = window.URL.createObjectURL(blob)
+                    
+                    // Create a temporary anchor element and trigger download
+                    const link = document.createElement('a')
+                    link.href = url
+                    
+                    // Extract filename from Content-Disposition header or use default
+                    const contentDisposition = response.headers.get('Content-Disposition')
+                    const filenameMatch = contentDisposition?.match(/filename="(.+)"/)
+                    const filename = filenameMatch ? filenameMatch[1] : `permit_${permit.id}_documents.zip`
+                    link.download = filename
+                    
+                    // Append to body, click, and remove
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                    
+                    // Clean up the blob URL
+                    window.URL.revokeObjectURL(url)
+                  } catch (error) {
+                    console.error('Error downloading ZIP:', error)
+                    setError('Failed to download document package')
+                  } finally {
+                    // Reset loading state - component is still mounted since we didn't navigate
+                    setDownloadingZip(false)
+                  }
                 }}
               >
                 {downloadingZip ? 'Creating ZIP...' : 'Download All as ZIP'}
@@ -732,13 +810,27 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
           {/* Upload Document Form */}
           {showUploadForm && (
             <form onSubmit={uploadDocument} className="mb-4 p-4 border rounded-md bg-gray-50">
+              {error && (
+                <div className="mb-3 rounded-md bg-red-50 p-3">
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+              )}
+              {uploadSuccess && (
+                <div className="mb-3 rounded-md bg-green-50 p-3">
+                  <p className="text-sm text-green-800">Document uploaded successfully!</p>
+                </div>
+              )}
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">File *</label>
                   <input
                     type="file"
                     required
-                    onChange={(e) => setUploadForm({ ...uploadForm, file: e.target.files?.[0] || null })}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null
+                      console.log('File selected:', file?.name)
+                      setUploadForm({ ...uploadForm, file })
+                    }}
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                   />
                 </div>
