@@ -324,6 +324,7 @@ export default function NewPermitPage() {
                   <option value="Roofing">Roofing</option>
                   <option value="HVAC">HVAC</option>
                   <option value="Structural">Structural</option>
+                  <option value="MobileHome">Mobile home</option>
                   <option value="Other">Other</option>
                 </select>
               </div>

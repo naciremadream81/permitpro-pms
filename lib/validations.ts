@@ -44,6 +44,7 @@ export const permitTypeEnum = z.enum([
   'Roofing',
   'HVAC',
   'Structural',
+  'MobileHome',
   'Other',
 ])
 

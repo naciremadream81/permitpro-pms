@@ -445,6 +445,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                     <option value="Roofing">Roofing</option>
                     <option value="HVAC">HVAC</option>
                     <option value="Structural">Structural</option>
+                    <option value="MobileHome">Mobile home</option>
                     <option value="Other">Other</option>
                   </select>
                   <Button size="sm" onClick={() => saveField('permitType')} disabled={loading}>Save</Button>

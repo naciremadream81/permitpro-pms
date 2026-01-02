@@ -28,6 +28,7 @@ export default function NewContractorPage() {
     'Roofing',
     'HVAC',
     'Structural',
+    'Mobile home',
   ]
 
   // Form state

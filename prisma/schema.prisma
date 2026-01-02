@@ -91,6 +91,7 @@ enum PermitType {
   Roofing
   HVAC
   Structural
+  MobileHome
   Other
 }
 
