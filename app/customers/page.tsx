@@ -51,7 +51,9 @@ export default async function CustomersPage({
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
-          <Button>New Customer</Button>
+          <Link href="/customers/new">
+            <Button>New Customer</Button>
+          </Link>
         </div>
 
         <Card>
