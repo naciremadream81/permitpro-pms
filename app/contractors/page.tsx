@@ -51,7 +51,9 @@ export default async function ContractorsPage({
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900">Contractors</h1>
-          <Button>New Contractor</Button>
+          <Link href="/contractors/new">
+            <Button>New Contractor</Button>
+          </Link>
         </div>
 
         <Card>

@@ -27,6 +27,8 @@ export const contractorSchema = z.object({
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   address: z.string().optional(),
   preferredContactMethod: z.enum(['phone', 'email', 'text']).optional(),
+  workersCompExpirationDate: z.string().datetime().optional().or(z.literal('')).transform((val) => val === '' ? undefined : val),
+  liabilityExpirationDate: z.string().datetime().optional().or(z.literal('')).transform((val) => val === '' ? undefined : val),
   notes: z.string().optional(),
 })
 

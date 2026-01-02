@@ -64,6 +64,8 @@ model Contractor {
   email                 String?
   address               String?
   preferredContactMethod String?  // phone, email, text
+  workersCompExpirationDate DateTime?
+  liabilityExpirationDate DateTime?
   notes                 String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
