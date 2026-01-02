@@ -25,15 +25,15 @@ export async function GET(
       where: { id: params.id },
       include: {
         permitPackages: {
-          select: {
-            id: true,
-            projectName: true,
-            status: true,
-            permitType: true,
-            openedDate: true,
+          include: {
+            contractor: {
+              select: {
+                id: true,
+                companyName: true,
+              },
+            },
           },
           orderBy: { openedDate: 'desc' },
-          take: 10, // Limit to recent permits
         },
       },
     })
