@@ -1,0 +1,312 @@
+// Prisma Schema for Permit Processing & Document Management System
+// This schema defines all entities and relationships for the permit coordination application
+
+generator client {
+  provider = "prisma-client"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============================================================================
+// USER & AUTHENTICATION
+// ============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  passwordHash  String    // For credentials auth (bcrypt hashed)
+  role          String    @default("user") // user, admin
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  activityLogs  ActivityLog[]
+  uploadedDocs  PermitDocument[]
+
+  @@index([email])
+}
+
+// ============================================================================
+// CUSTOMER ENTITY
+// ============================================================================
+
+model Customer {
+  id            String    @id @default(cuid())
+  name          String
+  contactName   String?
+  phone         String?
+  email         String?
+  mainAddress   String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  permitPackages PermitPackage[]
+
+  @@index([name])
+  @@index([email])
+}
+
+// ============================================================================
+// CONTRACTOR ENTITY
+// ============================================================================
+
+model Contractor {
+  id                    String    @id @default(cuid())
+  companyName          String
+  licenseNumber         String?
+  phone                 String?
+  email                 String?
+  address               String?
+  preferredContactMethod String?  // phone, email, text
+  notes                 String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  permitPackages        PermitPackage[]
+
+  @@index([companyName])
+  @@index([licenseNumber])
+  @@index([email])
+}
+
+// ============================================================================
+// PERMIT PACKAGE ENTITY (Main entity)
+// ============================================================================
+
+enum PermitType {
+  Building
+  Electrical
+  Plumbing
+  Mechanical
+  Roofing
+  HVAC
+  Structural
+  Other
+}
+
+enum PermitStatus {
+  New
+  Submitted
+  InReview
+  RevisionsNeeded
+  Approved
+  Issued
+  Inspections
+  FinaledClosed
+  Canceled
+}
+
+enum InternalStage {
+  WaitingOnContractorDocs
+  WaitingOnCounty
+  WaitingOnBilling
+  ReadyToSubmit
+  ReadyToClose
+  InProgress
+}
+
+enum BillingStatus {
+  NotSent
+  SentToBilling
+  Billed
+  Paid
+}
+
+model PermitPackage {
+  id                String          @id @default(cuid())
+  customerId        String
+  contractorId      String
+  projectName       String
+  projectAddress    String
+  county            String?
+  jurisdictionNotes String?
+  
+  permitType        PermitType
+  status            PermitStatus    @default(New)
+  internalStage     InternalStage?  @default(InProgress)
+  
+  permitNumber      String?         // Assigned by jurisdiction
+  openedDate        DateTime        @default(now())
+  targetIssueDate   DateTime?
+  closedDate        DateTime?
+  
+  billingStatus     BillingStatus   @default(NotSent)
+  sentToBillingAt   DateTime?
+  billingNotes      String?
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  customer          Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  contractor        Contractor      @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+  documents         PermitDocument[]
+  tasks             Task[]
+  activityLogs      ActivityLog[]
+
+  @@index([customerId])
+  @@index([contractorId])
+  @@index([status])
+  @@index([permitType])
+  @@index([billingStatus])
+  @@index([permitNumber])
+  @@index([county])
+}
+
+// ============================================================================
+// PERMIT DOCUMENT ENTITY
+// ============================================================================
+
+enum DocumentCategory {
+  Application
+  Plans
+  Specifications
+  Engineering
+  Photos
+  Correspondence
+  Inspection
+  Certificate
+  Other
+}
+
+enum DocumentStatus {
+  Pending
+  Verified
+  Rejected
+}
+
+model PermitDocument {
+  id                String            @id @default(cuid())
+  permitPackageId  String
+  fileName          String
+  fileType          String            // MIME type or extension
+  category          DocumentCategory
+  uploadedBy        String
+  uploadedAt        DateTime          @default(now())
+  
+  versionTag        String?           // e.g., "v1", "v2", "revised"
+  notes             String?
+  
+  isRequired        Boolean           @default(false)
+  isVerified        Boolean           @default(false)
+  status            DocumentStatus    @default(Pending)
+  
+  fileSize          Int               // bytes
+  storagePath       String            // Local path or S3 key
+  checksum          String?           // MD5 or SHA256 for integrity
+  
+  // Versioning support
+  parentDocumentId  String?           // Points to previous version
+  versionGroupId    String?           // Groups all versions together
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  // Relations
+  permitPackage     PermitPackage     @relation(fields: [permitPackageId], references: [id], onDelete: Cascade)
+  uploadedByUser    User              @relation(fields: [uploadedBy], references: [id])
+  parentDocument    PermitDocument?   @relation("DocumentVersions", fields: [parentDocumentId], references: [id])
+  childDocuments    PermitDocument[]  @relation("DocumentVersions")
+
+  @@index([permitPackageId])
+  @@index([category])
+  @@index([status])
+  @@index([versionGroupId])
+  @@index([parentDocumentId])
+}
+
+// ============================================================================
+// TASK / WORKFLOW STEP ENTITY
+// ============================================================================
+
+enum TaskStatus {
+  NotStarted
+  InProgress
+  Waiting
+  Completed
+}
+
+model Task {
+  id                String          @id @default(cuid())
+  permitPackageId   String
+  name              String
+  description       String?
+  status            TaskStatus      @default(NotStarted)
+  assignedTo        String?         // User email or name (text for now)
+  dueDate           DateTime?
+  completedAt       DateTime?
+  priority          String?         // low, medium, high
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  permitPackage     PermitPackage   @relation(fields: [permitPackageId], references: [id], onDelete: Cascade)
+
+  @@index([permitPackageId])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([dueDate])
+}
+
+// ============================================================================
+// ACTIVITY LOG ENTITY (Audit Trail)
+// ============================================================================
+
+enum ActivityType {
+  StatusChange
+  StageChange
+  BillingStatusChange
+  DocumentUploaded
+  DocumentVerified
+  TaskCreated
+  TaskCompleted
+  NoteAdded
+  FieldUpdated
+}
+
+model ActivityLog {
+  id                String          @id @default(cuid())
+  permitPackageId   String
+  userId            String?
+  activityType      ActivityType
+  description       String
+  oldValue          String?         // Previous status/stage value
+  newValue          String?         // New status/stage value
+  metadata          String?         // JSON for additional context
+  createdAt         DateTime        @default(now())
+
+  // Relations
+  permitPackage     PermitPackage   @relation(fields: [permitPackageId], references: [id], onDelete: Cascade)
+  user              User?           @relation(fields: [userId], references: [id])
+
+  @@index([permitPackageId])
+  @@index([activityType])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// REQUIRED DOCUMENT TEMPLATE ENTITY
+// ============================================================================
+
+model RequiredDocumentTemplate {
+  id                String          @id @default(cuid())
+  permitType        PermitType
+  county            String?         // null = applies to all counties
+  category          DocumentCategory
+  name              String          // Display name
+  description       String?
+  isRequired        Boolean         @default(true)
+  order             Int             @default(0) // Display order
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([permitType, county])
+  @@unique([permitType, county, category, name])
+}
