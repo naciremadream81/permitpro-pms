@@ -163,7 +163,22 @@ export default function NewContractorPage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        
+        // Provide helpful error message for 401
+        if (response.status === 401) {
+          throw new Error('Your session has expired. Please refresh the page and try again.')
+        }
+        
+        // Provide helpful error message for validation errors
+        if (response.status === 400 && errorData.details) {
+          const zodError = errorData.details
+          if (zodError.issues && Array.isArray(zodError.issues)) {
+            const firstError = zodError.issues[0]
+            throw new Error(firstError.message || 'Validation error')
+          }
+        }
+        
         throw new Error(errorData.error || 'Failed to create contractor')
       }
 

@@ -87,7 +87,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: contractor }, { status: 201 })
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError') {
+    // Handle Zod validation errors
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
+      console.error('Validation error:', error)
       return NextResponse.json(
         { error: 'Validation error', details: error },
         { status: 400 }
@@ -95,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
     console.error('Error creating contractor:', error)
     return NextResponse.json(
-      { error: 'Failed to create contractor' },
+      { error: 'Failed to create contractor', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }
