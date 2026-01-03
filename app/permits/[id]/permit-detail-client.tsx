@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { formatDate, formatDateTime } from '@/lib/utils'
+import { formatDate, formatDateTime, formatPermitType } from '@/lib/utils'
 import Link from 'next/link'
 
 // Types
@@ -453,7 +453,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <p className="text-sm">{permit.permitType}</p>
+                  <p className="text-sm">{formatPermitType(permit.permitType)}</p>
                   <Button size="sm" variant="ghost" onClick={() => startEdit('permitType', permit.permitType)}>Edit</Button>
                 </div>
               )}

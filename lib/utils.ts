@@ -100,3 +100,15 @@ export function formatStatus(status: string): string {
     .join(' ')
 }
 
+/**
+ * Format permit type for display
+ * Converts enum values to user-friendly display text
+ */
+export function formatPermitType(permitType: string): string {
+  const typeMap: Record<string, string> = {
+    'MobileHome': 'Mobile home',
+    // Add other mappings if needed in the future
+  }
+  return typeMap[permitType] || permitType
+}
+

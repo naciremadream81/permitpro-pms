@@ -7,6 +7,7 @@
 import { AppLayout } from '@/components/layout/app-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { prisma } from '@/lib/prisma'
+import { formatPermitType } from '@/lib/utils'
 
 async function getReportData() {
   const [
@@ -73,7 +74,7 @@ export default async function ReportsPage() {
               <div className="space-y-2">
                 {data.permitsByType.map((type) => (
                   <div key={type.permitType} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">{type.permitType}</span>
+                    <span className="text-sm text-gray-600">{formatPermitType(type.permitType)}</span>
                     <span className="text-sm font-semibold">{type._count}</span>
                   </div>
                 ))}

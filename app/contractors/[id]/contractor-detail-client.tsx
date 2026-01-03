@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { formatDate } from '@/lib/utils'
+import { formatDate, formatPermitType } from '@/lib/utils'
 import Link from 'next/link'
 
 interface PermitPackage {
@@ -629,7 +629,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
                           {permit.customer.name}
                         </Link>
                       </td>
-                      <td className="px-4 py-2 text-sm">{permit.permitType}</td>
+                      <td className="px-4 py-2 text-sm">{formatPermitType(permit.permitType)}</td>
                       <td className="px-4 py-2">
                         <StatusBadge status={permit.status} />
                       </td>
