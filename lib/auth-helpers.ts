@@ -68,3 +68,39 @@ export async function requireAuth() {
   return session
 }
 
+/**
+ * Require admin role - throws error if not admin
+ * 
+ * This function ensures that a user is authenticated and has admin role.
+ * 
+ * @returns Promise<Session> - The current session (guaranteed to be admin)
+ * @throws Error - If the user is not authenticated or not an admin
+ * 
+ * @example
+ * ```typescript
+ * try {
+ *   const session = await requireAdmin()
+ *   // User is admin, proceed with admin operations
+ * } catch (error) {
+ *   return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+ * }
+ * ```
+ */
+export async function requireAdmin() {
+  const session = await requireAuth()
+  if (session.user?.role !== 'admin') {
+    throw new Error('Forbidden')
+  }
+  return session
+}
+
+/**
+ * Check if current user is admin
+ * 
+ * @returns Promise<boolean> - True if user is admin, false otherwise
+ */
+export async function isAdmin(): Promise<boolean> {
+  const session = await getSession()
+  return session?.user?.role === 'admin'
+}
+

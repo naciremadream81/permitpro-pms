@@ -7,6 +7,21 @@
 
 import { z } from 'zod'
 
+// User validation schemas
+export const userSchema = z.object({
+  email: z.string().email('Invalid email'),
+  name: z.string().min(1, 'Name is required'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  role: z.enum(['user', 'admin']).default('user'),
+})
+
+export const userUpdateSchema = z.object({
+  email: z.string().email('Invalid email').optional(),
+  name: z.string().min(1, 'Name is required').optional(),
+  password: z.string().min(6, 'Password must be at least 6 characters').optional(),
+  role: z.enum(['user', 'admin']).optional(),
+})
+
 // Customer validation schemas
 export const customerSchema = z.object({
   name: z.string().min(1, 'Name is required'),

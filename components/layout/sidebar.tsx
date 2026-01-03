@@ -9,6 +9,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
@@ -16,6 +17,7 @@ import {
   Users,
   Wrench,
   BarChart3,
+  Settings,
   LogOut,
 } from 'lucide-react'
 
@@ -29,6 +31,8 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { data: session } = useSession()
+  const isAdmin = session?.user?.role === 'admin'
 
   return (
     <div className="flex h-screen w-64 flex-col bg-gray-900 text-white">
@@ -56,6 +60,20 @@ export function Sidebar() {
             </Link>
           )
         })}
+        {isAdmin && (
+          <Link
+            href="/settings"
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              pathname === '/settings' || pathname?.startsWith('/settings/')
+                ? 'bg-gray-800 text-white'
+                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+            )}
+          >
+            <Settings className="h-5 w-5" />
+            Settings
+          </Link>
+        )}
       </nav>
       <div className="border-t border-gray-800 p-4">
         <Link

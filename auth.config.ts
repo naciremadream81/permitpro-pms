@@ -48,7 +48,7 @@ export const authConfig: NextAuthConfig = {
         const user = await authenticateUser(credentials.email, credentials.password)
         
         // Return user object if authentication succeeds, null otherwise
-        return user ? { id: user.id, email: user.email, name: user.name } : null
+        return user ? { id: user.id, email: user.email, name: user.name, role: user.role } : null
       },
     }),
   ],
@@ -69,6 +69,7 @@ export const authConfig: NextAuthConfig = {
         token.id = user.id
         token.email = user.email
         token.name = user.name
+        token.role = user.role
       }
       return token
     },
@@ -82,6 +83,7 @@ export const authConfig: NextAuthConfig = {
         session.user.id = token.id as string
         session.user.email = token.email as string
         session.user.name = token.name as string
+        session.user.role = token.role as string
       }
       return session
     },
