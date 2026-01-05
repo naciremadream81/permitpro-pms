@@ -284,6 +284,23 @@ The storage system is abstracted through `lib/storage.ts`, making it easy to mig
 
 ## Deployment
 
+### Cloudflare Tunnel Deployment (Recommended for Remote Access)
+
+Cloudflare Tunnel allows you to securely expose your local application to the internet without opening firewall ports. This is ideal for accessing your PermitPro PMS from outside your local network.
+
+**Quick Setup:**
+
+1. **Install cloudflared** (see detailed guide below)
+2. **Create a tunnel** in Cloudflare Dashboard (Zero Trust → Networks → Tunnels)
+3. **Configure the tunnel** to point to `http://localhost:3000`
+4. **Update your `.env`** file:
+   ```env
+   NEXTAUTH_URL="https://permitpro.yourdomain.com"
+   ```
+5. **Start your Next.js app** and the tunnel service
+
+For detailed step-by-step instructions, see **[cloudflare-tunnel-setup.md](./cloudflare-tunnel-setup.md)**
+
 ### Local Network Deployment
 
 1. **Build the application**
@@ -366,6 +383,14 @@ const storageAdapter: StorageAdapter = new S3StorageAdapter({
 - `npm run db:migrate` - Run database migrations
 - `npm run db:generate` - Generate Prisma Client
 - `npm run db:studio` - Open Prisma Studio (database GUI)
+
+### Cloudflare Tunnel
+- `./scripts/cloudflare-tunnel.sh start` - Start the tunnel service
+- `./scripts/cloudflare-tunnel.sh stop` - Stop the tunnel service
+- `./scripts/cloudflare-tunnel.sh restart` - Restart the tunnel service
+- `./scripts/cloudflare-tunnel.sh status` - Show tunnel status
+- `./scripts/cloudflare-tunnel.sh logs` - View tunnel logs
+- `./scripts/cloudflare-tunnel.sh install` - Install cloudflared
 
 ## Development
 
