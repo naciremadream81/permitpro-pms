@@ -48,3 +48,7 @@ dev.db
 prisma/dev.db
 
 /app/generated/prisma
+
+# cloudflare tunnel
+.cloudflared/*.json
+*.cloudflared.json

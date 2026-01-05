@@ -1,0 +1,20 @@
+# Cloudflare Tunnel Configuration
+# 
+# This file configures the Cloudflare Tunnel to expose your local
+# Next.js application to the internet securely.
+#
+# IMPORTANT: Replace the tunnel token below with your actual tunnel token
+# from the Cloudflare dashboard.
+
+tunnel: YOUR_TUNNEL_ID
+credentials-file: /home/archie/.cloudflared/YOUR_TUNNEL_ID.json
+
+# Ingress rules - routes traffic to your local Next.js app
+ingress:
+  # Route all traffic to your local Next.js application
+  - hostname: permitpro.yourdomain.com  # Replace with your domain
+    service: http://localhost:3000
+  
+  # Catch-all rule (must be last)
+  - service: http_status:404
+
