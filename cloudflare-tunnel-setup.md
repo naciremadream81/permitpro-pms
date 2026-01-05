@@ -2,6 +2,8 @@
 
 This guide will help you set up a Cloudflare Tunnel to expose your local PermitPro PMS application to the internet securely, without opening ports on your firewall.
 
+**Important Security Note:** Tunnel credentials (TUNNEL_ID and TUNNEL_TOKEN) are stored in your `.env` file, which is git-ignored. Never commit these values to version control. See `.env.example` for the expected structure.
+
 ## Prerequisites
 
 1. A Cloudflare account with a domain added
@@ -42,22 +44,36 @@ cloudflared --version
 
 ## Step 3: Install the Tunnel on Your Server
 
-After creating the tunnel, Cloudflare will provide you with a command to run. It will look like:
+1. After creating the tunnel in the Cloudflare Dashboard, copy the tunnel token provided.
 
-```bash
-cloudflared service install YOUR_TUNNEL_TOKEN
-```
-
-**Important:** Copy the entire command including the token and run it on your server.
-
-Alternatively, you can manually install:
-
-1. Copy the tunnel token from the dashboard
-2. Create the credentials file:
+2. Add the token to your `.env` file (create it in the project root if it doesn't exist):
    ```bash
-   mkdir -p ~/.cloudflared
-   # The token will be saved automatically when you run the install command
+   # Edit .env file
+   nano .env
    ```
+
+3. Add the tunnel credentials to `.env`:
+   ```env
+   # Cloudflare Tunnel Configuration
+   CLOUDFLARE_TUNNEL_ID="your-tunnel-id-here"
+   CLOUDFLARE_TUNNEL_TOKEN="your-tunnel-token-here"
+   ```
+
+   **Security Note:** The `.env` file is git-ignored and should never be committed to version control.
+
+4. Install the tunnel using the token from your environment:
+   ```bash
+   # Source the .env file and install (or export the variable first)
+   export $(grep -v '^#' .env | xargs)
+   cloudflared service install $CLOUDFLARE_TUNNEL_TOKEN
+   ```
+
+   Or if you prefer, you can use the token directly (but remember to add it to `.env` for future reference):
+   ```bash
+   cloudflared service install YOUR_TUNNEL_TOKEN
+   ```
+
+**Important:** Keep your tunnel token secure. It provides full access to your tunnel configuration.
 
 ## Step 4: Configure the Tunnel
 
@@ -66,7 +82,7 @@ Alternatively, you can manually install:
    sudo nano /etc/cloudflared/config.yml
    ```
 
-2. Update the configuration (replace with your values):
+2. Update the configuration with your tunnel ID (from your `.env` file's `CLOUDFLARE_TUNNEL_ID`):
    ```yaml
    tunnel: YOUR_TUNNEL_ID
    credentials-file: /root/.cloudflared/YOUR_TUNNEL_ID.json
@@ -77,30 +93,42 @@ Alternatively, you can manually install:
      - service: http_status:404
    ```
 
+   **Important:** Replace `YOUR_TUNNEL_ID` with the actual tunnel ID from your `.env` file (the `CLOUDFLARE_TUNNEL_ID` value). Do not commit this file with real values to git.
+
 3. Save and exit
 
 ## Step 5: Configure DNS
 
-1. In Cloudflare Dashboard, go to **DNS** → **Records**
-2. Add a new **CNAME** record:
+1. Get your tunnel ID from your `.env` file (the `CLOUDFLARE_TUNNEL_ID` value) or from the Cloudflare Dashboard (Zero Trust → Networks → Tunnels)
+
+2. In Cloudflare Dashboard, go to **DNS** → **Records**
+3. Add a new **CNAME** record:
    - **Name**: `permitpro` (or your preferred subdomain)
-   - **Target**: `YOUR_TUNNEL_ID.cfargotunnel.com`
+   - **Target**: `YOUR_TUNNEL_ID.cfargotunnel.com` (replace `YOUR_TUNNEL_ID` with your actual tunnel ID from `.env`)
    - **Proxy status**: Proxied (orange cloud)
    - Click **Save**
 
 ## Step 6: Update Environment Variables
 
-Update your `.env` file to use your tunnel domain:
+Update your `.env` file with all necessary variables:
 
 ```env
-# Update NEXTAUTH_URL to your tunnel domain
-NEXTAUTH_URL="https://permitpro.yourdomain.com"
-
-# Keep other settings the same
+# Database
 DATABASE_URL="file:./dev.db"
+
+# NextAuth Configuration
+NEXTAUTH_URL="https://permitpro.yourdomain.com"  # Your tunnel domain
 NEXTAUTH_SECRET="your-secret-here"
+
+# File Storage
 STORAGE_ROOT="./storage"
+
+# Cloudflare Tunnel Configuration
+CLOUDFLARE_TUNNEL_ID="your-tunnel-id-here"
+CLOUDFLARE_TUNNEL_TOKEN="your-tunnel-token-here"
 ```
+
+**Security Reminder:** The `.env` file is git-ignored. Never commit tunnel credentials or secrets to version control.
 
 ## Step 7: Start the Tunnel Service
 

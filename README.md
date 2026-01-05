@@ -98,7 +98,13 @@ npm install
 
 3. **Set up environment variables**
 
-Create a `.env` file in the root directory:
+Copy the example environment file and update it with your values:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` and update the values:
 
 ```env
 # Database
@@ -110,7 +116,13 @@ NEXTAUTH_SECRET="your-secret-key-here" # Generate with: openssl rand -base64 32
 
 # File Storage (optional - defaults to ./storage)
 STORAGE_ROOT="./storage"
+
+# Cloudflare Tunnel Configuration (optional - only needed if using Cloudflare Tunnel)
+CLOUDFLARE_TUNNEL_ID="your-tunnel-id-here"
+CLOUDFLARE_TUNNEL_TOKEN="your-tunnel-token-here"
 ```
+
+**Note:** The `.env` file is git-ignored for security. See `.env.example` for the template.
 
 4. **Set up the database**
 
