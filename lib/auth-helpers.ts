@@ -8,7 +8,6 @@
  */
 
 import { auth } from '@/auth'
-import { authConfig } from '@/auth.config'
 
 /**
  * Get the current session on the server side

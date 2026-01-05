@@ -10,6 +10,7 @@ import { requireAdmin } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { userUpdateSchema } from '@/lib/validations'
 import { hashPassword } from '@/lib/auth'
+import { Prisma } from '@prisma/client'
 
 // GET /api/users/[id] - Get user by ID (admin only)
 export async function GET(
@@ -96,7 +97,7 @@ export async function PATCH(
     }
 
     // Prepare update data
-    const updateData: any = {}
+    const updateData: Prisma.UserUpdateInput = {}
     if (validatedData.email) updateData.email = validatedData.email
     if (validatedData.name) updateData.name = validatedData.name
     if (validatedData.role) updateData.role = validatedData.role
@@ -132,7 +133,7 @@ export async function PATCH(
         { status: 400 }
       )
     }
-    if ((error as any)?.code === 'P2025') {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
     console.error('Error updating user:', error)
@@ -182,7 +183,7 @@ export async function DELETE(
     if (error instanceof Error && error.message === 'Forbidden') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
-    if ((error as any)?.code === 'P2025') {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
     console.error('Error deleting user:', error)

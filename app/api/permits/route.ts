@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { permitPackageSchema } from '@/lib/validations'
+import { Prisma } from '@prisma/client'
 
 // GET /api/permits - List all permits with filters, search, and pagination
 export async function GET(request: NextRequest) {
@@ -32,24 +33,26 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: any = {}
+    const where: Prisma.PermitPackageWhereInput = {}
 
     // Search across multiple fields
+    // Note: SQLite doesn't support case-insensitive mode, but it's case-insensitive for ASCII by default
     if (search) {
       where.OR = [
-        { projectName: { contains: search, mode: 'insensitive' as const } },
-        { projectAddress: { contains: search, mode: 'insensitive' as const } },
-        { permitNumber: { contains: search, mode: 'insensitive' as const } },
-        { customer: { name: { contains: search, mode: 'insensitive' as const } } },
-        { contractor: { companyName: { contains: search, mode: 'insensitive' as const } } },
+        { projectName: { contains: search } },
+        { projectAddress: { contains: search } },
+        { permitNumber: { contains: search } },
+        { customer: { name: { contains: search } } },
+        { contractor: { companyName: { contains: search } } },
       ]
     }
 
     // Apply filters
-    if (status) where.status = status
-    if (permitType) where.permitType = permitType
-    if (county) where.county = { contains: county, mode: 'insensitive' as const }
-    if (billingStatus) where.billingStatus = billingStatus
+    // Type assertions are safe here as the values come from URL query params and Prisma will validate at runtime
+    if (status) where.status = status as unknown as Prisma.PermitPackageWhereInput['status']
+    if (permitType) where.permitType = permitType as unknown as Prisma.PermitPackageWhereInput['permitType']
+    if (county) where.county = { contains: county }
+    if (billingStatus) where.billingStatus = billingStatus as unknown as Prisma.PermitPackageWhereInput['billingStatus']
     if (customerId) where.customerId = customerId
     if (contractorId) where.contractorId = contractorId
 
@@ -109,13 +112,15 @@ export async function POST(request: NextRequest) {
     // Validate request data
     const validatedData = permitPackageSchema.parse(body)
 
-    // Convert date strings to Date objects
-    const data: any = {
-      ...validatedData,
-      targetIssueDate: validatedData.targetIssueDate
-        ? new Date(validatedData.targetIssueDate)
-        : undefined,
-    }
+    // Convert date strings to Date objects and structure for Prisma
+    // Note: We use customerId/contractorId directly as Prisma accepts both formats at runtime
+    const { customerId, contractorId, targetIssueDate, ...rest } = validatedData
+    const data = {
+      ...rest,
+      customerId,
+      contractorId,
+      targetIssueDate: targetIssueDate ? new Date(targetIssueDate) : undefined,
+    } as unknown as Parameters<typeof prisma.permitPackage.create>[0]['data']
 
     // Create permit package
     const permitPackage = await prisma.permitPackage.create({

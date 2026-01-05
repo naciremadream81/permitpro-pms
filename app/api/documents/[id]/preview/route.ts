@@ -41,7 +41,7 @@ export async function GET(
     const fileBuffer = await storage.get(document.storagePath)
 
     // Return file with appropriate headers for inline viewing
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(fileBuffer as unknown as BodyInit, {
       headers: {
         'Content-Type': document.fileType,
         'Content-Disposition': `inline; filename="${document.fileName}"`,

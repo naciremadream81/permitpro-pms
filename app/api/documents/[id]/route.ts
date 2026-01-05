@@ -9,6 +9,7 @@ import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { storage } from '@/lib/storage'
 import { documentUpdateSchema } from '@/lib/validations'
+import { Prisma } from '@prisma/client'
 
 // GET /api/documents/[id] - Get document by ID
 export async function GET(
@@ -107,7 +108,7 @@ export async function PATCH(
         { status: 400 }
       )
     }
-    if ((error as any)?.code === 'P2025') {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
     console.error('Error updating document:', error)
@@ -163,7 +164,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Document deleted successfully' })
   } catch (error) {
-    if ((error as any)?.code === 'P2025') {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
     console.error('Error deleting document:', error)

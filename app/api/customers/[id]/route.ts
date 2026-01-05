@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { customerUpdateSchema } from '@/lib/validations'
+import { Prisma } from '@prisma/client'
 
 // GET /api/customers/[id] - Get customer by ID
 export async function GET(
@@ -83,7 +84,7 @@ export async function PATCH(
         { status: 400 }
       )
     }
-    if ((error as any)?.code === 'P2025') {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
     console.error('Error updating customer:', error)
@@ -124,7 +125,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Customer deleted successfully' })
   } catch (error) {
-    if ((error as any)?.code === 'P2025') {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
     console.error('Error deleting customer:', error)

@@ -115,7 +115,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
     setError('')
 
     try {
-      const updateData: any = {}
+      const updateData: Record<string, unknown> = {}
       
       // Handle phone number - store the raw digits if it's a formatted phone
       if (field === 'phone' && editValue) {

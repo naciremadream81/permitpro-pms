@@ -16,12 +16,13 @@ async function getCustomers(searchParams: { [key: string]: string | string[] | u
   const limit = 20
   const skip = (page - 1) * limit
 
+  // Note: SQLite doesn't support case-insensitive mode, but it's case-insensitive for ASCII by default
   const where = search
     ? {
         OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { contactName: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search } },
+          { contactName: { contains: search } },
+          { email: { contains: search } },
         ],
       }
     : {}

@@ -22,15 +22,16 @@ async function getPermits(searchParams: { [key: string]: string | string[] | und
   const limit = 20
   const skip = (page - 1) * limit
 
-  const where: any = {}
+  const where: Record<string, unknown> = {}
   
+  // Note: SQLite doesn't support case-insensitive mode, but it's case-insensitive for ASCII by default
   if (search) {
     where.OR = [
-      { projectName: { contains: search, mode: 'insensitive' } },
-      { projectAddress: { contains: search, mode: 'insensitive' } },
-      { permitNumber: { contains: search, mode: 'insensitive' } },
-      { customer: { name: { contains: search, mode: 'insensitive' } } },
-      { contractor: { companyName: { contains: search, mode: 'insensitive' } } },
+      { projectName: { contains: search } },
+      { projectAddress: { contains: search } },
+      { permitNumber: { contains: search } },
+      { customer: { name: { contains: search } } },
+      { contractor: { companyName: { contains: search } } },
     ]
   }
   

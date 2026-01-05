@@ -137,7 +137,7 @@ export default function NewPermitPage() {
       }
 
       // Step 2: Create permit with the customer ID
-      const submitData: any = {
+      const submitData: Record<string, unknown> = {
         customerId,
         contractorId: formData.contractorId,
         projectName: formData.projectName,
@@ -244,7 +244,7 @@ export default function NewPermitPage() {
                   placeholder="Enter customer name (e.g., ABC Development LLC)"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Enter the customer name. A new customer will be created if one doesn't exist.
+                  Enter the customer name. A new customer will be created if one doesn&apos;t exist.
                 </p>
               </div>
 

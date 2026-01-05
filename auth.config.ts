@@ -42,10 +42,14 @@ export const authConfig: NextAuthConfig = {
           return null
         }
 
+        // Type assertions are safe here as we've validated the credentials above
+        const email = credentials.email as string
+        const password = credentials.password as string
+
         // Dynamically import authenticateUser to avoid loading Prisma in Edge runtime
         // This function is only called during sign-in, not in middleware
         const { authenticateUser } = await import('@/lib/auth')
-        const user = await authenticateUser(credentials.email, credentials.password)
+        const user = await authenticateUser(email, password)
         
         // Return user object if authentication succeeds, null otherwise
         return user ? { id: user.id, email: user.email, name: user.name, role: user.role } : null

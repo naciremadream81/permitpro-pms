@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { permitStatusUpdateSchema } from '@/lib/validations'
+import { Prisma } from '@prisma/client'
 
 // POST /api/permits/[id]/status - Update permit status with logging
 export async function POST(
@@ -37,7 +38,7 @@ export async function POST(
     }
 
     // Prepare update data
-    const updateData: any = {
+    const updateData: Prisma.PermitPackageUpdateInput = {
       status: validatedData.status,
     }
     if (validatedData.internalStage) {

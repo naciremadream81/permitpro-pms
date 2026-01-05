@@ -87,7 +87,7 @@ export default function NewCustomerPage() {
 
     try {
       // Prepare submit data - only include fields that have values
-      const submitData: any = {
+      const submitData: Record<string, unknown> = {
         name: formData.name,
       }
 
@@ -112,7 +112,7 @@ export default function NewCustomerPage() {
         throw new Error(errorData.error || 'Failed to create customer')
       }
 
-      const result = await response.json()
+      await response.json()
       
       // Reset loading state before redirect
       // This ensures the button state is correct if user navigates back

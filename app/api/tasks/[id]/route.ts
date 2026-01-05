@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { taskUpdateSchema } from '@/lib/validations'
+import { Prisma } from '@prisma/client'
 
 // PATCH /api/tasks/[id] - Update task
 export async function PATCH(
@@ -37,7 +38,7 @@ export async function PATCH(
     }
 
     // Convert date string to Date object
-    const data: any = { ...validatedData }
+    const data: Prisma.TaskUpdateInput = { ...validatedData }
     if (validatedData.dueDate) {
       data.dueDate = new Date(validatedData.dueDate)
     }
@@ -77,7 +78,7 @@ export async function PATCH(
         { status: 400 }
       )
     }
-    if ((error as any)?.code === 'P2025') {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
     console.error('Error updating task:', error)
@@ -114,7 +115,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Task deleted successfully' })
   } catch (error) {
-    if ((error as any)?.code === 'P2025') {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 })
     }
     console.error('Error deleting task:', error)

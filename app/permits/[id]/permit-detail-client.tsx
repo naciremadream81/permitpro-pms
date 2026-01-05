@@ -123,20 +123,16 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
           openedDate: new Date(data.data.openedDate).toISOString(),
           targetIssueDate: data.data.targetIssueDate ? new Date(data.data.targetIssueDate).toISOString() : null,
           closedDate: data.data.closedDate ? new Date(data.data.closedDate).toISOString() : null,
-          documents: data.data.documents.map((doc: any) => ({
+          documents: data.data.documents.map((doc: PermitDocument) => ({
             ...doc,
             uploadedAt: new Date(doc.uploadedAt).toISOString(),
-            createdAt: new Date(doc.createdAt).toISOString(),
-            updatedAt: new Date(doc.updatedAt).toISOString(),
           })),
-          tasks: data.data.tasks.map((task: any) => ({
+          tasks: data.data.tasks.map((task: Task) => ({
             ...task,
             dueDate: task.dueDate ? new Date(task.dueDate).toISOString() : null,
             completedAt: task.completedAt ? new Date(task.completedAt).toISOString() : null,
-            createdAt: new Date(task.createdAt).toISOString(),
-            updatedAt: new Date(task.updatedAt).toISOString(),
           })),
-          activityLogs: data.data.activityLogs.map((log: any) => ({
+          activityLogs: data.data.activityLogs.map((log: ActivityLog) => ({
             ...log,
             createdAt: new Date(log.createdAt).toISOString(),
           })),
@@ -178,7 +174,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
     setError('')
 
     try {
-      const updateData: any = {}
+      const updateData: Record<string, unknown> = {}
       
       // Handle different field types
       if (field === 'targetIssueDate') {
@@ -218,7 +214,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
     setError('')
 
     try {
-      const taskData: any = {
+      const taskData: Record<string, unknown> = {
         name: newTask.name,
         description: newTask.description || undefined,
         assignedTo: newTask.assignedTo || undefined,
@@ -739,7 +735,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                     </div>
                     <select
                       value={task.status}
-                      onChange={(e) => updateTask(task.id, { status: e.target.value as any })}
+                      onChange={(e) => updateTask(task.id, { status: e.target.value })}
                       className="text-sm rounded-md border border-gray-300 px-2 py-1"
                     >
                       <option value="NotStarted">Not Started</option>
@@ -752,7 +748,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">No tasks. Click "Add Task" to create one.</p>
+            <p className="text-gray-500">No tasks. Click &quot;Add Task&quot; to create one.</p>
           )}
         </CardContent>
       </Card>

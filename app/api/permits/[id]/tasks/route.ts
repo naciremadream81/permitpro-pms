@@ -78,10 +78,13 @@ export async function POST(
     }
 
     // Convert date string to Date object
-    const data: any = {
-      ...validatedData,
-      dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : undefined,
-    }
+    // Note: We use permitPackageId directly as Prisma accepts both formats at runtime
+    const { permitPackageId, dueDate, ...rest } = validatedData
+    const data = {
+      ...rest,
+      permitPackageId,
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+    } as unknown as Parameters<typeof prisma.task.create>[0]['data']
 
     // Create task
     const task = await prisma.task.create({

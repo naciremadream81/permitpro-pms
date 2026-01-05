@@ -102,7 +102,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
           liabilityExpirationDate: data.data.liabilityExpirationDate
             ? new Date(data.data.liabilityExpirationDate).toISOString()
             : null,
-          permitPackages: data.data.permitPackages.map((pkg: any) => ({
+          permitPackages: data.data.permitPackages.map((pkg: PermitPackage) => ({
             ...pkg,
             openedDate: new Date(pkg.openedDate).toISOString(),
           })),
@@ -144,7 +144,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
     setError('')
 
     try {
-      const updateData: any = {}
+      const updateData: Record<string, unknown> = {}
       
       // Handle different field types
       if (field === 'workersCompExpirationDate' || field === 'liabilityExpirationDate') {

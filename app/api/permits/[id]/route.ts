@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { permitPackageUpdateSchema } from '@/lib/validations'
+import { Prisma } from '@prisma/client'
 
 // GET /api/permits/[id] - Get permit by ID with all related data
 export async function GET(
@@ -91,7 +92,7 @@ export async function PATCH(
     }
 
     // Convert date strings to Date objects
-    const data: any = { ...validatedData }
+    const data: Prisma.PermitPackageUpdateInput = { ...validatedData }
     if (validatedData.targetIssueDate) {
       data.targetIssueDate = new Date(validatedData.targetIssueDate)
     }
@@ -145,7 +146,7 @@ export async function PATCH(
         { status: 400 }
       )
     }
-    if ((error as any)?.code === 'P2025') {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
     }
     console.error('Error updating permit:', error)
@@ -174,7 +175,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Permit deleted successfully' })
   } catch (error) {
-    if ((error as any)?.code === 'P2025') {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
     }
     console.error('Error deleting permit:', error)

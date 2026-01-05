@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/ui/badge'
-import { formatDate, formatDateTime } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 
 interface User {
   id: string
@@ -84,7 +84,7 @@ export function SettingsClient() {
       const method = editingUser ? 'PATCH' : 'POST'
 
       // Prepare submit data - only include password if provided or creating new user
-      const submitData: any = {
+      const submitData: Record<string, unknown> = {
         email: formData.email,
         name: formData.name,
         role: formData.role,

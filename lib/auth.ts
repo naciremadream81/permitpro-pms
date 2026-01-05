@@ -48,7 +48,8 @@ export async function authenticateUser(email: string, password: string) {
   }
 
   // Return user without password hash
-  const { passwordHash, ...userWithoutPassword } = user
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { passwordHash: _passwordHash, ...userWithoutPassword } = user
   return userWithoutPassword
 }
 

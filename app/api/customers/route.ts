@@ -26,13 +26,14 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause for search
+    // Note: SQLite doesn't support case-insensitive mode, but it's case-insensitive for ASCII by default
     const where = search
       ? {
           OR: [
-            { name: { contains: search, mode: 'insensitive' as const } },
-            { contactName: { contains: search, mode: 'insensitive' as const } },
-            { email: { contains: search, mode: 'insensitive' as const } },
-            { phone: { contains: search, mode: 'insensitive' as const } },
+            { name: { contains: search } },
+            { contactName: { contains: search } },
+            { email: { contains: search } },
+            { phone: { contains: search } },
           ],
         }
       : {}

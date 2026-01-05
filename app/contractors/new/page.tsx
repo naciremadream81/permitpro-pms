@@ -131,7 +131,7 @@ export default function NewContractorPage() {
       }
 
       // Prepare submit data - only include fields that have values
-      const submitData: any = {
+      const submitData: Record<string, unknown> = {
         companyName: formData.companyName,
       }
 

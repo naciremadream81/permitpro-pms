@@ -7,7 +7,7 @@
 
 import { AppLayout } from '@/components/layout/app-layout'
 import { SettingsClient } from './settings-client'
-import { getSession, requireAdmin } from '@/lib/auth-helpers'
+import { getSession } from '@/lib/auth-helpers'
 import { redirect } from 'next/navigation'
 
 export default async function SettingsPage() {

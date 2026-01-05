@@ -115,7 +115,7 @@ export async function GET(
     const zipFileName = `${permitName}_PermitPackage_${dateStr}.zip`
 
     // Return the ZIP file
-    return new NextResponse(zipBuffer, {
+    return new NextResponse(zipBuffer as unknown as BodyInit, {
       headers: {
         'Content-Type': 'application/zip',
         'Content-Disposition': `attachment; filename="${zipFileName}"`,
