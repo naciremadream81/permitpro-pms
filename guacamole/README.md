@@ -51,8 +51,10 @@ If you have access to an AMD64 system, run Guacamole there and connect via the n
 ### First-time setup:
 1. Start all services (including Guacamole):
    ```bash
-   docker compose up -d
+   docker compose --profile guacamole up -d
    ```
+   
+   **Note:** Guacamole services are in a profile, so you must explicitly enable them with `--profile guacamole`.
 
 2. Wait for the database to initialize (check logs):
    ```bash
