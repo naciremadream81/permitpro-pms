@@ -53,6 +53,8 @@ prisma/dev.db
 # cloudflare tunnel
 .cloudflared/*.json
 *.cloudflared.json
+cloudflared/*.json
+cloudflared/config.yml
 
 # Let's Encrypt certificates (contains sensitive SSL certificates)
 letsencrypt/

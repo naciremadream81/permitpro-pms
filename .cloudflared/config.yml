@@ -1,20 +1,30 @@
-# Cloudflare Tunnel Configuration
-# 
-# This file configures the Cloudflare Tunnel to expose your local
-# Next.js application to the internet securely.
-#
-# IMPORTANT: Replace the tunnel token below with your actual tunnel token
-# from the Cloudflare dashboard.
+tunnel: c9dc2d8d-c7e5-4ead-a7a6-fbe396fe63ea
+credentials-file: /home/nonroot/.cloudflared/c9dc2d8d-c7e5-4ead-a7a6-fbe396fe63ea.json
 
-tunnel: YOUR_TUNNEL_ID
-credentials-file: /home/archie/.cloudflared/YOUR_TUNNEL_ID.json
-
-# Ingress rules - routes traffic to your local Next.js app
 ingress:
-  # Route all traffic to your local Next.js application
-  - hostname: permitpro.yourdomain.com  # Replace with your domain
-    service: http://localhost:3000
+  # PermitPro PMS - Main application
+  - hostname: permitpro.permitpro.icu
+    service: http://traefik:80
+    originRequest:
+      noHappyEyeballs: true
   
-  # Catch-all rule (must be last)
+  # Traefik Dashboard
+  - hostname: traefik.permitpro.icu
+    service: http://traefik:8080
+    originRequest:
+      noHappyEyeballs: true
+  
+  # n8n - Workflow automation
+  - hostname: n8n.permitpro.icu
+    service: http://traefik:80
+    originRequest:
+      noHappyEyeballs: true
+  
+  # Guacamole - Remote desktop (if enabled)
+  - hostname: guacamole.permitpro.icu
+    service: http://traefik:80
+    originRequest:
+      noHappyEyeballs: true
+  
+  # Catch-all rule - must be last
   - service: http_status:404
-
