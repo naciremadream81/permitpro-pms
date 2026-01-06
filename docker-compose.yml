@@ -72,8 +72,10 @@ services:
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
 
   # Guacamole Server - Browser-based remote desktop gateway
+  # NOTE: Official Guacamole images only support AMD64. For ARM64, see guacamole/README.md
   guacamole:
     image: guacamole/guacamole:latest
+    # platform: linux/amd64  # Uncomment for ARM64 systems (requires QEMU emulation)
     container_name: guacamole
     restart: unless-stopped
     environment:
@@ -94,14 +96,20 @@ services:
       - "traefik.http.routers.guacamole.entrypoints=websecure"
       - "traefik.http.routers.guacamole.tls.certresolver=letsencrypt"
       - "traefik.http.services.guacamole.loadbalancer.server.port=8080"
+    profiles:
+      - guacamole  # Disabled by default - use --profile guacamole to enable
 
   # Guacamole Daemon - Handles remote desktop connections
+  # NOTE: Official Guacamole images only support AMD64
   guacd:
     image: guacamole/guacd:latest
+    # platform: linux/amd64  # Uncomment for ARM64 systems (requires QEMU emulation)
     container_name: guacd
     restart: unless-stopped
     networks:
       - traefik-network
+    profiles:
+      - guacamole  # Disabled by default - use --profile guacamole to enable
 
   # MySQL Database for Guacamole
   guacamole-db:
@@ -123,10 +131,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    profiles:
+      - guacamole  # Use profiles to enable only when needed
 
   # Guacamole Database Initialization (runs once on first startup)
+  # NOTE: Official Guacamole images only support AMD64
   guacamole-init:
     image: guacamole/guacamole:latest
+    # platform: linux/amd64  # Uncomment to use emulation on ARM64 (slower)
     container_name: guacamole-init
     restart: "no"
     command: /opt/guacamole/bin/initdb.sh --mysql
@@ -140,6 +152,8 @@ services:
     depends_on:
       guacamole-db:
         condition: service_healthy
+    profiles:
+      - guacamole  # Use profiles to enable only when needed
 
   # n8n - Workflow automation tool
   n8n:
