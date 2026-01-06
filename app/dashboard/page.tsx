@@ -5,6 +5,9 @@
  * of permit packages, including status breakdowns and recent activity.
  */
 
+// Force dynamic rendering since this page uses database queries
+export const dynamic = 'force-dynamic'
+
 import { AppLayout } from '@/components/layout/app-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from '@/components/ui/badge'

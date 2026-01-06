@@ -1,0 +1,343 @@
+#!/bin/bash
+Define project name
+PROJECT_NAME="permit-manager"
+echo "🚀 Starting scaffold for $PROJECT_NAME..."
+1. Create Directory Structure
+mkdir -p $PROJECT_NAME/app/api/permits/[id]/status
+mkdir -p $PROJECT_NAME/app/permits/[id]
+mkdir -p $PROJECT_NAME/components/ui
+mkdir -p $PROJECT_NAME/lib
+mkdir -p $PROJECT_NAME/prisma
+mkdir -p $PROJECT_NAME/storage
+mkdir -p $PROJECT_NAME/types
+cd $PROJECT_NAME
+2. Generate package.json
+cat << 'EOF' > package.json
+{
+"name": "permit-manager",
+"version": "1.0.0",
+"private": true,
+"scripts": {
+"dev": "next dev",
+"build": "next build",
+"start": "next start",
+"lint": "next lint",
+"db:push": "prisma db push",
+"db:seed": "ts-node --compiler-options {"module":"commonjs"} prisma/seed.ts",
+"db:reset": "rm -f prisma/dev.db && prisma db push && npm run db:seed"
+},
+"dependencies": {
+"@hookform/resolvers": "^3.3.4",
+"@prisma/client": "^5.10.2",
+"@radix-ui/react-dialog": "^1.0.5",
+"@radix-ui/react-dropdown-menu": "^2.0.6",
+"@radix-ui/react-label": "^2.0.2",
+"@radix-ui/react-select": "^2.0.0",
+"@radix-ui/react-slot": "^1.0.2",
+"@radix-ui/react-tabs": "^1.0.4",
+"@radix-ui/react-toast": "^1.1.5",
+"@tanstack/react-table": "^8.13.2",
+"class-variance-authority": "^0.7.0",
+"clsx": "^2.1.0",
+"date-fns": "^3.3.1",
+"lucide-react": "^0.344.0",
+"next": "14.1.0",
+"next-auth": "^4.24.6",
+"react": "^18",
+"react-dom": "^18",
+"react-hook-form": "^7.51.0",
+"recharts": "^2.12.0",
+"tailwind-merge": "^2.2.1",
+"tailwindcss-animate": "^1.0.7",
+"zod": "^3.22.4"
+},
+"devDependencies": {
+"@types/node": "^20",
+"@types/react": "^18",
+"@types/react-dom": "^18",
+"autoprefixer": "^10.0.1",
+"eslint": "^8",
+"eslint-config-next": "14.1.0",
+"postcss": "^8",
+"prisma": "^5.10.2",
+"tailwindcss": "^3.3.0",
+"ts-node": "^10.9.2",
+"typescript": "^5"
+}
+}
+EOF
+3. Generate Prisma Schema
+cat << 'EOF' > prisma/schema.prisma
+generator client {
+provider = "prisma-client-js"
+}
+datasource db {
+provider = "sqlite"
+url      = "file:./dev.db"
+}
+enum PermitStatus {
+NEW
+SUBMITTED
+IN_REVIEW
+REVISIONS_NEEDED
+APPROVED
+ISSUED
+INSPECTIONS
+FINALED
+CANCELED
+}
+enum PermitType {
+BUILDING
+ELECTRICAL
+PLUMBING
+MECHANICAL
+ROOFING
+POOL
+DEMOLITION
+}
+enum BillingStatus {
+NOT_SENT
+SENT_TO_BILLING
+BILLED
+PAID
+}
+enum TaskStatus {
+NOT_STARTED
+IN_PROGRESS
+WAITING
+COMPLETED
+}
+enum UserRole {
+ADMIN
+COORDINATOR
+}
+model User {
+id        String   @id @default(cuid())
+email     String   @unique
+name      String?
+password  String
+role      UserRole @default(COORDINATOR)
+createdAt DateTime @default(now())
+activityLogs ActivityLog[]
+assignedTasks Task[]
+}
+model Customer {
+id           String   @id @default(cuid())
+name         String
+contactName  String?
+phone        String?
+email        String?
+mainAddress  String?
+notes        String?
+createdAt    DateTime @default(now())
+updatedAt    DateTime @updatedAt
+permits      PermitPackage[]
+}
+model Contractor {
+id              String   @id @default(cuid())
+companyName     String
+licenseNumber   String
+phone           String?
+email           String?
+address         String?
+contactMethod   String?
+notes           String?
+createdAt       DateTime @default(now())
+updatedAt       DateTime @updatedAt
+permits         PermitPackage[]
+}
+model PermitPackage {
+id              String       @id @default(cuid())
+customer        Customer     @relation(fields: [customerId], references: [id])
+customerId      String
+contractor      Contractor   @relation(fields: [contractorId], references: [id])
+contractorId    String
+projectName     String
+projectAddress  String
+county          String
+jurisdictionNotes String?
+permitType      PermitType
+permitNumber    String?
+status          PermitStatus @default(NEW)
+internalStage   String?
+openedDate      DateTime     @default(now())
+targetIssueDate DateTime?
+closedDate      DateTime?
+billingStatus   BillingStatus @default(NOT_SENT)
+sentToBillingAt DateTime?
+billingNote     String?
+createdAt       DateTime     @default(now())
+updatedAt       DateTime     @updatedAt
+documents       PermitDocument[]
+tasks           Task[]
+activityLogs    ActivityLog[]
+}
+model PermitDocument {
+id              String   @id @default(cuid())
+permitPackage   PermitPackage @relation(fields: [permitPackageId], references: [id], onDelete: Cascade)
+permitPackageId String
+fileName        String
+fileType        String
+category        String
+storagePath     String
+fileSize        Int
+version         Int      @default(1)
+uploadedBy      String?
+uploadedAt      DateTime @default(now())
+notes           String?
+isVerified      Boolean  @default(false)
+isRequired      Boolean  @default(false)
+}
+model Task {
+id              String   @id @default(cuid())
+permitPackage   PermitPackage @relation(fields: [permitPackageId], references: [id], onDelete: Cascade)
+permitPackageId String
+name            String
+status          TaskStatus @default(NOT_STARTED)
+assignedToUser  User?    @relation(fields: [assignedToId], references: [id])
+assignedToId    String?
+dueDate         DateTime?
+completedAt     DateTime?
+createdAt       DateTime @default(now())
+}
+model ActivityLog {
+id              String   @id @default(cuid())
+permitPackage   PermitPackage @relation(fields: [permitPackageId], references: [id], onDelete: Cascade)
+permitPackageId String
+actor           User?    @relation(fields: [actorId], references: [id])
+actorId         String?
+eventType       String
+message         String?
+fromValue       String?
+toValue         String?
+createdAt       DateTime @default(now())
+}
+EOF
+4. Generate Prisma Seed Script
+cat << 'EOF' > prisma/seed.ts
+import { PrismaClient, PermitStatus, PermitType, BillingStatus } from '@prisma/client';
+const prisma = new PrismaClient();
+async function main() {
+console.log('🌱 Starting seed...');
+const admin = await prisma.user.upsert({
+where: { email: 'admin@permits.com' },
+update: {},
+create: {
+email: 'admin@permits.com',
+name: 'Admin User',
+password: 'password123',
+role: 'ADMIN',
+},
+});
+const cust1 = await prisma.customer.create({
+data: {
+name: 'Oakwood Developments',
+contactName: 'John Smith',
+email: 'john@oakwood.com',
+phone: '555-0101',
+mainAddress: '123 Oak St, Suite 100',
+},
+});
+const cont1 = await prisma.contractor.create({
+data: {
+companyName: 'Best Build Construction',
+licenseNumber: 'GC-999888',
+email: 'info@bestbuild.com',
+contactMethod: 'Email',
+},
+});
+await prisma.permitPackage.create({
+data: {
+customerId: cust1.id,
+contractorId: cont1.id,
+projectName: 'Oakwood Lot 44 - New Build',
+projectAddress: '88 Pine Lane',
+county: 'Orange County',
+permitType: PermitType.BUILDING,
+status: PermitStatus.SUBMITTED,
+internalStage: 'Waiting on County',
+billingStatus: BillingStatus.SENT_TO_BILLING,
+activityLogs: {
+create: {
+actorId: admin.id,
+eventType: 'STATUS_CHANGE',
+message: 'Initial creation',
+toValue: 'SUBMITTED'
+}
+}
+},
+});
+console.log('✅ Seed completed.');
+}
+main().catch(e => { console.error(e); process.exit(1); }).finally(() => prisma.$disconnect());
+EOF
+5. Workflow Service Logic
+cat << 'EOF' > lib/workflow.ts
+import { PrismaClient, PermitStatus } from '@prisma/client';
+const prisma = new PrismaClient();
+export async function changePermitStatus(permitId: string, newStatus: PermitStatus, actorId: string, note?: string) {
+return await prisma.$transaction(async (tx) => {
+const currentPermit = await tx.permitPackage.findUnique({ where: { id: permitId } });
+if (!currentPermit) throw new Error("Permit not found");
+const updated = await tx.permitPackage.update({
+  where: { id: permitId },
+  data: {
+    status: newStatus,
+    closedDate: (newStatus === 'FINALED' || newStatus === 'CANCELED') ? new Date() : null,
+  },
+});
+
+await tx.activityLog.create({
+  data: {
+    permitPackageId: permitId,
+    actorId: actorId,
+    eventType: 'STATUS_CHANGE',
+    fromValue: currentPermit.status,
+    toValue: newStatus,
+    message: note || `Status updated to ${newStatus}`,
+  },
+});
+
+return updated;
+
+});
+}
+EOF
+6. Database Client
+cat << 'EOF' > lib/prisma.ts
+import { PrismaClient } from '@prisma/client';
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+export const prisma = globalForPrisma.prisma || new PrismaClient();
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+EOF
+7. API Route Handler
+cat << 'EOF' > app/api/permits/[id]/status/route.ts
+import { NextResponse } from 'next/server';
+import { changePermitStatus } from '@/lib/workflow';
+import { z } from 'zod';
+const schema = z.object({
+status: z.string(),
+note: z.string().optional(),
+});
+export async function POST(req: Request, { params }: { params: { id: string } }) {
+try {
+const body = await req.json();
+const { status, note } = schema.parse(body);
+const result = await changePermitStatus(params.id, status as any, 'system-user', note);
+return NextResponse.json(result);
+} catch (e) {
+return NextResponse.json({ error: 'Failed to update status' }, { status: 400 });
+}
+}
+EOF
+8. README
+cat << 'EOF' > README.md
+Permit Manager Scaffold
+Setup
+ * npm install
+ * npm run db:reset (Initializes SQLite + Seed Data)
+ * npm run dev
+Credentials
+ * admin@permits.com / password123
+   EOF
+echo "✅ Scaffold complete! Run 'cd $PROJECT_NAME && npm install' to begin."

@@ -1,0 +1,192 @@
+services:
+  permitpro-pms:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    container_name: permitpro-pms
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/dev.db
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-https://permitpro.permitpro.icu}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - STORAGE_ROOT=/app/storage
+    volumes:
+      # Database persistence
+      - ./data:/app/data
+      # Storage persistence
+      - ./storage:/app/storage
+      # Prisma schema (for migrations)
+      - ./prisma:/app/prisma:ro
+    networks:
+      - traefik-network
+    labels:
+      # Traefik configuration
+      - "traefik.enable=true"
+      # Router configuration - update permitpro.permitpro.icu with your actual domain
+      - "traefik.http.routers.permitpro.rule=Host(`permitpro.permitpro.icu`)"
+      - "traefik.http.routers.permitpro.entrypoints=websecure"
+      - "traefik.http.routers.permitpro.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.permitpro.service=permitpro"
+      # Service configuration
+      - "traefik.http.services.permitpro.loadbalancer.server.port=3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  traefik:
+    image: traefik:v2.11
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=traefik-network"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@permitpro.icu}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - traefik-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.permitpro.icu`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+
+  # Guacamole Server - Browser-based remote desktop gateway
+  guacamole:
+    image: guacamole/guacamole:latest
+    container_name: guacamole
+    restart: unless-stopped
+    environment:
+      - GUACD_HOSTNAME=guacd
+      - GUACD_PORT=4822
+      - MYSQL_HOSTNAME=guacamole-db
+      - MYSQL_DATABASE=guacamole_db
+      - MYSQL_USERNAME=guacamole_user
+      - MYSQL_PASSWORD=${GUACAMOLE_DB_PASSWORD:-change-this-password}
+    networks:
+      - traefik-network
+    depends_on:
+      - guacd
+      - guacamole-db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.guacamole.rule=Host(`guacamole.permitpro.icu`)"
+      - "traefik.http.routers.guacamole.entrypoints=websecure"
+      - "traefik.http.routers.guacamole.tls.certresolver=letsencrypt"
+      - "traefik.http.services.guacamole.loadbalancer.server.port=8080"
+
+  # Guacamole Daemon - Handles remote desktop connections
+  guacd:
+    image: guacamole/guacd:latest
+    container_name: guacd
+    restart: unless-stopped
+    networks:
+      - traefik-network
+
+  # MySQL Database for Guacamole
+  guacamole-db:
+    image: mysql:8.0
+    container_name: guacamole-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${GUACAMOLE_DB_ROOT_PASSWORD:-change-root-password}
+      - MYSQL_DATABASE=guacamole_db
+      - MYSQL_USER=guacamole_user
+      - MYSQL_PASSWORD=${GUACAMOLE_DB_PASSWORD:-change-this-password}
+    volumes:
+      - guacamole-db-data:/var/lib/mysql
+    networks:
+      - traefik-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${GUACAMOLE_DB_ROOT_PASSWORD:-change-root-password}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Guacamole Database Initialization (runs once on first startup)
+  guacamole-init:
+    image: guacamole/guacamole:latest
+    container_name: guacamole-init
+    restart: "no"
+    command: /opt/guacamole/bin/initdb.sh --mysql
+    environment:
+      - MYSQL_HOSTNAME=guacamole-db
+      - MYSQL_DATABASE=guacamole_db
+      - MYSQL_USERNAME=guacamole_user
+      - MYSQL_PASSWORD=${GUACAMOLE_DB_PASSWORD:-change-this-password}
+    networks:
+      - traefik-network
+    depends_on:
+      guacamole-db:
+        condition: service_healthy
+
+  # n8n - Workflow automation tool
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE:-true}
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-change-this-password}
+      - N8N_HOST=${N8N_HOST:-n8n.permitpro.icu}
+      - N8N_PROTOCOL=https
+      - N8N_PORT=5678
+      - WEBHOOK_URL=https://n8n.permitpro.icu/
+      - GENERIC_TIMEZONE=${N8N_TIMEZONE:-America/New_York}
+      - DB_TYPE=sqlite
+      - DB_SQLITE_DATABASE=/home/node/.n8n/database.sqlite
+    volumes:
+      - n8n-data:/home/node/.n8n
+    networks:
+      - traefik-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.n8n.rule=Host(`n8n.permitpro.icu`)"
+      - "traefik.http.routers.n8n.entrypoints=websecure"
+      - "traefik.http.routers.n8n.tls.certresolver=letsencrypt"
+      - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - traefik-network
+    depends_on:
+      - traefik
+      - permitpro-pms
+
+volumes:
+  guacamole-db-data:
+    driver: local
+  n8n-data:
+    driver: local
+
+networks:
+  traefik-network:
+    driver: bridge

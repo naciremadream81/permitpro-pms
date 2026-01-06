@@ -4,6 +4,9 @@
  * Displays basic metrics and reports for permit management.
  */
 
+// Force dynamic rendering since this page uses database queries
+export const dynamic = 'force-dynamic'
+
 import { AppLayout } from '@/components/layout/app-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { prisma } from '@/lib/prisma'
