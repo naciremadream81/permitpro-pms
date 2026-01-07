@@ -80,7 +80,7 @@ services:
   # NOTE: Official Guacamole images only support AMD64. For ARM64, see guacamole/README.md
   guacamole:
     image: guacamole/guacamole:latest
-    # platform: linux/amd64  # Uncomment for ARM64 systems (requires QEMU emulation)
+    platform: linux/amd64  # Uncomment for ARM64 systems (requires QEMU emulation)
     container_name: guacamole
     restart: unless-stopped
     environment:
@@ -108,7 +108,7 @@ services:
   # NOTE: Official Guacamole images only support AMD64
   guacd:
     image: guacamole/guacd:latest
-    # platform: linux/amd64  # Uncomment for ARM64 systems (requires QEMU emulation)
+    platform: linux/amd64  # Uncomment for ARM64 systems (requires QEMU emulation)
     container_name: guacd
     restart: unless-stopped
     networks:
@@ -143,7 +143,7 @@ services:
   # NOTE: Official Guacamole images only support AMD64
   guacamole-init:
     image: guacamole/guacamole:latest
-    # platform: linux/amd64  # Uncomment to use emulation on ARM64 (slower)
+    platform: linux/amd64  # Uncomment to use emulation on ARM64 (slower)
     container_name: guacamole-init
     restart: "no"
     command: /opt/guacamole/bin/initdb.sh --mysql
