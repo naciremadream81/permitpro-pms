@@ -26,14 +26,29 @@ Guacamole services are disabled by default on ARM64 systems using Docker Compose
 
 **Note:** Emulation will be slower than native ARM64. Consider building from source or using an alternative for better performance.
 
-#### Option 2: Build from Source (Better Performance on ARM64)
-Build Guacamole from source for native ARM64 support. This requires more setup but provides better performance.
+#### Option 2: Build from Source (Better Performance on ARM64) ⭐ RECOMMENDED
+Build Guacamole from source for native ARM64 support. This provides much better performance than emulation.
 
-1. Clone the Guacamole repository
-2. Build the Docker images with ARM64 support
-3. Update `docker-compose.yml` to use your custom-built images
+**You already have the source code in this directory!** (`guacamole-server-1.6.0/` and `guacamole-client-1.6.0/`)
 
-See: https://github.com/apache/guacamole-client
+**Quick Start:**
+```bash
+cd /home/archie/codebase/permitpro-pms/guacamole
+./build-arm64.sh
+```
+
+This will build native ARM64 images:
+- `guacamole/guacd:arm64-local`
+- `guacamole/guacamole:arm64-local`
+
+**After building:**
+1. Update `docker-compose.yml` to use `arm64-local` images
+2. Remove `platform: linux/amd64` lines (no longer needed)
+3. Restart services: `docker compose --profile guacamole up -d`
+
+**For detailed instructions, see:** [`BUILD_ARM64.md`](./BUILD_ARM64.md)
+
+**Note:** Building takes 30-60 minutes on Raspberry Pi but provides native performance!
 
 #### Option 3: Use Alternative Remote Desktop Solutions
 Consider alternatives that have native ARM64 support:

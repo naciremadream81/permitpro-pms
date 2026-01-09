@@ -178,9 +178,18 @@ export async function POST(
         { status: 400 }
       )
     }
+    // Enhanced error logging for debugging
     console.error('Error uploading document:', error)
+    if (error instanceof Error) {
+      console.error('Error name:', error.name)
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
     return NextResponse.json(
-      { error: 'Failed to upload document' },
+      { 
+        error: 'Failed to upload document',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

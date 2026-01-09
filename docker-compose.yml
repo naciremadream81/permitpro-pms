@@ -71,9 +71,9 @@ services:
       - traefik-network
     labels:
       - "traefik.enable=true"
+      # Traefik Dashboard - accessible via Cloudflare tunnel (HTTP, SSL terminated by Cloudflare)
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.permitpro.icu`)"
-      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
-      - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=web"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
 
   # Guacamole Server - Browser-based remote desktop gateway
@@ -97,9 +97,9 @@ services:
       - guacamole-db
     labels:
       - "traefik.enable=true"
+      # Guacamole - accessible via Cloudflare tunnel (HTTP, SSL terminated by Cloudflare)
       - "traefik.http.routers.guacamole.rule=Host(`guacamole.permitpro.icu`)"
-      - "traefik.http.routers.guacamole.entrypoints=websecure"
-      - "traefik.http.routers.guacamole.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.guacamole.entrypoints=web"
       - "traefik.http.services.guacamole.loadbalancer.server.port=8080"
     profiles:
       - guacamole  # Disabled by default - use --profile guacamole to enable

@@ -15,6 +15,8 @@ import { prisma } from '@/lib/prisma'
 import { formatDate } from '@/lib/utils'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { getSession } from '@/lib/auth-helpers'
+import { redirect } from 'next/navigation'
 
 async function getDashboardData() {
   const [
@@ -77,6 +79,13 @@ async function getDashboardData() {
 }
 
 export default async function DashboardPage() {
+  // Check authentication
+  const session = await getSession()
+  
+  if (!session) {
+    redirect('/login')
+  }
+
   const data = await getDashboardData()
 
   return (
