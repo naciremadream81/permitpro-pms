@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { permitPackageSchema } from '@/lib/validations'
+import { generateChecklist } from '@/lib/checklist-engine'
 import { Prisma } from '@prisma/client'
 
 // GET /api/permits - List all permits with filters, search, and pagination
@@ -145,6 +146,17 @@ export async function POST(request: NextRequest) {
         newValue: permitPackage.status,
       },
     })
+
+    // Set lastActivityAt
+    await prisma.permitPackage.update({
+      where: { id: permitPackage.id },
+      data: { lastActivityAt: new Date() },
+    })
+
+    // Auto-generate checklist from jurisdiction requirements (if jurisdiction linked)
+    if (permitPackage.jurisdictionId) {
+      await generateChecklist(permitPackage.id)
+    }
 
     return NextResponse.json({ data: permitPackage }, { status: 201 })
   } catch (error) {
