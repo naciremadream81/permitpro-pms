@@ -40,11 +40,11 @@ export default async function ExportProfilesPage() {
             <h1 className="text-2xl font-bold text-gray-900">Export Profiles</h1>
             <p className="text-sm text-gray-500 mt-0.5">Jurisdiction-specific ZIP assembly templates</p>
           </div>
-          <Button asChild>
-            <Link href="/admin/export-profiles/new">
+          <Link href="/admin/export-profiles/new">
+            <Button>
               <Plus className="h-4 w-4 mr-1" /> New Profile
-            </Link>
-          </Button>
+            </Button>
+          </Link>
         </div>
 
         {profiles.length === 0 ? (
@@ -53,9 +53,9 @@ export default async function ExportProfilesPage() {
               <Package className="h-10 w-10 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500 font-medium">No export profiles yet</p>
               <p className="text-sm text-gray-400 mt-1">Create profiles to control how permit packages are zipped for submission.</p>
-              <Button asChild className="mt-4">
-                <Link href="/admin/export-profiles/new">Create first profile</Link>
-              </Button>
+              <Link href="/admin/export-profiles/new" className="mt-4 inline-block">
+                <Button>Create first profile</Button>
+              </Link>
             </CardContent>
           </Card>
         ) : (

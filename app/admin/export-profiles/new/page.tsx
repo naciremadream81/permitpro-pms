@@ -154,9 +154,9 @@ export default function NewExportProfilePage() {
                   {saving && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
                   Create Profile
                 </Button>
-                <Button variant="outline" type="button" asChild>
-                  <Link href="/admin/export-profiles">Cancel</Link>
-                </Button>
+                <Link href="/admin/export-profiles">
+                  <Button variant="outline" type="button">Cancel</Button>
+                </Link>
               </div>
             </form>
           </CardContent>

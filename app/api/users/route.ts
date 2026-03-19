@@ -6,49 +6,58 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/auth-helpers'
+import { requireAdmin, getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { userSchema } from '@/lib/validations'
 import { hashPassword } from '@/lib/auth'
 
-// GET /api/users - List all users (admin only)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function GET(_request: NextRequest) {
-  try {
-    // Check authentication and admin role
-    await requireAdmin()
+// GET /api/users - List users
+//   Admin: full list with counts
+//   Coordinator/Reviewer: lightweight list of reviewers only (for dropdowns)
 
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            activityLogs: true,
-            uploadedDocs: true,
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const isAdmin = session.user.role === 'admin'
+    const { searchParams } = new URL(request.url)
+    const roleFilter = searchParams.get('role') ?? undefined
+
+    if (isAdmin) {
+      // Full list with activity counts
+      const users = await prisma.user.findMany({
+        where: roleFilter ? { role: roleFilter } : undefined,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              activityLogs: true,
+              uploadedDocs: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+        orderBy: { createdAt: 'desc' },
+      })
+      return NextResponse.json({ data: users })
+    }
 
+    // Coordinators/Reviewers: lightweight list scoped to reviewers
+    // (used for assigning reviewers in permit detail)
+    const users = await prisma.user.findMany({
+      where: { role: roleFilter ?? 'reviewer' },
+      select: { id: true, name: true, email: true, role: true },
+      orderBy: { name: 'asc' },
+    })
     return NextResponse.json({ data: users })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    if (error instanceof Error && error.message === 'Forbidden') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
     console.error('Error fetching users:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch users' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
   }
 }
 
