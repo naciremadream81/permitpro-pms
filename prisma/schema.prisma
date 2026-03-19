@@ -1,6 +1,7 @@
 // Prisma Schema for Permit Processing & Document Management System
-// Phase 1 upgrade: Jurisdiction, Requirement, ChecklistItem, ContractorDocument,
-// ReviewAssignment, ReviewComment, NotificationEvent, ExportProfile, ExportLog
+// Phase 1: Jurisdiction, Requirement, ChecklistItem, ContractorDocument,
+//          ReviewAssignment, ReviewComment, NotificationEvent, ExportProfile, ExportLog
+// Phase 2: DocumentTemplate, SavedReport, PackageSnapshot
 
 generator client {
   provider = "prisma-client-js"
@@ -251,6 +252,7 @@ model PermitPackage {
   checklistItems    ChecklistItem[]
   reviewAssignments ReviewAssignment[]
   exportLogs        ExportLog[]
+  snapshots         PackageSnapshot[]
 
   @@index([customerId])
   @@index([contractorId])
@@ -625,4 +627,93 @@ model RequiredDocumentTemplate {
 
   @@index([permitType, county])
   @@unique([permitType, county, category, name])
+}
+
+// ============================================================================
+// DOCUMENT TEMPLATES (Phase 2)
+// Reusable fillable forms with merge field substitution
+// ============================================================================
+
+enum DocumentTemplateStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model DocumentTemplate {
+  id           String                 @id @default(cuid())
+  name         String
+  // Immutable short code, e.g. "HILLSBOROUGH_APP_V1"
+  code         String                 @unique
+  description  String?
+  category     DocumentCategory
+  // HTML or plain-text content with {{merge.field}} placeholders
+  content      String
+  // JSON schema of available merge fields: [{ key, label, source }]
+  mergeFields  String                 @default("[]")
+  version      Int                    @default(1)
+  status       DocumentTemplateStatus @default(DRAFT)
+  createdBy    String
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+
+  @@index([category])
+  @@index([status])
+}
+
+// ============================================================================
+// SAVED REPORTS (Phase 2)
+// Persisted report configurations with optional scheduling
+// ============================================================================
+
+enum ReportType {
+  PACKAGE_PIPELINE
+  STALLED_PACKAGES
+  CONTRACTOR_COMPLIANCE
+  DOCUMENT_QUALITY
+  REVIEW_PERFORMANCE
+  SUBMISSION_VOLUME
+}
+
+model SavedReport {
+  id           String     @id @default(cuid())
+  createdBy    String
+  name         String
+  isShared     Boolean    @default(false)
+  reportType   ReportType
+  // JSON: filter values for this report type
+  filters      String     @default("{}")
+  // JSON: visible column keys and their order
+  columns      String     @default("[]")
+  sortBy       String?
+  sortOrder    String?    @default("desc")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([createdBy])
+  @@index([reportType])
+}
+
+// ============================================================================
+// PACKAGE SNAPSHOTS (Phase 2)
+// Daily operational state capture for trend analytics
+// ============================================================================
+
+model PackageSnapshot {
+  id              String        @id @default(cuid())
+  packageId       String
+  package         PermitPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  snapshotDate    DateTime
+  stage           InternalStage?
+  status          PermitStatus
+  checklistPct    Float         @default(0)
+  verifiedDocPct  Float         @default(0)
+  daysInStage     Int           @default(0)
+  totalDocuments  Int           @default(0)
+  openComments    Int           @default(0)
+
+  @@unique([packageId, snapshotDate])
+  @@index([packageId])
+  @@index([snapshotDate])
+  @@index([status])
 }
