@@ -17,7 +17,7 @@ const savedReportSchema = z.object({
     'DOCUMENT_QUALITY',
     'REVIEW_PERFORMANCE',
     'SUBMISSION_VOLUME',
-  ]),
+  ] as const),
   filters: z.string().default('{}'),
   columns: z.string().default('[]'),
   sortBy: z.string().optional(),

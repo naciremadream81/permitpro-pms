@@ -29,12 +29,14 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
+  TrendingUp,
+  FileSearch,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-type ReportType = 'pipeline' | 'stalled' | 'contractor-compliance' | 'review-performance'
+type ReportType = 'pipeline' | 'stalled' | 'contractor-compliance' | 'review-performance' | 'submission-volume' | 'document-quality'
 
 interface PipelineRow {
   id: string
@@ -455,6 +457,171 @@ function ReviewPerformanceReport() {
   )
 }
 
+// ─── Submission Volume ────────────────────────────────────────────────────────
+
+interface VolumeBucket {
+  month: string
+  total: number
+  approved: number
+  closed: number
+  byType: Record<string, number>
+}
+
+function SubmissionVolumeReport() {
+  const [rows, setRows] = useState<VolumeBucket[]>([])
+  const [permitTypes, setPermitTypes] = useState<string[]>([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/reports/submission-volume')
+      .then(r => r.json())
+      .then(j => {
+        setRows(j.data ?? [])
+        setPermitTypes(j.permitTypes ?? [])
+        setTotalCount(j.total ?? 0)
+        setLoading(false)
+      })
+  }, [])
+
+  if (loading) return <TableSkeleton cols={5} />
+
+  const maxTotal = Math.max(...rows.map(r => r.total), 1)
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-gray-500">{totalCount} permits opened in the past 12 months</p>
+
+      {/* Volume bar chart */}
+      <div className="space-y-1.5">
+        {rows.map(row => (
+          <div key={row.month} className="flex items-center gap-3">
+            <span className="text-xs text-gray-500 w-14 text-right flex-shrink-0">{row.month}</span>
+            <div className="flex-1 bg-gray-100 rounded-full h-5 relative overflow-hidden">
+              <div
+                className="h-full bg-blue-500 rounded-full transition-all"
+                style={{ width: `${(row.total / maxTotal) * 100}%` }}
+              />
+              {row.total > 0 && (
+                <span className="absolute inset-0 flex items-center px-2 text-xs font-medium text-gray-700">
+                  {row.total}
+                </span>
+              )}
+            </div>
+            <span className="text-xs text-gray-400 w-20 flex-shrink-0">
+              {row.approved > 0 && <span className="text-green-600">{row.approved} approved</span>}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Type breakdown table */}
+      {permitTypes.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">By Permit Type (trailing 12 months)</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b bg-gray-50">
+                <tr>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
+                  {permitTypes.map(t => (
+                    <th key={t} className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t.replace(/([A-Z])/g, ' $1').trim()}</th>
+                  ))}
+                  <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {rows.filter(r => r.total > 0).map(row => (
+                  <tr key={row.month} className="hover:bg-gray-50">
+                    <td className="px-3 py-2 text-gray-600">{row.month}</td>
+                    {permitTypes.map(t => (
+                      <td key={t} className="px-3 py-2 text-right tabular-nums text-gray-600">
+                        {row.byType[t] ?? '—'}
+                      </td>
+                    ))}
+                    <td className="px-3 py-2 text-right tabular-nums font-medium">{row.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Document Quality ─────────────────────────────────────────────────────────
+
+interface DocQualityRow {
+  category: string
+  total: number
+  verified: number
+  rejected: number
+  pending: number
+  revised: number
+  verificationRate: number
+  rejectionRate: number
+  avgVersionDepth: number | null
+}
+
+function DocumentQualityReport() {
+  const [rows, setRows] = useState<DocQualityRow[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/reports/document-quality')
+      .then(r => r.json())
+      .then(j => { setRows(j.data ?? []); setLoading(false) })
+  }, [])
+
+  if (loading) return <TableSkeleton cols={7} />
+
+  return (
+    <div className="overflow-x-auto">
+      <p className="text-sm text-gray-500 mb-3">{rows.length} document categories · sorted by rejection/revision rate</p>
+      <table className="w-full text-sm">
+        <thead className="border-b bg-gray-50">
+          <tr>
+            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Verified</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Rejected</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Revised</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Rejection %</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Verify Rate</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Avg Versions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y">
+          {rows.map(row => (
+            <tr key={row.category} className="hover:bg-gray-50">
+              <td className="px-3 py-2 font-medium text-gray-800">{row.category.replace(/_/g, ' ')}</td>
+              <td className="px-3 py-2 text-right tabular-nums text-gray-600">{row.total}</td>
+              <td className="px-3 py-2 text-right tabular-nums text-green-700">{row.verified}</td>
+              <td className="px-3 py-2 text-right tabular-nums text-red-600">{row.rejected}</td>
+              <td className="px-3 py-2 text-right tabular-nums text-orange-600">{row.revised}</td>
+              <td className="px-3 py-2 text-right">
+                <span className={cn('font-medium', row.rejectionRate >= 30 ? 'text-red-600' : row.rejectionRate >= 15 ? 'text-yellow-600' : 'text-gray-700')}>
+                  {row.rejectionRate}%
+                </span>
+              </td>
+              <td className="px-3 py-2 text-right">
+                <span className={cn('font-medium', row.verificationRate >= 80 ? 'text-green-700' : row.verificationRate >= 50 ? 'text-yellow-600' : 'text-red-600')}>
+                  {row.verificationRate}%
+                </span>
+              </td>
+              <td className="px-3 py-2 text-right tabular-nums text-gray-600">
+                {row.avgVersionDepth !== null ? row.avgVersionDepth : '—'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function TableSkeleton({ cols }: { cols: number }) {
@@ -523,6 +690,8 @@ function SavedViewsPanel({ activeType, onLoad }: {
     STALLED_PACKAGES: 'stalled',
     CONTRACTOR_COMPLIANCE: 'contractor-compliance',
     REVIEW_PERFORMANCE: 'review-performance',
+    SUBMISSION_VOLUME: 'submission-volume',
+    DOCUMENT_QUALITY: 'document-quality',
   }
 
   return (
@@ -594,6 +763,8 @@ const TABS: { id: ReportType; label: string; icon: React.ReactNode; description:
   { id: 'stalled', label: 'Stalled Packages', icon: <Clock className="h-4 w-4" />, description: 'Packages with no recent activity' },
   { id: 'contractor-compliance', label: 'Contractor Compliance', icon: <ShieldAlert className="h-4 w-4" />, description: 'License and insurance expiry status' },
   { id: 'review-performance', label: 'Review Performance', icon: <Star className="h-4 w-4" />, description: 'Per-reviewer approval and SLA metrics' },
+  { id: 'submission-volume', label: 'Submission Volume', icon: <TrendingUp className="h-4 w-4" />, description: 'Monthly permit intake trends over 12 months' },
+  { id: 'document-quality', label: 'Document Quality', icon: <FileSearch className="h-4 w-4" />, description: 'Rejection rates and verification times by doc type' },
 ]
 
 export default function ReportsPage() {
@@ -670,6 +841,8 @@ export default function ReportsPage() {
                 {activeTab === 'stalled' && <StalledReport />}
                 {activeTab === 'contractor-compliance' && <ContractorComplianceReport />}
                 {activeTab === 'review-performance' && <ReviewPerformanceReport />}
+                {activeTab === 'submission-volume' && <SubmissionVolumeReport />}
+                {activeTab === 'document-quality' && <DocumentQualityReport />}
               </CardContent>
             </Card>
           </div>
