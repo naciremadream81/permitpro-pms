@@ -1,5 +1,6 @@
 // Prisma Schema for Permit Processing & Document Management System
-// This schema defines all entities and relationships for the permit coordination application
+// Phase 1 upgrade: Jurisdiction, Requirement, ChecklistItem, ContractorDocument,
+// ReviewAssignment, ReviewComment, NotificationEvent, ExportProfile, ExportLog
 
 generator client {
   provider = "prisma-client-js"
@@ -18,14 +19,19 @@ model User {
   id            String    @id @default(cuid())
   email         String    @unique
   name          String
-  passwordHash  String    // For credentials auth (bcrypt hashed)
-  role          String    @default("user") // user, admin
+  passwordHash  String
+  // Valid values: "admin" | "coordinator" | "reviewer"
+  role          String    @default("coordinator")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  activityLogs  ActivityLog[]
-  uploadedDocs  PermitDocument[]
+  activityLogs          ActivityLog[]
+  uploadedDocs          PermitDocument[]
+  coordinatedPackages   PermitPackage[]       @relation("PackageCoordinator")
+  reviewAssignments     ReviewAssignment[]
+  reviewComments        ReviewComment[]
+  notifications         NotificationEvent[]
 
   @@index([email])
 }
@@ -45,7 +51,6 @@ model Customer {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // Relations
   permitPackages PermitPackage[]
 
   @@index([name])
@@ -57,26 +62,106 @@ model Customer {
 // ============================================================================
 
 model Contractor {
-  id                    String    @id @default(cuid())
-  companyName          String
-  licenseNumber         String?
-  phone                 String?
-  email                 String?
-  address               String?
-  preferredContactMethod String?  // phone, email, text
-  specialties          String?    // Comma-separated list of specialties
+  id                     String    @id @default(cuid())
+  companyName            String
+  licenseNumber          String?
+  phone                  String?
+  email                  String?
+  address                String?
+  preferredContactMethod String?
+  specialties            String?
+  // Legacy flat expiry fields — now superseded by ContractorDocument vault
   workersCompExpirationDate DateTime?
-  liabilityExpirationDate DateTime?
-  notes                 String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  liabilityExpirationDate   DateTime?
+  notes                  String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
-  // Relations
-  permitPackages        PermitPackage[]
+  permitPackages         PermitPackage[]
+  contractorDocuments    ContractorDocument[]
 
   @@index([companyName])
   @@index([licenseNumber])
   @@index([email])
+}
+
+// ============================================================================
+// JURISDICTION & REQUIREMENTS
+// ============================================================================
+
+model Jurisdiction {
+  id           String    @id @default(cuid())
+  name         String
+  countyCode   String    @unique
+  state        String    @default("FL")
+  isActive     Boolean   @default(true)
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  requirements    Requirement[]
+  exportProfiles  ExportProfile[]
+  packages        PermitPackage[]
+
+  @@index([state])
+  @@index([isActive])
+}
+
+model Requirement {
+  id             String    @id @default(cuid())
+  jurisdictionId String
+  jurisdiction   Jurisdiction @relation(fields: [jurisdictionId], references: [id], onDelete: Cascade)
+  // JSON array of PermitType enum values: e.g. '["Building","Roofing"]' or '["*"]' for all
+  permitTypes    String
+  documentCategory DocumentCategory
+  documentName   String
+  description    String?
+  helpText       String?
+  isRequired     Boolean   @default(true)
+  // If false, coordinator can skip without a formal waiver
+  isMandatoryForSubmission Boolean @default(true)
+  order          Int       @default(0)
+  // JSON: { maxFileSizeMb, allowedMimeTypes[], ... }
+  validationRules String?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  checklistItems ChecklistItem[]
+
+  @@unique([jurisdictionId, documentName, permitTypes])
+  @@index([jurisdictionId])
+  @@index([documentCategory])
+}
+
+model ChecklistItem {
+  id            String    @id @default(cuid())
+  packageId     String
+  package       PermitPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  requirementId String
+  requirement   Requirement @relation(fields: [requirementId], references: [id])
+  documentId    String?
+  document      PermitDocument? @relation(fields: [documentId], references: [id])
+  status        ChecklistItemStatus @default(PENDING)
+  waiverReason  String?
+  waivedBy      String?
+  waivedAt      DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([packageId])
+  @@index([requirementId])
+  @@index([status])
+}
+
+enum ChecklistItemStatus {
+  PENDING
+  UPLOADED
+  VERIFIED
+  REJECTED
+  WAIVED
+  NOT_APPLICABLE
 }
 
 // ============================================================================
@@ -127,41 +212,57 @@ model PermitPackage {
   id                String          @id @default(cuid())
   customerId        String
   contractorId      String
+  // Explicit coordinator assignment
+  coordinatorId     String?
+  // Structured jurisdiction (replaces free-text county)
+  jurisdictionId    String?
   projectName       String
   projectAddress    String
+  // Legacy free-text county — kept for display if no jurisdiction linked
   county            String?
   jurisdictionNotes String?
-  
+
   permitType        PermitType
   status            PermitStatus    @default(New)
   internalStage     InternalStage?  @default(InProgress)
-  
-  permitNumber      String?         // Assigned by jurisdiction
+
+  permitNumber      String?
   openedDate        DateTime        @default(now())
   targetIssueDate   DateTime?
   closedDate        DateTime?
-  
+
   billingStatus     BillingStatus   @default(NotSent)
   sentToBillingAt   DateTime?
   billingNotes      String?
-  
+
+  // Denormalized for efficient stall detection queries
+  lastActivityAt    DateTime?
+
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
-  // Relations
   customer          Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
   contractor        Contractor      @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+  coordinator       User?           @relation("PackageCoordinator", fields: [coordinatorId], references: [id])
+  jurisdiction      Jurisdiction?   @relation(fields: [jurisdictionId], references: [id])
   documents         PermitDocument[]
   tasks             Task[]
   activityLogs      ActivityLog[]
+  checklistItems    ChecklistItem[]
+  reviewAssignments ReviewAssignment[]
+  exportLogs        ExportLog[]
 
   @@index([customerId])
   @@index([contractorId])
+  @@index([coordinatorId])
+  @@index([jurisdictionId])
   @@index([status])
+  @@index([internalStage])
   @@index([permitType])
   @@index([billingStatus])
   @@index([permitNumber])
   @@index([county])
+  @@index([lastActivityAt])
 }
 
 // ============================================================================
@@ -190,40 +291,238 @@ model PermitDocument {
   id                String            @id @default(cuid())
   permitPackageId  String
   fileName          String
-  fileType          String            // MIME type or extension
+  fileType          String
   category          DocumentCategory
   uploadedBy        String
   uploadedAt        DateTime          @default(now())
-  
-  versionTag        String?           // e.g., "v1", "v2", "revised"
+
+  versionTag        String?
   notes             String?
-  
+
   isRequired        Boolean           @default(false)
   isVerified        Boolean           @default(false)
   status            DocumentStatus    @default(Pending)
-  
-  fileSize          Int               // bytes
-  storagePath       String            // Local path or S3 key
-  checksum          String?           // MD5 or SHA256 for integrity
-  
-  // Versioning support
-  parentDocumentId  String?           // Points to previous version
-  versionGroupId    String?           // Groups all versions together
-  
+
+  fileSize          Int
+  storagePath       String
+  checksum          String?
+
+  parentDocumentId  String?
+  versionGroupId    String?
+
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  // Relations
   permitPackage     PermitPackage     @relation(fields: [permitPackageId], references: [id], onDelete: Cascade)
   uploadedByUser    User              @relation(fields: [uploadedBy], references: [id])
   parentDocument    PermitDocument?   @relation("DocumentVersions", fields: [parentDocumentId], references: [id])
   childDocuments    PermitDocument[]  @relation("DocumentVersions")
+  checklistItems    ChecklistItem[]
+  reviewComments    ReviewComment[]
 
   @@index([permitPackageId])
   @@index([category])
   @@index([status])
   @@index([versionGroupId])
   @@index([parentDocumentId])
+}
+
+// ============================================================================
+// CONTRACTOR DOCUMENT VAULT
+// ============================================================================
+
+enum ContractorDocType {
+  LICENSE
+  WORKERS_COMP
+  LIABILITY
+  W9
+  OTHER
+}
+
+enum ContractorDocStatus {
+  ACTIVE
+  EXPIRED
+  PENDING_REVIEW
+}
+
+model ContractorDocument {
+  id             String              @id @default(cuid())
+  contractorId   String
+  contractor     Contractor          @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+  type           ContractorDocType
+  documentName   String
+  storagePath    String
+  fileSize       Int
+  issueDate      DateTime?
+  expirationDate DateTime?
+  uploadedBy     String
+  uploadedAt     DateTime            @default(now())
+  status         ContractorDocStatus @default(ACTIVE)
+  isVerified     Boolean             @default(false)
+  verifiedBy     String?
+  verifiedAt     DateTime?
+  notes          String?
+  // Marks previous version as superseded when renewed
+  isSuperseded   Boolean             @default(false)
+
+  @@index([contractorId])
+  @@index([type])
+  @@index([status])
+  @@index([expirationDate])
+}
+
+// ============================================================================
+// REVIEW WORKFLOW
+// ============================================================================
+
+enum ReviewStatus {
+  ASSIGNED
+  IN_REVIEW
+  APPROVED
+  SENT_BACK
+}
+
+model ReviewAssignment {
+  id          String        @id @default(cuid())
+  packageId   String
+  package     PermitPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  reviewerId  String
+  reviewer    User          @relation(fields: [reviewerId], references: [id])
+  assignedAt  DateTime      @default(now())
+  startedAt   DateTime?
+  dueDate     DateTime?
+  completedAt DateTime?
+  status      ReviewStatus  @default(ASSIGNED)
+  comments    ReviewComment[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([packageId])
+  @@index([reviewerId])
+  @@index([status])
+}
+
+model ReviewComment {
+  id              String           @id @default(cuid())
+  assignmentId    String
+  assignment      ReviewAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  authorId        String
+  author          User             @relation(fields: [authorId], references: [id])
+  body            String
+  // Optional: pin comment to a specific checklist item or document
+  checklistItemId String?
+  documentId      String?
+  document        PermitDocument?  @relation(fields: [documentId], references: [id])
+  isResolved      Boolean          @default(false)
+  resolvedBy      String?
+  resolvedAt      DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([assignmentId])
+  @@index([isResolved])
+}
+
+// ============================================================================
+// NOTIFICATION SYSTEM
+// ============================================================================
+
+enum NotificationType {
+  CONTRACTOR_LICENSE_EXPIRING_30D
+  CONTRACTOR_LICENSE_EXPIRING_7D
+  CONTRACTOR_LICENSE_EXPIRED
+  CONTRACTOR_INSURANCE_EXPIRING_60D
+  CONTRACTOR_INSURANCE_EXPIRING_30D
+  CONTRACTOR_INSURANCE_EXPIRED
+  PACKAGE_STALLED
+  REVIEW_ASSIGNED
+  REVIEW_SENT_BACK
+  REVIEW_APPROVED
+  EXPORT_READY
+  CHECKLIST_ITEM_WAIVED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  READ
+  DISMISSED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+model NotificationEvent {
+  id           String              @id @default(cuid())
+  type         NotificationType
+  recipientId  String
+  recipient    User                @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  packageId    String?
+  contractorId String?
+  title        String
+  body         String
+  metadata     String?
+  status       NotificationStatus  @default(PENDING)
+  channel      NotificationChannel @default(IN_APP)
+  createdAt    DateTime            @default(now())
+  scheduledFor DateTime?
+  sentAt       DateTime?
+  readAt       DateTime?
+
+  @@index([recipientId])
+  @@index([status])
+  @@index([type])
+  @@index([packageId])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// EXPORT PROFILES & LOGS
+// ============================================================================
+
+model ExportProfile {
+  id                   String        @id @default(cuid())
+  jurisdictionId       String?
+  jurisdiction         Jurisdiction? @relation(fields: [jurisdictionId], references: [id])
+  name                 String
+  description          String?
+  isDefault            Boolean       @default(false)
+  // JSON: [{ folder: "01_Application", categories: ["Application"] }, ...]
+  folderStructure      String        @default("[]")
+  fileNamingPattern    String        @default("{category}_{fileName}")
+  includeManifest      Boolean       @default(true)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  exportLogs ExportLog[]
+
+  @@index([jurisdictionId])
+}
+
+enum ExportStatus {
+  GENERATED
+  DOWNLOADED
+  SUBMITTED
+}
+
+model ExportLog {
+  id           String        @id @default(cuid())
+  packageId    String
+  package      PermitPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  exportedBy   String
+  exportedAt   DateTime      @default(now())
+  profileId    String?
+  profile      ExportProfile? @relation(fields: [profileId], references: [id])
+  fileName     String
+  fileSize     Int
+  checksum     String?
+  downloadedAt DateTime?
+  status       ExportStatus  @default(GENERATED)
+
+  @@index([packageId])
+  @@index([status])
 }
 
 // ============================================================================
@@ -243,14 +542,13 @@ model Task {
   name              String
   description       String?
   status            TaskStatus      @default(NotStarted)
-  assignedTo        String?         // User email or name (text for now)
+  assignedTo        String?
   dueDate           DateTime?
   completedAt       DateTime?
-  priority          String?         // low, medium, high
+  priority          String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
-  // Relations
   permitPackage     PermitPackage   @relation(fields: [permitPackageId], references: [id], onDelete: Cascade)
 
   @@index([permitPackageId])
@@ -269,10 +567,24 @@ enum ActivityType {
   BillingStatusChange
   DocumentUploaded
   DocumentVerified
+  DocumentRejected
   TaskCreated
   TaskCompleted
   NoteAdded
   FieldUpdated
+  ChecklistGenerated
+  ChecklistItemUpdated
+  ChecklistItemWaived
+  ReviewAssigned
+  ReviewStarted
+  ReviewApproved
+  ReviewSentBack
+  CommentAdded
+  CommentResolved
+  ContractorDocumentUploaded
+  PackageExported
+  ReadinessBlocked
+  ReadinessOverridden
 }
 
 model ActivityLog {
@@ -281,12 +593,11 @@ model ActivityLog {
   userId            String?
   activityType      ActivityType
   description       String
-  oldValue          String?         // Previous status/stage value
-  newValue          String?         // New status/stage value
-  metadata          String?         // JSON for additional context
+  oldValue          String?
+  newValue          String?
+  metadata          String?
   createdAt         DateTime        @default(now())
 
-  // Relations
   permitPackage     PermitPackage   @relation(fields: [permitPackageId], references: [id], onDelete: Cascade)
   user              User?           @relation(fields: [userId], references: [id])
 
@@ -296,18 +607,19 @@ model ActivityLog {
 }
 
 // ============================================================================
-// REQUIRED DOCUMENT TEMPLATE ENTITY
+// REQUIRED DOCUMENT TEMPLATE (legacy — superseded by Jurisdiction/Requirement)
+// Kept for backward compatibility and initial data seeding
 // ============================================================================
 
 model RequiredDocumentTemplate {
   id                String          @id @default(cuid())
   permitType        PermitType
-  county            String?         // null = applies to all counties
+  county            String?
   category          DocumentCategory
-  name              String          // Display name
+  name              String
   description       String?
   isRequired        Boolean         @default(true)
-  order             Int             @default(0) // Display order
+  order             Int             @default(0)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 

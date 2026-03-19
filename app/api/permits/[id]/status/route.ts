@@ -1,66 +1,104 @@
 /**
  * Permit Status Update API Route Handler
- * 
- * Handles POST requests to update permit status with automatic activity logging
- * and optional task automation.
+ *
+ * Handles POST requests to update permit status with:
+ * - Readiness gate enforcement for ReadyToSubmit transitions
+ * - Admin override capability (with required reason)
+ * - Automatic activity logging
+ * - Optional task automation
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth-helpers'
+import { getSession, ForbiddenError } from '@/lib/auth-helpers'
+import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { permitStatusUpdateSchema } from '@/lib/validations'
+import { evaluateReadiness } from '@/lib/readiness-engine'
 import { Prisma } from '@prisma/client'
 
-// POST /api/permits/[id]/status - Update permit status with logging
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check authentication
     const session = await getSession()
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const role = normalizeRole(session.user?.role)
     const body = await request.json()
-    
-    // Validate request data
     const validatedData = permitStatusUpdateSchema.parse(body)
 
-    // Get current permit
     const currentPermit = await prisma.permitPackage.findUnique({
       where: { id: params.id },
     })
-
-    if (!currentPermit) {
+    if (!currentPermit)
       return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
+
+    // ── Readiness gate ────────────────────────────────────────────────────
+    // Enforce when transitioning internalStage to ReadyToSubmit
+    const transitioningToReady = validatedData.internalStage === 'ReadyToSubmit'
+
+    if (transitioningToReady) {
+      const readiness = await evaluateReadiness(params.id)
+
+      if (!readiness.isReady) {
+        if (validatedData.overrideReadiness) {
+          // Only admins may override
+          enforce(role, 'override_readiness', 'checklist')
+
+          if (!validatedData.overrideReason) {
+            return NextResponse.json(
+              { error: 'An override reason is required when bypassing the readiness gate' },
+              { status: 400 }
+            )
+          }
+
+          await prisma.activityLog.create({
+            data: {
+              permitPackageId: params.id,
+              userId: session.user.id,
+              activityType: 'ReadinessOverridden',
+              description: `Readiness gate overridden: ${validatedData.overrideReason}`,
+              metadata: JSON.stringify({
+                blockers: readiness.blockers,
+                overrideReason: validatedData.overrideReason,
+              }),
+            },
+          })
+        } else {
+          return NextResponse.json(
+            {
+              error: 'Package is not ready for submission',
+              blockers: readiness.blockers,
+              warnings: readiness.warnings,
+              checklistPct: readiness.checklistPct,
+            },
+            { status: 422 }
+          )
+        }
+      }
     }
 
-    // Prepare update data
+    // ── Apply update ──────────────────────────────────────────────────────
     const updateData: Prisma.PermitPackageUpdateInput = {
       status: validatedData.status,
+      lastActivityAt: new Date(),
     }
     if (validatedData.internalStage) {
       updateData.internalStage = validatedData.internalStage
     }
 
-    // Update permit
     const permitPackage = await prisma.permitPackage.update({
       where: { id: params.id },
       data: updateData,
       include: {
-        customer: {
-          select: { id: true, name: true },
-        },
-        contractor: {
-          select: { id: true, companyName: true },
-        },
+        customer: { select: { id: true, name: true } },
+        contractor: { select: { id: true, companyName: true } },
       },
     })
 
-    // Create activity log entry
-    const activityDescription = validatedData.note
+    // ── Activity log ──────────────────────────────────────────────────────
+    const description = validatedData.note
       ? `${validatedData.note} (Status: ${currentPermit.status} → ${permitPackage.status})`
       : `Status changed from ${currentPermit.status} to ${permitPackage.status}`
 
@@ -69,7 +107,7 @@ export async function POST(
         permitPackageId: permitPackage.id,
         userId: session.user.id,
         activityType: 'StatusChange',
-        description: activityDescription,
+        description,
         oldValue: currentPermit.status,
         newValue: permitPackage.status,
         metadata: validatedData.internalStage
@@ -78,14 +116,24 @@ export async function POST(
       },
     })
 
-    // Auto-create tasks based on status (workflow automation)
-    if (validatedData.status === 'Approved') {
-      // Check if "Send to Billing" task already exists
-      const existingTask = await prisma.task.findFirst({
-        where: {
+    // Log stage change separately if present
+    if (validatedData.internalStage && validatedData.internalStage !== currentPermit.internalStage) {
+      await prisma.activityLog.create({
+        data: {
           permitPackageId: permitPackage.id,
-          name: 'Send to Billing',
+          userId: session.user.id,
+          activityType: 'StageChange',
+          description: `Stage changed from ${currentPermit.internalStage ?? 'none'} to ${validatedData.internalStage}`,
+          oldValue: currentPermit.internalStage ?? undefined,
+          newValue: validatedData.internalStage,
         },
+      })
+    }
+
+    // ── Workflow automation ───────────────────────────────────────────────
+    if (validatedData.status === 'Approved') {
+      const existingTask = await prisma.task.findFirst({
+        where: { permitPackageId: permitPackage.id, name: 'Send to Billing' },
       })
 
       if (!existingTask) {
@@ -93,7 +141,7 @@ export async function POST(
           data: {
             permitPackageId: permitPackage.id,
             name: 'Send to Billing',
-            description: 'Permit approved - send to billing department',
+            description: 'Permit approved — send to billing department',
             status: 'NotStarted',
             priority: 'high',
           },
@@ -112,17 +160,11 @@ export async function POST(
 
     return NextResponse.json({ data: permitPackage })
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error },
-        { status: 400 }
-      )
-    }
-    console.error('Error updating permit status:', error)
-    return NextResponse.json(
-      { error: 'Failed to update permit status' },
-      { status: 500 }
-    )
+    if (error instanceof ForbiddenError)
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    if (error instanceof Error && error.name === 'ZodError')
+      return NextResponse.json({ error: 'Validation error', details: error }, { status: 400 })
+    console.error('POST /api/permits/[id]/status:', error)
+    return NextResponse.json({ error: 'Failed to update permit status' }, { status: 500 })
   }
 }
-
