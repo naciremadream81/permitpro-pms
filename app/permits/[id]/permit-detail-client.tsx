@@ -950,7 +950,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                     ) : (
                       <div className="flex items-start gap-2">
                         <p className="text-sm text-gray-600 flex-1">
-                          {doc.notes || <span className="text-gray-400 italic">No notes</span>}
+                          {doc.notes || <span className="text-gray-500 italic">No notes</span>}
                         </p>
                         <Button
                           size="sm"

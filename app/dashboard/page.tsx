@@ -204,13 +204,13 @@ export default async function DashboardPage() {
                           <span className="text-gray-600">
                             {permit.tasks[0].name}
                             {permit.tasks[0].dueDate && (
-                              <span className="text-gray-400">
+                              <span className="text-gray-600">
                                 {' '}(Due: {formatDate(permit.tasks[0].dueDate)})
                               </span>
                             )}
                           </span>
                         ) : (
-                          <span className="text-gray-400">No tasks</span>
+                          <span className="text-gray-600">No tasks</span>
                         )}
                       </td>
                     </tr>
