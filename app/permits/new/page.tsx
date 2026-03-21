@@ -13,6 +13,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { FLORIDA_COUNTIES } from '@/lib/florida-counties'
 
 interface Customer {
   id: string
@@ -334,15 +335,18 @@ export default function NewPermitPage() {
                 <label htmlFor="county" className="block text-sm font-medium text-gray-700 mb-1">
                   County
                 </label>
-                <input
-                  type="text"
+                <select
                   id="county"
                   name="county"
                   value={formData.county}
                   onChange={handleChange}
                   className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                  placeholder="e.g., Anytown County"
-                />
+                >
+                  <option value="">Select a county...</option>
+                  {FLORIDA_COUNTIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Jurisdiction Notes */}

@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatDateTime, formatPermitType } from '@/lib/utils'
+import { FLORIDA_COUNTIES } from '@/lib/florida-counties'
 import Link from 'next/link'
 
 // Types
@@ -559,13 +560,17 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               <p className="text-sm font-medium text-gray-500">County</p>
               {editingField === 'county' ? (
                 <div className="flex items-center gap-2 mt-1">
-                  <input
-                    type="text"
+                  <select
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
                     className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
                     autoFocus
-                  />
+                  >
+                    <option value="">Select a county...</option>
+                    {FLORIDA_COUNTIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
                   <Button size="sm" onClick={() => saveField('county')} disabled={loading}>Save</Button>
                   <Button size="sm" variant="outline" onClick={cancelEdit}>Cancel</Button>
                 </div>
