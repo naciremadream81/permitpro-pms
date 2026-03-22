@@ -3,9 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      platforms:
-        - linux/amd64
-        - linux/arm64
     container_name: permitpro-pms
     restart: unless-stopped
     environment:
@@ -201,8 +198,6 @@ services:
     container_name: cloudflared
     restart: unless-stopped
     command: tunnel --config /home/nonroot/.cloudflared/config.yml run
-    environment:
-      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
     volumes:
       - ./cloudflared:/home/nonroot/.cloudflared:ro
     networks:
