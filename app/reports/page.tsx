@@ -178,8 +178,8 @@ function PipelineReport() {
   }
 
   const sorted = [...rows].sort((a, b) => {
-    const va = (a as Record<string, unknown>)[sort.by]
-    const vb = (b as Record<string, unknown>)[sort.by]
+    const va = (a as unknown as Record<string, unknown>)[sort.by]
+    const vb = (b as unknown as Record<string, unknown>)[sort.by]
     if (va === null || va === undefined) return 1
     if (vb === null || vb === undefined) return -1
     const cmp = va < vb ? -1 : va > vb ? 1 : 0
@@ -260,8 +260,8 @@ function StalledReport() {
   }
 
   const sorted = [...rows].sort((a, b) => {
-    const va = (a as Record<string, unknown>)[sort.by]
-    const vb = (b as Record<string, unknown>)[sort.by]
+    const va = (a as unknown as Record<string, unknown>)[sort.by]
+    const vb = (b as unknown as Record<string, unknown>)[sort.by]
     if (va === null || va === undefined) return 1
     if (vb === null || vb === undefined) return -1
     const cmp = va < vb ? -1 : va > vb ? 1 : 0
@@ -626,11 +626,11 @@ export default function ReportsPage() {
             <Button variant="outline" size="sm" onClick={() => setRefreshKey(k => k + 1)}>
               <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
             </Button>
-            <Button variant="outline" size="sm" asChild>
-              <a href={`/api/reports/${activeTab}?format=csv`} download>
+            <a href={`/api/reports/${activeTab}?format=csv`} download>
+              <Button variant="outline" size="sm">
                 <Download className="h-3.5 w-3.5 mr-1" /> Export
-              </a>
-            </Button>
+              </Button>
+            </a>
           </div>
         </div>
 

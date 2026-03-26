@@ -24,7 +24,7 @@ const savedReportSchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 })
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

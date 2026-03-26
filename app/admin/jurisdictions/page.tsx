@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, MapPin, CheckCircle2, XCircle, ChevronRight } from 'lucide-react'
 
@@ -16,7 +15,6 @@ interface Jurisdiction {
 }
 
 export default function JurisdictionsPage() {
-  const router = useRouter()
   const [jurisdictions, setJurisdictions] = useState<Jurisdiction[]>([])
   const [loading, setLoading] = useState(true)
   const [showInactive, setShowInactive] = useState(false)

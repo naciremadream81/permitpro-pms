@@ -79,7 +79,6 @@ async function getDashboardData(userId: string, role: string) {
       where: {
         isSuperseded: false,
         expirationDate: { lt: new Date(now.getTime() + WARN_DAYS * 24 * 60 * 60 * 1000) },
-        status: { not: 'ARCHIVED' },
       },
     }),
 

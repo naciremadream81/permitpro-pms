@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession, ForbiddenError } from '@/lib/auth-helpers'
 import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
-import { storage, getMimeType } from '@/lib/storage'
+import { storage } from '@/lib/storage'
 import { contractorDocumentSchema } from '@/lib/validations'
 
 // GET /api/contractors/[id]/documents

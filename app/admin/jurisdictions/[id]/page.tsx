@@ -135,14 +135,6 @@ export default function JurisdictionDetailPage() {
   if (loading) return <div className="p-6 text-sm text-gray-500">Loading…</div>
   if (!jurisdiction) return <div className="p-6 text-sm text-red-500">Jurisdiction not found</div>
 
-  const byPermitType = PERMIT_TYPES.reduce((acc, pt) => {
-    acc[pt] = jurisdiction.requirements.filter((r) => {
-      const types = parsePermitTypes(r.permitTypes)
-      return types.includes('*') || types.includes(pt)
-    })
-    return acc
-  }, {} as Record<string, Requirement[]>)
-
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}

@@ -32,7 +32,6 @@ export async function runDailySnapshot(): Promise<SnapshotResult> {
         },
       },
       documents: {
-        where: { isSuperseded: false },
         select: { status: true },
       },
       reviewAssignments: {

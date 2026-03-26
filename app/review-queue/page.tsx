@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Clock, CheckCircle2, AlertTriangle, ChevronRight, MessageSquare } from 'lucide-react'
+import { Clock, CheckCircle2, ChevronRight, MessageSquare } from 'lucide-react'
 
 interface ReviewAssignment {
   id: string
