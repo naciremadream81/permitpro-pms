@@ -59,7 +59,7 @@ export default async function ReportsPage() {
               <div className="space-y-2">
                 {data.permitsByStatus.map((status) => (
                   <div key={status.status} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-gray-900">
                       {status.status.replace(/([A-Z])/g, ' $1').trim()}
                     </span>
                     <span className="text-sm font-semibold">{status._count}</span>
@@ -77,7 +77,7 @@ export default async function ReportsPage() {
               <div className="space-y-2">
                 {data.permitsByType.map((type) => (
                   <div key={type.permitType} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">{formatPermitType(type.permitType)}</span>
+                    <span className="text-sm text-gray-900">{formatPermitType(type.permitType)}</span>
                     <span className="text-sm font-semibold">{type._count}</span>
                   </div>
                 ))}
@@ -93,7 +93,7 @@ export default async function ReportsPage() {
               <div className="space-y-2">
                 {data.permitsByBillingStatus.map((status) => (
                   <div key={status.billingStatus} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-gray-900">
                       {status.billingStatus.replace(/([A-Z])/g, ' $1').trim()}
                     </span>
                     <span className="text-sm font-semibold">{status._count}</span>

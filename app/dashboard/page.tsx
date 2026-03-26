@@ -102,45 +102,45 @@ export default async function DashboardPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Permits</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-900">Active Permits</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.totalPermits}</div>
-              <p className="text-xs text-gray-500">Currently in progress</p>
+              <div className="text-2xl font-bold text-gray-900">{data.totalPermits}</div>
+              <p className="text-xs text-gray-700">Currently in progress</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Waiting on Billing</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-900">Waiting on Billing</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.permitsWaitingOnBilling}</div>
-              <p className="text-xs text-gray-500">Ready for billing</p>
+              <div className="text-2xl font-bold text-gray-900">{data.permitsWaitingOnBilling}</div>
+              <p className="text-xs text-gray-700">Ready for billing</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">In Review</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-900">In Review</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-gray-900">
                 {data.permitsByStatus.find((p) => p.status === 'InReview')?._count || 0}
               </div>
-              <p className="text-xs text-gray-500">Under county review</p>
+              <p className="text-xs text-gray-700">Under county review</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">New Permits</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-900">New Permits</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-gray-900">
                 {data.permitsByStatus.find((p) => p.status === 'New')?._count || 0}
               </div>
-              <p className="text-xs text-gray-500">Awaiting submission</p>
+              <p className="text-xs text-gray-700">Awaiting submission</p>
             </CardContent>
           </Card>
         </div>
@@ -154,7 +154,7 @@ export default async function DashboardPage() {
             <div className="space-y-2">
               {data.permitsByStatus.map((status) => (
                 <div key={status.status} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-gray-900">
                     {status.status.replace(/([A-Z])/g, ' $1').trim()}
                   </span>
                   <span className="text-sm font-semibold">{status._count}</span>
@@ -193,9 +193,9 @@ export default async function DashboardPage() {
                           {permit.id.slice(0, 8)}...
                         </Link>
                       </td>
-                      <td className="px-4 py-2 text-sm">{permit.projectName}</td>
-                      <td className="px-4 py-2 text-sm">{permit.customer.name}</td>
-                      <td className="px-4 py-2 text-sm">{permit.contractor.companyName}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{permit.projectName}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{permit.customer.name}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{permit.contractor.companyName}</td>
                       <td className="px-4 py-2">
                         <StatusBadge status={permit.status} />
                       </td>
@@ -210,7 +210,7 @@ export default async function DashboardPage() {
                             )}
                           </span>
                         ) : (
-                          <span className="text-gray-400">No tasks</span>
+                          <span className="text-gray-700">No tasks</span>
                         )}
                       </td>
                     </tr>

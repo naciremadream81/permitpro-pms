@@ -291,14 +291,14 @@ export function SettingsClient() {
                 {users.map((user) => (
                   <tr key={user.id} className="border-b hover:bg-gray-50">
                     <td className="px-4 py-2 text-sm font-medium">{user.name}</td>
-                    <td className="px-4 py-2 text-sm">{user.email}</td>
+                    <td className="px-4 py-2 text-sm text-gray-900">{user.email}</td>
                     <td className="px-4 py-2">
                       <StatusBadge status={user.role} />
                     </td>
-                    <td className="px-4 py-2 text-sm text-gray-600">
+                    <td className="px-4 py-2 text-sm text-gray-900">
                       {user._count.activityLogs} logs, {user._count.uploadedDocs} docs
                     </td>
-                    <td className="px-4 py-2 text-sm text-gray-600">
+                    <td className="px-4 py-2 text-sm text-gray-900">
                       {formatDate(user.createdAt)}
                     </td>
                     <td className="px-4 py-2">
@@ -325,7 +325,7 @@ export function SettingsClient() {
               </tbody>
             </table>
             {users.length === 0 && (
-              <p className="text-center text-gray-500 py-8">No users found</p>
+              <p className="text-center text-gray-700 py-8">No users found</p>
             )}
           </div>
         </CardContent>

@@ -228,7 +228,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
             </div>
           )}
           {contractor.licenseNumber && (
-            <p className="text-gray-600">License: {contractor.licenseNumber}</p>
+            <p className="text-gray-900">License: {contractor.licenseNumber}</p>
           )}
         </div>
         <div className="flex gap-2">
@@ -253,7 +253,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
           <div className="grid gap-4 md:grid-cols-2">
             {/* License Number */}
             <div>
-              <p className="text-sm font-medium text-gray-500">License Number</p>
+              <p className="text-sm font-medium text-gray-700">License Number</p>
               {editingField === 'licenseNumber' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -286,7 +286,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Phone */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Phone</p>
+              <p className="text-sm font-medium text-gray-700">Phone</p>
               {editingField === 'phone' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -324,7 +324,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Email */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Email</p>
+              <p className="text-sm font-medium text-gray-700">Email</p>
               {editingField === 'email' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -366,7 +366,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Address */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Address</p>
+              <p className="text-sm font-medium text-gray-700">Address</p>
               {editingField === 'address' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -399,7 +399,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Preferred Contact Method */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Preferred Contact Method</p>
+              <p className="text-sm font-medium text-gray-700">Preferred Contact Method</p>
               {editingField === 'preferredContactMethod' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <select
@@ -441,7 +441,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Specialties */}
             <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Specialties</p>
+              <p className="text-sm font-medium text-gray-700">Specialties</p>
               {editingField === 'specialties' ? (
                 <div className="mt-1">
                   <input
@@ -480,7 +480,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Workers Comp Expiration Date */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Workers Comp Expiration Date</p>
+              <p className="text-sm font-medium text-gray-700">Workers Comp Expiration Date</p>
               {editingField === 'workersCompExpirationDate' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -517,7 +517,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Liability Expiration Date */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Liability Expiration Date</p>
+              <p className="text-sm font-medium text-gray-700">Liability Expiration Date</p>
               {editingField === 'liabilityExpirationDate' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -554,7 +554,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Notes */}
             <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Notes</p>
+              <p className="text-sm font-medium text-gray-700">Notes</p>
               {editingField === 'notes' ? (
                 <div className="flex items-start gap-2 mt-1">
                   <textarea
@@ -629,11 +629,11 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
                           {permit.customer.name}
                         </Link>
                       </td>
-                      <td className="px-4 py-2 text-sm">{formatPermitType(permit.permitType)}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{formatPermitType(permit.permitType)}</td>
                       <td className="px-4 py-2">
                         <StatusBadge status={permit.status} />
                       </td>
-                      <td className="px-4 py-2 text-sm">
+                      <td className="px-4 py-2 text-sm text-gray-900">
                         {formatDate(permit.openedDate)}
                       </td>
                     </tr>
@@ -642,7 +642,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
               </table>
             </div>
           ) : (
-            <p className="text-gray-500">No permit packages for this contractor</p>
+            <p className="text-gray-700">No permit packages for this contractor</p>
           )}
         </CardContent>
       </Card>

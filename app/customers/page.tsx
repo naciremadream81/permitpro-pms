@@ -83,9 +83,9 @@ export default async function CustomersPage({
                           {customer.name}
                         </Link>
                       </td>
-                      <td className="px-4 py-2 text-sm">{customer.contactName || '-'}</td>
-                      <td className="px-4 py-2 text-sm">{customer.email || '-'}</td>
-                      <td className="px-4 py-2 text-sm">{customer.phone || '-'}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{customer.contactName || '-'}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{customer.email || '-'}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{customer.phone || '-'}</td>
                     </tr>
                   ))}
                 </tbody>

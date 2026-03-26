@@ -82,9 +82,9 @@ export default async function ContractorsPage({
                           {contractor.companyName}
                         </Link>
                       </td>
-                      <td className="px-4 py-2 text-sm">{contractor.licenseNumber || '-'}</td>
-                      <td className="px-4 py-2 text-sm">{contractor.email || '-'}</td>
-                      <td className="px-4 py-2 text-sm">{contractor.phone || '-'}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{contractor.licenseNumber || '-'}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{contractor.email || '-'}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{contractor.phone || '-'}</td>
                     </tr>
                   ))}
                 </tbody>

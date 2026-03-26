@@ -197,7 +197,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
             </div>
           )}
           {customer.contactName && (
-            <p className="text-gray-600">Contact: {customer.contactName}</p>
+            <p className="text-gray-900">Contact: {customer.contactName}</p>
           )}
         </div>
         <div className="flex gap-2">
@@ -222,7 +222,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
           <div className="grid gap-4 md:grid-cols-2">
             {/* Contact Name */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Contact Name</p>
+              <p className="text-sm font-medium text-gray-700">Contact Name</p>
               {editingField === 'contactName' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -255,7 +255,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
 
             {/* Phone */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Phone</p>
+              <p className="text-sm font-medium text-gray-700">Phone</p>
               {editingField === 'phone' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -293,7 +293,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
 
             {/* Email */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Email</p>
+              <p className="text-sm font-medium text-gray-700">Email</p>
               {editingField === 'email' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -335,7 +335,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
 
             {/* Main Address */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Main Address</p>
+              <p className="text-sm font-medium text-gray-700">Main Address</p>
               {editingField === 'mainAddress' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -368,7 +368,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
 
             {/* Notes */}
             <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Notes</p>
+              <p className="text-sm font-medium text-gray-700">Notes</p>
               {editingField === 'notes' ? (
                 <div className="mt-1">
                   <textarea
@@ -445,7 +445,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
                           {permit.projectName}
                         </Link>
                       </td>
-                      <td className="px-4 py-2 text-sm">{formatPermitType(permit.permitType)}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{formatPermitType(permit.permitType)}</td>
                       <td className="px-4 py-2">
                         <StatusBadge status={permit.status} />
                       </td>
@@ -457,7 +457,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
                           {permit.contractor.companyName}
                         </Link>
                       </td>
-                      <td className="px-4 py-2 text-sm">
+                      <td className="px-4 py-2 text-sm text-gray-900">
                         {formatDate(permit.openedDate)}
                       </td>
                     </tr>
@@ -466,7 +466,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
               </table>
             </div>
           ) : (
-            <p className="text-gray-500">No permit packages for this customer</p>
+            <p className="text-gray-700">No permit packages for this customer</p>
           )}
         </CardContent>
       </Card>

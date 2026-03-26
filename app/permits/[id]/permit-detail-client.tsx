@@ -391,7 +391,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">{permit.projectName}</h1>
-          <p className="text-gray-600">{permit.projectAddress}</p>
+          <p className="text-gray-900">{permit.projectAddress}</p>
         </div>
         <div className="flex gap-2">
           <StatusBadge status={permit.status} />
@@ -413,19 +413,19 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-sm font-medium text-gray-500">Customer</p>
+              <p className="text-sm font-medium text-gray-700">Customer</p>
               <Link href={`/customers/${permit.customer.id}`} className="text-blue-600 hover:underline">
                 {permit.customer.name}
               </Link>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Contractor</p>
+              <p className="text-sm font-medium text-gray-700">Contractor</p>
               <Link href={`/contractors/${permit.contractor.id}`} className="text-blue-600 hover:underline">
                 {permit.contractor.companyName}
               </Link>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Permit Type</p>
+              <p className="text-sm font-medium text-gray-700">Permit Type</p>
               {editingField === 'permitType' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <select
@@ -455,7 +455,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Permit Number</p>
+              <p className="text-sm font-medium text-gray-700">Permit Number</p>
               {editingField === 'permitNumber' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -476,7 +476,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Status</p>
+              <p className="text-sm font-medium text-gray-700">Status</p>
               {editingField === 'status' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <select
@@ -506,7 +506,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Billing Status</p>
+              <p className="text-sm font-medium text-gray-700">Billing Status</p>
               {editingField === 'billingStatus' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <select
@@ -531,11 +531,11 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Opened Date</p>
+              <p className="text-sm font-medium text-gray-700">Opened Date</p>
               <p className="text-sm">{formatDate(new Date(permit.openedDate))}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Target Issue Date</p>
+              <p className="text-sm font-medium text-gray-700">Target Issue Date</p>
               {editingField === 'targetIssueDate' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -556,7 +556,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">County</p>
+              <p className="text-sm font-medium text-gray-700">County</p>
               {editingField === 'county' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -577,7 +577,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Jurisdiction Notes</p>
+              <p className="text-sm font-medium text-gray-700">Jurisdiction Notes</p>
               {editingField === 'jurisdictionNotes' ? (
                 <div className="mt-1">
                   <textarea
@@ -600,7 +600,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Billing Notes</p>
+              <p className="text-sm font-medium text-gray-700">Billing Notes</p>
               {editingField === 'billingNotes' ? (
                 <div className="mt-1">
                   <textarea
@@ -713,10 +713,10 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                   <div className="flex-1">
                     <p className="font-medium">{task.name}</p>
                     {task.description && (
-                      <p className="text-sm text-gray-600">{task.description}</p>
+                      <p className="text-sm text-gray-900">{task.description}</p>
                     )}
                     {task.assignedTo && (
-                      <p className="text-xs text-gray-500">Assigned to: {task.assignedTo}</p>
+                      <p className="text-xs text-gray-700">Assigned to: {task.assignedTo}</p>
                     )}
                     {task.priority && (
                       <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">
@@ -748,7 +748,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">No tasks. Click &quot;Add Task&quot; to create one.</p>
+            <p className="text-gray-700">No tasks. Click &quot;Add Task&quot; to create one.</p>
           )}
         </CardContent>
       </Card>
@@ -910,7 +910,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-900">
                         {formatDateTime(new Date(doc.uploadedAt))} • {doc.uploadedByUser.name}
                       </p>
                     </div>
@@ -950,7 +950,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                     ) : (
                       <div className="flex items-start gap-2">
                         <p className="text-sm text-gray-600 flex-1">
-                          {doc.notes || <span className="text-gray-400 italic">No notes</span>}
+                          {doc.notes || <span className="text-gray-600 italic">No notes</span>}
                         </p>
                         <Button
                           size="sm"
@@ -969,7 +969,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">No documents uploaded yet</p>
+            <p className="text-gray-700">No documents uploaded yet</p>
           )}
         </CardContent>
       </Card>
@@ -984,7 +984,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
             {permit.activityLogs.map((log) => (
               <div key={log.id} className="border-b pb-2">
                 <p className="text-sm">{log.description}</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-700">
                   {formatDateTime(new Date(log.createdAt))} • {log.user?.name || 'System'}
                 </p>
               </div>

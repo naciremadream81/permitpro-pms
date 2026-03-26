@@ -143,17 +143,17 @@ export default async function PermitsPage({
                           {permit.id.slice(0, 8)}...
                         </Link>
                       </td>
-                      <td className="px-4 py-2 text-sm">{permit.projectName}</td>
-                      <td className="px-4 py-2 text-sm">{permit.customer.name}</td>
-                      <td className="px-4 py-2 text-sm">{permit.contractor.companyName}</td>
-                      <td className="px-4 py-2 text-sm">{formatPermitType(permit.permitType)}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{permit.projectName}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{permit.customer.name}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{permit.contractor.companyName}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900">{formatPermitType(permit.permitType)}</td>
                       <td className="px-4 py-2">
                         <StatusBadge status={permit.status} />
                       </td>
                       <td className="px-4 py-2">
                         <StatusBadge status={permit.billingStatus} />
                       </td>
-                      <td className="px-4 py-2 text-sm text-gray-600">
+                      <td className="px-4 py-2 text-sm text-gray-900">
                         {formatDate(permit.openedDate)}
                       </td>
                     </tr>
@@ -165,7 +165,7 @@ export default async function PermitsPage({
             {/* Pagination */}
             {data.totalPages > 1 && (
               <div className="mt-4 flex items-center justify-between">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-900">
                   Page {data.page} of {data.totalPages}
                 </p>
                 <div className="flex gap-2">
