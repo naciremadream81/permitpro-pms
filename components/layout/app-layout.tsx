@@ -1,6 +1,6 @@
 /**
  * App Layout Component
- * 
+ *
  * Main layout wrapper that provides the sidebar and header structure
  * for all authenticated pages in the application.
  */
@@ -12,7 +12,7 @@ import { Header } from './header'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
@@ -23,4 +23,3 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   )
 }
-

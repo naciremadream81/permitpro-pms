@@ -1,15 +1,20 @@
 /**
  * Session Provider Component
- * 
+ *
  * Wraps the application with NextAuth session provider for client-side
- * session access in React components.
+ * session access in React components, and ThemeProvider for dark/light
+ * mode support.
  */
 
 'use client'
 
 import { SessionProvider } from 'next-auth/react'
+import { ThemeProvider } from 'next-themes'
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <SessionProvider>{children}</SessionProvider>
+  return (
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+      <SessionProvider>{children}</SessionProvider>
+    </ThemeProvider>
+  )
 }
-
