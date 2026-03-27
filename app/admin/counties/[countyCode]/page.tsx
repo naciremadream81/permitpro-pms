@@ -116,7 +116,7 @@ function EditableRequirementRow({
               <input
                 value={draft.documentName}
                 onChange={e => setDraft({ ...draft, documentName: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -124,7 +124,7 @@ function EditableRequirementRow({
               <select
                 value={draft.documentCategory}
                 onChange={e => setDraft({ ...draft, documentCategory: e.target.value as DocumentCategory })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {DOC_CATEGORIES.map(c => <option key={c}>{c}</option>)}
               </select>
@@ -146,7 +146,7 @@ function EditableRequirementRow({
               <input
                 value={draft.description ?? ''}
                 onChange={e => setDraft({ ...draft, description: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div className="col-span-2 flex gap-2">
@@ -427,12 +427,12 @@ export default function CountyDetailPage() {
       <div className="bg-gray-900 text-white">
         <div className="max-w-6xl mx-auto px-6 py-5">
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-1.5 text-xs text-gray-500 mb-4">
-            <Link href="/admin" className="hover:text-gray-300 transition-colors">Dashboard</Link>
-            <ChevronRight className="w-3 h-3" />
-            <Link href="/admin/counties" className="hover:text-gray-300 transition-colors">Counties</Link>
-            <ChevronRight className="w-3 h-3" />
-            <span className="text-gray-300">{displayName}</span>
+          <nav className="flex items-center gap-1.5 text-xs text-gray-400 mb-4">
+            <Link href="/admin" className="hover:text-white transition-colors">Dashboard</Link>
+            <ChevronRight className="w-3 h-3 text-gray-600" />
+            <Link href="/admin/counties" className="hover:text-white transition-colors">Counties</Link>
+            <ChevronRight className="w-3 h-3 text-gray-600" />
+            <span className="text-white">{displayName}</span>
           </nav>
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -492,12 +492,12 @@ export default function CountyDetailPage() {
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Document Name <span className="text-red-500">*</span></label>
                 <input value={newReq.documentName} onChange={e => setNewReq({ ...newReq, documentName: e.target.value })}
-                  placeholder="e.g. Site Plan" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  placeholder="e.g. Site Plan" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
                 <select value={newReq.documentCategory} onChange={e => setNewReq({ ...newReq, documentCategory: e.target.value as DocumentCategory })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
                   {DOC_CATEGORIES.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
@@ -521,7 +521,7 @@ export default function CountyDetailPage() {
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
                 <input value={newReq.description} onChange={e => setNewReq({ ...newReq, description: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div className="col-span-2 flex items-center gap-6 text-sm">
                 <label className="flex items-center gap-2 cursor-pointer">
