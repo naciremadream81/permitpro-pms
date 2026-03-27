@@ -20,6 +20,24 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Force readable dark text on all form controls — prevents OS dark-mode
+   and browser defaults from rendering input values as near-invisible light grey */
+@layer base {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea {
+    color: #111827;        /* gray-900 */
+    background-color: #ffffff;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):disabled,
+  select:disabled,
+  textarea:disabled {
+    color: #6B7280;        /* gray-500 — visually distinct for disabled state */
+    background-color: #F9FAFB; /* gray-50 */
+  }
+}
+
 input::placeholder,
 textarea::placeholder {
   color: #6B7280;
