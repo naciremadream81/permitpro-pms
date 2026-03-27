@@ -79,7 +79,6 @@ function EditableRequirementRow({
   onToggle,
   onDelete,
   onShowHistory,
-  isAdmin: _isAdmin,
 }: {
   req: Requirement
   onSave: (id: string, updates: Partial<Requirement>) => Promise<void>

@@ -9,13 +9,13 @@
  * - Populates PermitTypeDefinition table if not already seeded.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { DocumentCategory } from '@prisma/client'
 import { FL_COUNTIES, DEFAULT_REQUIREMENTS, DEFAULT_PERMIT_TYPES } from '@/lib/counties-seed-data'
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
