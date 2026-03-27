@@ -4,8 +4,8 @@ import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, Plus, Trash2, ToggleLeft, ToggleRight, Save,
-  History, ChevronDown, ChevronRight, X, RotateCcw, Clock,
-  AlertTriangle, CheckCircle2, Pencil,
+  History, X, RotateCcw, Clock,
+  AlertTriangle, Pencil,
 } from 'lucide-react'
 import { FL_COUNTIES } from '@/lib/counties-seed-data'
 
@@ -79,7 +79,7 @@ function EditableRequirementRow({
   onToggle,
   onDelete,
   onShowHistory,
-  isAdmin,
+  isAdmin: _isAdmin,
 }: {
   req: Requirement
   onSave: (id: string, updates: Partial<Requirement>) => Promise<void>

@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
+import { DocumentCategory } from '@prisma/client'
 
 export async function POST(
   request: NextRequest,
@@ -51,7 +52,7 @@ export async function POST(
       where: { id: params.id },
       data: {
         documentName:            snapshot.documentName as string,
-        documentCategory:        snapshot.documentCategory as any,
+        documentCategory:        snapshot.documentCategory as DocumentCategory,
         permitTypes:             snapshot.permitTypes as string,
         isRequired:              snapshot.isRequired as boolean,
         isMandatoryForSubmission: snapshot.isMandatoryForSubmission as boolean,

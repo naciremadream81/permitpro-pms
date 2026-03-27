@@ -12,7 +12,6 @@ import {
   AlertTriangle,
   Circle,
   RefreshCw,
-  Layers,
 } from 'lucide-react'
 
 // ── All 67 Florida counties ──────────────────────────────────────────────────
@@ -52,8 +51,6 @@ const FL_COUNTIES = [
   { name: 'Wakulla',      code: 'WAK' }, { name: 'Walton',       code: 'WAL' },
   { name: 'Washington',   code: 'WAS' },
 ] as const
-
-type CountyCode = (typeof FL_COUNTIES)[number]['code']
 
 type SeedStatus = 'seeded' | 'partial' | 'unseeded'
 

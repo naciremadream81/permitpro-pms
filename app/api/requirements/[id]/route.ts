@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession, ForbiddenError } from '@/lib/auth-helpers'
 import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
+import { ChangeAction } from '@prisma/client'
 import { requirementUpdateSchema } from '@/lib/validations'
 
 export async function PATCH(
@@ -45,7 +46,7 @@ export async function PATCH(
         data: {
           requirementId: params.id,
           changedBy: session.user?.id as string,
-          action: action as any,
+          action: action as ChangeAction,
           fieldName: field,
           oldValue: String(oldVal ?? ''),
           newValue: String(newVal ?? ''),

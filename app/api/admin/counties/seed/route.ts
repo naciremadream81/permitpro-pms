@@ -12,9 +12,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
+import { DocumentCategory } from '@prisma/client'
 import { FL_COUNTIES, DEFAULT_REQUIREMENTS, DEFAULT_PERMIT_TYPES } from '@/lib/counties-seed-data'
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
             data: {
               jurisdictionId: jurisdiction.id,
               documentName: req.documentName,
-              documentCategory: req.documentCategory as any,
+              documentCategory: req.documentCategory as DocumentCategory,
               permitTypes: permitTypesJson,
               isRequired: req.isRequired,
               isMandatoryForSubmission: req.isMandatoryForSubmission,
