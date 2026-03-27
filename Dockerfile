@@ -42,6 +42,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Install Prisma CLI for running migrations at container startup
+# Pre-download engines and set permissions so nextjs user can run migrations
+RUN npm install -g prisma@6.19.2 --ignore-scripts \
+    && prisma version || true \
+    && chown -R nextjs:nodejs /usr/local/lib/node_modules/prisma
+
 # Copy necessary files
 # Next.js standalone output includes public files, so we don't need to copy it separately
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
