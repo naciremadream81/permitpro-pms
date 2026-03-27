@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
+import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import {
-  ArrowLeft, Plus, Trash2, ToggleLeft, ToggleRight, Save,
+  ArrowLeft, ChevronRight, Plus, Trash2, ToggleLeft, ToggleRight, Save,
   History, X, RotateCcw, Clock,
   AlertTriangle, Pencil,
 } from 'lucide-react'
@@ -425,13 +426,14 @@ export default function CountyDetailPage() {
       {/* Header */}
       <div className="bg-gray-900 text-white">
         <div className="max-w-6xl mx-auto px-6 py-5">
-          <button
-            onClick={() => router.push('/admin/counties')}
-            className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-200 mb-3 transition-colors"
-          >
-            <ArrowLeft className="w-3 h-3" />
-            All Counties
-          </button>
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-1.5 text-xs text-gray-500 mb-4">
+            <Link href="/admin" className="hover:text-gray-300 transition-colors">Dashboard</Link>
+            <ChevronRight className="w-3 h-3" />
+            <Link href="/admin/counties" className="hover:text-gray-300 transition-colors">Counties</Link>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-gray-300">{displayName}</span>
+          </nav>
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-xl font-bold tracking-tight">{displayName}</h1>

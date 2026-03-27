@@ -240,7 +240,14 @@ export default function CountiesPage() {
 
       {/* ── Command Header ──────────────────────────────────────────────── */}
       <div className="bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="max-w-7xl mx-auto px-6 pt-4 pb-6">
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-1.5 text-xs text-gray-500 mb-4">
+            <Link href="/admin" className="hover:text-gray-300 transition-colors">Dashboard</Link>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-gray-300">Counties</span>
+          </nav>
+
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/20">
