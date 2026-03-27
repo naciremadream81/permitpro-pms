@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import {
-  ArrowLeft, ChevronRight, Plus, Trash2, ToggleLeft, ToggleRight, Save,
+  ChevronRight, Plus, Trash2, ToggleLeft, ToggleRight, Save,
   History, X, RotateCcw, Clock,
   AlertTriangle, Pencil,
 } from 'lucide-react'
@@ -306,7 +306,6 @@ function HistoryDrawer({
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function CountyDetailPage() {
   const { countyCode } = useParams<{ countyCode: string }>()
-  const router = useRouter()
 
   const countyMeta = FL_COUNTIES.find(c => c.code === countyCode)
   const [jurisdiction, setJurisdiction] = useState<Jurisdiction | null>(null)
