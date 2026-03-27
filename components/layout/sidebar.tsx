@@ -24,6 +24,7 @@ import {
   Package,
   ChevronDown,
   ChevronRight,
+  Flag,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -43,6 +44,7 @@ const mainNav: NavItem[] = [
 ]
 
 const adminNav: NavItem[] = [
+  { name: 'Counties', href: '/admin/counties', icon: Flag },
   { name: 'Jurisdictions', href: '/admin/jurisdictions', icon: MapPin },
   { name: 'Export Profiles', href: '/admin/export-profiles', icon: Package },
   { name: 'Settings', href: '/settings', icon: Settings },

@@ -1,5 +1,6 @@
 /**
  * Requirement API — PATCH / DELETE individual requirement
+ * Now includes RequirementChangeLog entries on every mutation.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -20,10 +21,38 @@ export async function PATCH(
     const body = await request.json()
     const data = requirementUpdateSchema.parse(body)
 
+    // Capture current state for change log
+    const before = await prisma.requirement.findUnique({ where: { id: params.id } })
+    if (!before) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
     const requirement = await prisma.requirement.update({
       where: { id: params.id },
       data,
     })
+
+    // Determine action type and log each changed field
+    const changedFields = Object.keys(data) as (keyof typeof data)[]
+    const isToggle = changedFields.length === 1 && changedFields[0] === 'isActive'
+    const action = isToggle
+      ? (data.isActive ? 'ACTIVATED' : 'DEACTIVATED')
+      : 'UPDATED'
+
+    for (const field of changedFields) {
+      const oldVal = before[field as keyof typeof before]
+      const newVal = data[field]
+      if (String(oldVal) === String(newVal)) continue
+      await prisma.requirementChangeLog.create({
+        data: {
+          requirementId: params.id,
+          changedBy: session.user?.id as string,
+          action: action as any,
+          fieldName: field,
+          oldValue: String(oldVal ?? ''),
+          newValue: String(newVal ?? ''),
+          snapshot: JSON.stringify(requirement),
+        },
+      })
+    }
 
     return NextResponse.json({ data: requirement })
   } catch (error) {
@@ -45,6 +74,9 @@ export async function DELETE(
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     enforce(normalizeRole(session.user?.role), 'delete', 'requirement')
 
+    const before = await prisma.requirement.findUnique({ where: { id: params.id } })
+    if (!before) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
     // Soft-delete: mark inactive rather than destroy if checklist items exist
     const checklistCount = await prisma.checklistItem.count({
       where: { requirementId: params.id },
@@ -55,9 +87,28 @@ export async function DELETE(
         where: { id: params.id },
         data: { isActive: false },
       })
+      await prisma.requirementChangeLog.create({
+        data: {
+          requirementId: params.id,
+          changedBy: session.user?.id as string,
+          action: 'DEACTIVATED',
+          fieldName: 'isActive',
+          oldValue: 'true',
+          newValue: 'false',
+          snapshot: JSON.stringify(requirement),
+        },
+      })
       return NextResponse.json({ data: requirement, softDeleted: true })
     }
 
+    await prisma.requirementChangeLog.create({
+      data: {
+        requirementId: params.id,
+        changedBy: session.user?.id as string,
+        action: 'DELETED',
+        snapshot: JSON.stringify(before),
+      },
+    })
     await prisma.requirement.delete({ where: { id: params.id } })
     return NextResponse.json({ success: true })
   } catch (error) {

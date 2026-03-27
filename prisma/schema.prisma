@@ -129,6 +129,7 @@ model Requirement {
   updatedAt      DateTime  @updatedAt
 
   checklistItems ChecklistItem[]
+  changeLogs     RequirementChangeLog[]
 
   @@unique([jurisdictionId, documentName, permitTypes])
   @@index([jurisdictionId])
@@ -716,4 +717,84 @@ model PackageSnapshot {
   @@index([packageId])
   @@index([snapshotDate])
   @@index([status])
+}
+
+// ============================================================================
+// COUNTIES MODULE — CHANGE TRACKING & SEEDING (Phase 3)
+// ============================================================================
+
+enum ChangeAction {
+  CREATED
+  UPDATED
+  DELETED
+  ACTIVATED
+  DEACTIVATED
+  RESTORED
+}
+
+enum SeedBatchStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+// One record per field-level change to a Requirement
+model RequirementChangeLog {
+  id            String      @id @default(cuid())
+  requirementId String
+  requirement   Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  changedBy     String      // User id (or "system" for seed operations)
+  seedBatchId   String?
+  seedBatch     SeedBatch?  @relation(fields: [seedBatchId], references: [id])
+  action        ChangeAction
+  fieldName     String?     // Null for CREATED / DELETED
+  oldValue      String?
+  newValue      String?
+  // Full JSON snapshot of the requirement at time of change (for rollback)
+  snapshot      String
+  createdAt     DateTime    @default(now())
+
+  @@index([requirementId])
+  @@index([changedBy])
+  @@index([seedBatchId])
+  @@index([createdAt])
+}
+
+// One record per bulk seed run
+model SeedBatch {
+  id                 String          @id @default(cuid())
+  triggeredBy        String          // User id
+  description        String?
+  totalCounties      Int             @default(0)
+  totalRequirements  Int             @default(0)
+  skippedCount       Int             @default(0)
+  status             SeedBatchStatus @default(PENDING)
+  startedAt          DateTime        @default(now())
+  completedAt        DateTime?
+  errorMessage       String?
+
+  changes            RequirementChangeLog[]
+
+  @@index([triggeredBy])
+  @@index([status])
+  @@index([startedAt])
+}
+
+// Runtime-configurable permit type definitions
+// Extends (and mirrors) the PermitType enum for admin-managed additions
+model PermitTypeDefinition {
+  id          String   @id @default(cuid())
+  code        String   @unique  // Matches PermitType enum value or custom slug
+  label       String
+  description String?
+  isActive    Boolean  @default(true)
+  isBuiltIn   Boolean  @default(true)  // false for admin-created types
+  order       Int      @default(0)
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([order])
 }

@@ -4,7 +4,7 @@
     {
       "name": "Next.js Dev Server",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["--prefix", "/media/archie/storage/codebase/permitpro-pms", "next", "dev"],
+      "runtimeArgs": ["--prefix", "/home/archie/codebase/permitpro-pms", "next", "dev"],
       "port": 3000
     },
     {
