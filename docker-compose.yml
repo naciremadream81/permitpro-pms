@@ -200,11 +200,7 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: unless-stopped
-    command: tunnel --config /home/nonroot/.cloudflared/config.yml run
-    environment:
-      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
-    volumes:
-      - ./cloudflared:/home/nonroot/.cloudflared:ro
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     networks:
       - traefik-network
     depends_on:
