@@ -33,8 +33,56 @@ model User {
   reviewAssignments     ReviewAssignment[]
   reviewComments        ReviewComment[]
   notifications         NotificationEvent[]
+  adminAuditLogs        AdminAuditLog[]
 
   @@index([email])
+}
+
+// ============================================================================
+// ORGANIZATION & ADMIN SETTINGS (singleton org row + feature flags + audit)
+// ============================================================================
+
+model OrganizationSettings {
+  id                    String   @id @default("default")
+  displayName           String   @default("PermitPro")
+  tagline               String?
+  logoUrl               String?
+  primaryHex            String   @default("#2563eb")
+  accentHex             String   @default("#7c3aed")
+  notificationConfig    String   @default("{}")
+  integrationConfig     String   @default("[]")
+  securityConfig        String   @default("{}")
+  localizationConfig    String   @default("{}")
+  backupRetentionConfig String   @default("{}")
+  billingConfig         String   @default("{}")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  enabled     Boolean  @default(false)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([enabled])
+}
+
+model AdminAuditLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id])
+  action       String
+  resourceType String
+  resourceId   String?
+  details      String?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([resourceType])
+  @@index([userId])
 }
 
 // ============================================================================

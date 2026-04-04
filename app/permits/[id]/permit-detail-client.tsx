@@ -391,8 +391,8 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{permit.projectName}</h1>
-          <p className="text-gray-600">{permit.projectAddress}</p>
+          <h1 className="text-3xl font-bold text-foreground">{permit.projectName}</h1>
+          <p className="text-muted-foreground">{permit.projectAddress}</p>
         </div>
         <div className="flex gap-2">
           <StatusBadge status={permit.status} />
@@ -414,25 +414,25 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-sm font-medium text-gray-500">Customer</p>
-              <Link href={`/customers/${permit.customer.id}`} className="text-blue-600 hover:underline">
+              <p className="text-sm font-medium text-muted-foreground">Customer</p>
+              <Link href={`/customers/${permit.customer.id}`} className="text-primary hover:underline">
                 {permit.customer.name}
               </Link>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Contractor</p>
-              <Link href={`/contractors/${permit.contractor.id}`} className="text-blue-600 hover:underline">
+              <p className="text-sm font-medium text-muted-foreground">Contractor</p>
+              <Link href={`/contractors/${permit.contractor.id}`} className="text-primary hover:underline">
                 {permit.contractor.companyName}
               </Link>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Permit Type</p>
+              <p className="text-sm font-medium text-muted-foreground">Permit Type</p>
               {editingField === 'permitType' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <select
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   >
                     <option value="Building">Building</option>
@@ -456,14 +456,14 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Permit Number</p>
+              <p className="text-sm font-medium text-muted-foreground">Permit Number</p>
               {editingField === 'permitNumber' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="text"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('permitNumber')} disabled={loading}>Save</Button>
@@ -477,13 +477,13 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Status</p>
+              <p className="text-sm font-medium text-muted-foreground">Status</p>
               {editingField === 'status' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <select
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   >
                     <option value="New">New</option>
@@ -507,13 +507,13 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Billing Status</p>
+              <p className="text-sm font-medium text-muted-foreground">Billing Status</p>
               {editingField === 'billingStatus' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <select
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   >
                     <option value="NotSent">Not Sent</option>
@@ -532,18 +532,18 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Opened Date</p>
+              <p className="text-sm font-medium text-muted-foreground">Opened Date</p>
               <p className="text-sm">{formatDate(new Date(permit.openedDate))}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Target Issue Date</p>
+              <p className="text-sm font-medium text-muted-foreground">Target Issue Date</p>
               {editingField === 'targetIssueDate' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="date"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('targetIssueDate')} disabled={loading}>Save</Button>
@@ -557,13 +557,13 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">County</p>
+              <p className="text-sm font-medium text-muted-foreground">County</p>
               {editingField === 'county' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <select
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   >
                     <option value="">Select a county...</option>
@@ -582,13 +582,13 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Jurisdiction Notes</p>
+              <p className="text-sm font-medium text-muted-foreground">Jurisdiction Notes</p>
               {editingField === 'jurisdictionNotes' ? (
                 <div className="mt-1">
                   <textarea
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="w-full rounded-md border border-input px-2 py-1 text-sm"
                     rows={3}
                     autoFocus
                   />
@@ -605,13 +605,13 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Billing Notes</p>
+              <p className="text-sm font-medium text-muted-foreground">Billing Notes</p>
               {editingField === 'billingNotes' ? (
                 <div className="mt-1">
                   <textarea
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="w-full rounded-md border border-input px-2 py-1 text-sm"
                     rows={2}
                     autoFocus
                   />
@@ -642,56 +642,56 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
         <CardContent>
           {/* Add Task Form */}
           {showTaskForm && (
-            <form onSubmit={createTask} className="mb-4 p-4 border rounded-md bg-gray-50">
+            <form onSubmit={createTask} className="mb-4 p-4 border rounded-md bg-muted/40">
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Task Name *</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Task Name *</label>
                   <input
                     type="text"
                     required
                     value={newTask.name}
                     onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-input px-3 py-2 text-sm"
                     placeholder="e.g., Submit application to county"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Description</label>
                   <textarea
                     value={newTask.description}
                     onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-input px-3 py-2 text-sm"
                     rows={2}
                     placeholder="Task details..."
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">Assigned To</label>
                     <input
                       type="text"
                       value={newTask.assignedTo}
                       onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                      className="w-full rounded-md border border-input px-3 py-2 text-sm"
                       placeholder="Name or email"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                    <label className="block text-sm font-medium text-muted-foreground mb-1">Due Date</label>
                     <input
                       type="date"
                       value={newTask.dueDate}
                       onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                      className="w-full rounded-md border border-input px-3 py-2 text-sm"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Priority</label>
                   <select
                     value={newTask.priority}
                     onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as 'low' | 'medium' | 'high' })}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-input px-3 py-2 text-sm"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -718,13 +718,13 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                   <div className="flex-1">
                     <p className="font-medium">{task.name}</p>
                     {task.description && (
-                      <p className="text-sm text-gray-600">{task.description}</p>
+                      <p className="text-sm text-muted-foreground">{task.description}</p>
                     )}
                     {task.assignedTo && (
-                      <p className="text-xs text-gray-500">Assigned to: {task.assignedTo}</p>
+                      <p className="text-xs text-muted-foreground">Assigned to: {task.assignedTo}</p>
                     )}
                     {task.priority && (
-                      <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">
+                      <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
                         {task.priority} priority
                       </span>
                     )}
@@ -733,7 +733,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                     <div>
                       <StatusBadge status={task.status} />
                       {task.dueDate && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           Due: {formatDate(new Date(task.dueDate))}
                         </p>
                       )}
@@ -741,7 +741,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                     <select
                       value={task.status}
                       onChange={(e) => updateTask(task.id, { status: e.target.value })}
-                      className="text-sm rounded-md border border-gray-300 px-2 py-1"
+                      className="text-sm rounded-md border border-input px-2 py-1"
                     >
                       <option value="NotStarted">Not Started</option>
                       <option value="InProgress">In Progress</option>
@@ -753,7 +753,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">No tasks. Click &quot;Add Task&quot; to create one.</p>
+            <p className="text-muted-foreground">No tasks. Click &quot;Add Task&quot; to create one.</p>
           )}
         </CardContent>
       </Card>
@@ -823,7 +823,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
         <CardContent>
           {/* Upload Document Form */}
           {showUploadForm && (
-            <form onSubmit={uploadDocument} className="mb-4 p-4 border rounded-md bg-gray-50">
+            <form onSubmit={uploadDocument} className="mb-4 p-4 border rounded-md bg-muted/40">
               {error && (
                 <div className="mb-3 rounded-md bg-red-50 p-3">
                   <p className="text-sm text-red-800">{error}</p>
@@ -836,7 +836,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">File *</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">File *</label>
                   <input
                     type="file"
                     required
@@ -845,16 +845,16 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                       console.log('File selected:', file?.name)
                       setUploadForm({ ...uploadForm, file })
                     }}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-input px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Category *</label>
                   <select
                     required
                     value={uploadForm.category}
                     onChange={(e) => setUploadForm({ ...uploadForm, category: e.target.value })}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-input px-3 py-2 text-sm"
                   >
                     <option value="Application">Application</option>
                     <option value="Plans">Plans</option>
@@ -867,11 +867,11 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes/Labels</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-1">Notes/Labels</label>
                   <textarea
                     value={uploadForm.notes}
                     onChange={(e) => setUploadForm({ ...uploadForm, notes: e.target.value })}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-input px-3 py-2 text-sm"
                     rows={2}
                     placeholder="Add notes or labels for this document..."
                   />
@@ -882,9 +882,9 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                       type="checkbox"
                       checked={uploadForm.isRequired}
                       onChange={(e) => setUploadForm({ ...uploadForm, isRequired: e.target.checked })}
-                      className="rounded border-gray-300"
+                      className="rounded border-input"
                     />
-                    <span className="text-sm text-gray-700">Required Document</span>
+                    <span className="text-sm text-muted-foreground">Required Document</span>
                   </label>
                 </div>
                 <div className="flex gap-2">
@@ -906,16 +906,16 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <p className="font-medium">{doc.fileName}</p>
-                        <span className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                        <span className="text-xs px-2 py-0.5 rounded bg-primary/15 text-blue-800">
                           {doc.category}
                         </span>
                         {doc.versionTag && (
-                          <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">
+                          <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
                             {doc.versionTag}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-muted-foreground">
                         {formatDateTime(new Date(doc.uploadedAt))} • {doc.uploadedByUser.name}
                       </p>
                     </div>
@@ -934,7 +934,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                         <textarea
                           value={documentNotes[doc.id] || doc.notes || ''}
                           onChange={(e) => setDocumentNotes({ ...documentNotes, [doc.id]: e.target.value })}
-                          className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                          className="w-full rounded-md border border-input px-2 py-1 text-sm"
                           rows={2}
                           placeholder="Add notes or labels for this document..."
                           autoFocus
@@ -954,8 +954,8 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                       </div>
                     ) : (
                       <div className="flex items-start gap-2">
-                        <p className="text-sm text-gray-600 flex-1">
-                          {doc.notes || <span className="text-gray-400 italic">No notes</span>}
+                        <p className="text-sm text-muted-foreground flex-1">
+                          {doc.notes || <span className="text-muted-foreground/80 italic">No notes</span>}
                         </p>
                         <Button
                           size="sm"
@@ -974,7 +974,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">No documents uploaded yet</p>
+            <p className="text-muted-foreground">No documents uploaded yet</p>
           )}
         </CardContent>
       </Card>
@@ -989,7 +989,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
             {permit.activityLogs.map((log) => (
               <div key={log.id} className="border-b pb-2">
                 <p className="text-sm">{log.description}</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {formatDateTime(new Date(log.createdAt))} • {log.user?.name || 'System'}
                 </p>
               </div>

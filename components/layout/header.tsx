@@ -1,38 +1,68 @@
 /**
- * Header Component
- * 
- * Provides the top header bar for the application.
- * Displays user information and quick actions.
+ * Top bar — mobile menu, product title, theme toggle, user menu.
  */
 
-'use client'
+"use client";
 
-import { useSession } from 'next-auth/react'
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { cn } from "@/lib/utils";
 
-export function Header() {
-  const { data: session } = useSession()
+export function Header({ onMenuClick }: { onMenuClick?: () => void }) {
+  const { data: session } = useSession();
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6">
-      <div className="flex items-center gap-4">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Permit Processing & Document Management
-        </h2>
+    <header
+      className={cn(
+        "sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border",
+        "bg-background/80 px-4 backdrop-blur-md md:px-6"
+      )}
+    >
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="md:hidden"
+        onClick={onMenuClick}
+        aria-label="Open navigation menu"
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-foreground md:text-base">
+          Permit Processing &amp; Document Management
+        </p>
+        <p className="hidden text-xs text-muted-foreground sm:block">PermitPro PMS</p>
       </div>
-      <div className="flex items-center gap-4">
-        {session?.user && (
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-medium text-gray-900">{session.user.name}</p>
-              <p className="text-xs text-gray-500">{session.user.email}</p>
-            </div>
-            <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
-              {session.user.name?.charAt(0).toUpperCase()}
-            </div>
-          </div>
-        )}
+
+      <div className="flex items-center gap-1 sm:gap-2">
+        <ThemeToggle />
+        {session?.user ? (
+          <Link
+            href={session.user.role === "admin" ? "/settings/organization" : "/dashboard"}
+            className="flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5 shadow-sm transition-colors hover:bg-muted/60"
+          >
+            <span
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
+              aria-hidden
+            >
+              {session.user.name?.charAt(0).toUpperCase() ?? "?"}
+            </span>
+            <span className="hidden text-left text-sm lg:block">
+              <span className="block max-w-[140px] truncate font-medium text-foreground">
+                {session.user.name}
+              </span>
+              <span className="block max-w-[140px] truncate text-xs text-muted-foreground">
+                {session.user.email}
+              </span>
+            </span>
+          </Link>
+        ) : null}
       </div>
     </header>
-  )
+  );
 }
-

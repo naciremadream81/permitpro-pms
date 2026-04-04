@@ -2,31 +2,114 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * Design tokens — semantic surfaces for light and dark themes.
+ * Runtime theme uses the `dark` class on <html> (next-themes).
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand — modern bold accent on neutral foundation */
+  --color-primary: 37 99 235;
+  --color-primary-foreground: 255 255 255;
+  --color-accent: 124 58 237;
+  --color-accent-foreground: 255 255 255;
+
+  /* Surfaces */
+  --background: 250 250 252;
+  --foreground: 15 23 42;
+  --card: 255 255 255;
+  --card-foreground: 15 23 42;
+  --popover: 255 255 255;
+  --popover-foreground: 15 23 42;
+  --muted: 241 245 249;
+  --muted-foreground: 100 116 139;
+  --border: 226 232 240;
+  --input: 226 232 240;
+  --ring: 37 99 235;
+
+  /* Sidebar (light: elevated rail) */
+  --sidebar: 255 255 255;
+  --sidebar-foreground: 15 23 42;
+  --sidebar-border: 226 232 240;
+  --sidebar-accent: 241 245 249;
+  --sidebar-accent-foreground: 15 23 42;
+
+  /* Semantic */
+  --destructive: 220 38 38;
+  --destructive-foreground: 255 255 255;
+  --success: 22 163 74;
+  --success-foreground: 255 255 255;
+  --warning: 234 179 8;
+  --warning-foreground: 66 32 6;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+.dark {
+  --color-primary: 96 165 250;
+  --color-primary-foreground: 15 23 42;
+  --color-accent: 167 139 250;
+  --color-accent-foreground: 15 23 42;
+
+  --background: 9 11 19;
+  --foreground: 241 245 249;
+  --card: 17 20 31;
+  --card-foreground: 241 245 249;
+  --popover: 17 20 31;
+  --popover-foreground: 241 245 249;
+  --muted: 30 35 50;
+  --muted-foreground: 148 163 184;
+  --border: 41 48 68;
+  --input: 41 48 68;
+  --ring: 96 165 250;
+
+  --sidebar: 13 16 26;
+  --sidebar-foreground: 226 232 240;
+  --sidebar-border: 35 42 62;
+  --sidebar-accent: 30 35 50;
+  --sidebar-accent-foreground: 248 250 252;
+
+  --destructive: 248 113 113;
+  --destructive-foreground: 15 23 42;
+  --success: 74 222 128;
+  --success-foreground: 15 23 42;
+  --warning: 250 204 21;
+  --warning-foreground: 15 23 42;
+}
+
+@layer base {
+  * {
+    @apply border-border;
   }
-}
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+  }
 
-input::placeholder,
-textarea::placeholder {
-  color: #6B7280;
+  input::placeholder,
+  textarea::placeholder {
+    @apply text-muted-foreground/70;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .focus-ring {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 }

@@ -18,6 +18,9 @@ async function main() {
 
   // Clear existing data (in reverse order of dependencies)
   console.log('🧹 Clearing existing data...')
+  await prisma.adminAuditLog.deleteMany()
+  await prisma.featureFlag.deleteMany()
+  await prisma.organizationSettings.deleteMany()
   await prisma.activityLog.deleteMany()
   await prisma.task.deleteMany()
   await prisma.permitDocument.deleteMany()
@@ -43,7 +46,7 @@ async function main() {
       email: 'user@permitco.com',
       name: 'Regular User',
       passwordHash: await hashPassword('user123'),
-      role: 'user',
+      role: 'coordinator',
     },
   })
 
@@ -543,6 +546,12 @@ async function main() {
       },
     }),
   ])
+
+  await prisma.organizationSettings.upsert({
+    where: { id: 'default' },
+    create: { id: 'default' },
+    update: {},
+  })
 
   console.log('✅ Seed completed successfully!')
   console.log(`   - ${customers.length} customers`)

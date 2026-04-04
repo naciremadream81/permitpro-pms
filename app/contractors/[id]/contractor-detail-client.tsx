@@ -201,7 +201,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
                 type="text"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                className="text-3xl font-bold text-gray-900 border-b-2 border-blue-500 px-2 py-1"
+                className="text-3xl font-bold text-foreground border-b-2 border-blue-500 px-2 py-1"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') saveField('companyName')
@@ -217,7 +217,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold text-gray-900">{contractor.companyName}</h1>
+              <h1 className="text-3xl font-bold text-foreground">{contractor.companyName}</h1>
               <Button
                 size="sm"
                 variant="ghost"
@@ -228,7 +228,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
             </div>
           )}
           {contractor.licenseNumber && (
-            <p className="text-gray-600">License: {contractor.licenseNumber}</p>
+            <p className="text-muted-foreground">License: {contractor.licenseNumber}</p>
           )}
         </div>
         <div className="flex gap-2">
@@ -253,14 +253,14 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
           <div className="grid gap-4 md:grid-cols-2">
             {/* License Number */}
             <div>
-              <p className="text-sm font-medium text-gray-500">License Number</p>
+              <p className="text-sm font-medium text-muted-foreground">License Number</p>
               {editingField === 'licenseNumber' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="text"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('licenseNumber')} disabled={loading}>
@@ -286,7 +286,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Phone */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Phone</p>
+              <p className="text-sm font-medium text-muted-foreground">Phone</p>
               {editingField === 'phone' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -296,7 +296,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
                       const formatted = formatPhoneNumber(e.target.value)
                       setEditValue(formatted)
                     }}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     placeholder="(555) 123-4567"
                     maxLength={14}
                     autoFocus
@@ -324,14 +324,14 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Email */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Email</p>
+              <p className="text-sm font-medium text-muted-foreground">Email</p>
               {editingField === 'email' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="email"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('email')} disabled={loading}>
@@ -346,7 +346,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
                   {contractor.email ? (
                     <a
                       href={`mailto:${contractor.email}`}
-                      className="text-sm text-blue-600 hover:underline"
+                      className="text-sm text-primary hover:underline"
                     >
                       {contractor.email}
                     </a>
@@ -366,14 +366,14 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Address */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Address</p>
+              <p className="text-sm font-medium text-muted-foreground">Address</p>
               {editingField === 'address' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="text"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('address')} disabled={loading}>
@@ -399,13 +399,13 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Preferred Contact Method */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Preferred Contact Method</p>
+              <p className="text-sm font-medium text-muted-foreground">Preferred Contact Method</p>
               {editingField === 'preferredContactMethod' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <select
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   >
                     <option value="">Select...</option>
@@ -441,18 +441,18 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Specialties */}
             <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Specialties</p>
+              <p className="text-sm font-medium text-muted-foreground">Specialties</p>
               {editingField === 'specialties' ? (
                 <div className="mt-1">
                   <input
                     type="text"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="w-full rounded-md border border-input px-2 py-1 text-sm"
                     placeholder="e.g., Electrical, Plumbing, HVAC"
                     autoFocus
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Enter specialties separated by commas
                   </p>
                   <div className="flex gap-2 mt-2">
@@ -480,14 +480,14 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Workers Comp Expiration Date */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Workers Comp Expiration Date</p>
+              <p className="text-sm font-medium text-muted-foreground">Workers Comp Expiration Date</p>
               {editingField === 'workersCompExpirationDate' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="date"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('workersCompExpirationDate')} disabled={loading}>
@@ -517,14 +517,14 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Liability Expiration Date */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Liability Expiration Date</p>
+              <p className="text-sm font-medium text-muted-foreground">Liability Expiration Date</p>
               {editingField === 'liabilityExpirationDate' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="date"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('liabilityExpirationDate')} disabled={loading}>
@@ -554,13 +554,13 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
 
             {/* Notes */}
             <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Notes</p>
+              <p className="text-sm font-medium text-muted-foreground">Notes</p>
               {editingField === 'notes' ? (
                 <div className="flex items-start gap-2 mt-1">
                   <textarea
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     rows={3}
                     autoFocus
                   />
@@ -603,20 +603,20 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Project Name</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Customer</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Type</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Status</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Opened Date</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Project Name</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Customer</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Type</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Status</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Opened Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {contractor.permitPackages.map((permit) => (
-                    <tr key={permit.id} className="border-b hover:bg-gray-50">
+                    <tr key={permit.id} className="border-b hover:bg-muted/40">
                       <td className="px-4 py-2">
                         <Link
                           href={`/permits/${permit.id}`}
-                          className="text-sm text-blue-600 hover:underline"
+                          className="text-sm text-primary hover:underline"
                         >
                           {permit.projectName}
                         </Link>
@@ -624,7 +624,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
                       <td className="px-4 py-2">
                         <Link
                           href={`/customers/${permit.customer.id}`}
-                          className="text-sm text-blue-600 hover:underline"
+                          className="text-sm text-primary hover:underline"
                         >
                           {permit.customer.name}
                         </Link>
@@ -642,7 +642,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
               </table>
             </div>
           ) : (
-            <p className="text-gray-500">No permit packages for this contractor</p>
+            <p className="text-muted-foreground">No permit packages for this contractor</p>
           )}
         </CardContent>
       </Card>

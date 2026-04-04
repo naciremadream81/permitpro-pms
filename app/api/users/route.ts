@@ -10,12 +10,12 @@ import { requireAdmin } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { userSchema } from '@/lib/validations'
 import { hashPassword } from '@/lib/auth'
+import { writeAdminAuditLog } from '@/lib/admin-audit-log'
 
 // GET /api/users - List all users (admin only)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(_request: NextRequest) {
   try {
-    // Check authentication and admin role
     await requireAdmin()
 
     const users = await prisma.user.findMany({
@@ -55,8 +55,7 @@ export async function GET(_request: NextRequest) {
 // POST /api/users - Create a new user (admin only)
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication and admin role
-    await requireAdmin()
+    const session = await requireAdmin()
 
     const body = await request.json()
     
@@ -94,6 +93,14 @@ export async function POST(request: NextRequest) {
         createdAt: true,
         updatedAt: true,
       },
+    })
+
+    await writeAdminAuditLog({
+      userId: session.user?.id,
+      action: 'USER_CREATE',
+      resourceType: 'User',
+      resourceId: user.id,
+      details: { email: user.email, role: user.role },
     })
 
     return NextResponse.json({ data: user }, { status: 201 })

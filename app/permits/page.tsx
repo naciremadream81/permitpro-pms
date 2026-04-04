@@ -72,7 +72,7 @@ export default async function PermitsPage({
     <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Permits</h1>
+          <h1 className="text-3xl font-bold text-foreground">Permits</h1>
           <Link href="/permits/new">
             <Button>New Permit</Button>
           </Link>
@@ -90,12 +90,12 @@ export default async function PermitsPage({
                 name="search"
                 placeholder="Search permits..."
                 defaultValue={searchParams.search}
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2"
+                className="flex-1 rounded-md border border-input px-3 py-2"
               />
               <select
                 name="status"
                 defaultValue={searchParams.status}
-                className="rounded-md border border-gray-300 px-3 py-2"
+                className="rounded-md border border-input px-3 py-2"
               >
                 <option value="">All Statuses</option>
                 <option value="New">New</option>
@@ -122,23 +122,23 @@ export default async function PermitsPage({
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">ID</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Project</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Customer</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Contractor</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Type</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Status</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Billing</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Opened</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">ID</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Project</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Customer</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Contractor</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Type</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Status</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Billing</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Opened</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.permits.map((permit) => (
-                    <tr key={permit.id} className="border-b hover:bg-gray-50">
+                    <tr key={permit.id} className="border-b hover:bg-muted/40">
                       <td className="px-4 py-2">
                         <Link
                           href={`/permits/${permit.id}`}
-                          className="text-sm text-blue-600 hover:underline"
+                          className="text-sm text-primary hover:underline"
                         >
                           {permit.id.slice(0, 8)}...
                         </Link>
@@ -153,7 +153,7 @@ export default async function PermitsPage({
                       <td className="px-4 py-2">
                         <StatusBadge status={permit.billingStatus} />
                       </td>
-                      <td className="px-4 py-2 text-sm text-gray-600">
+                      <td className="px-4 py-2 text-sm text-muted-foreground">
                         {formatDate(permit.openedDate)}
                       </td>
                     </tr>
@@ -165,7 +165,7 @@ export default async function PermitsPage({
             {/* Pagination */}
             {data.totalPages > 1 && (
               <div className="mt-4 flex items-center justify-between">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Page {data.page} of {data.totalPages}
                 </p>
                 <div className="flex gap-2">

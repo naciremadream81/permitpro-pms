@@ -50,7 +50,7 @@ export default async function ContractorsPage({
     <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Contractors</h1>
+          <h1 className="text-3xl font-bold text-foreground">Contractors</h1>
           <Link href="/contractors/new">
             <Button>New Contractor</Button>
           </Link>
@@ -65,19 +65,19 @@ export default async function ContractorsPage({
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Company</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">License</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Email</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Phone</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Company</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">License</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Email</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Phone</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.contractors.map((contractor) => (
-                    <tr key={contractor.id} className="border-b hover:bg-gray-50">
+                    <tr key={contractor.id} className="border-b hover:bg-muted/40">
                       <td className="px-4 py-2">
                         <Link
                           href={`/contractors/${contractor.id}`}
-                          className="text-sm text-blue-600 hover:underline"
+                          className="text-sm text-primary hover:underline"
                         >
                           {contractor.companyName}
                         </Link>

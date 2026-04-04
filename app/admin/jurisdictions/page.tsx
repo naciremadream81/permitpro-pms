@@ -52,14 +52,14 @@ export default function JurisdictionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Jurisdictions</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-semibold text-foreground">Jurisdictions</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Manage counties and their permit document requirements
           </p>
         </div>
         <Link
           href="/admin/jurisdictions/new"
-          className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
           Add Jurisdiction
@@ -67,7 +67,7 @@ export default function JurisdictionsPage() {
       </div>
 
       {/* Filter */}
-      <label className="inline-flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+      <label className="inline-flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
         <input
           type="checkbox"
           checked={showInactive}
@@ -79,37 +79,37 @@ export default function JurisdictionsPage() {
 
       {/* Table */}
       {loading ? (
-        <div className="text-sm text-gray-500">Loading…</div>
+        <div className="text-sm text-muted-foreground">Loading…</div>
       ) : jurisdictions.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-muted-foreground/80">
           <MapPin className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p className="font-medium">No jurisdictions configured</p>
           <p className="text-sm mt-1">Add your first jurisdiction to enable checklist generation.</p>
         </div>
       ) : (
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="border border-border rounded-lg overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-muted/40 border-b border-border">
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">County</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Code</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">State</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Requirements</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Packages</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Active</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">County</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Code</th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground">State</th>
+                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Requirements</th>
+                <th className="text-right px-4 py-3 font-medium text-muted-foreground">Packages</th>
+                <th className="text-center px-4 py-3 font-medium text-muted-foreground">Active</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {jurisdictions.map((j) => (
-                <tr key={j.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900">{j.name}</td>
-                  <td className="px-4 py-3 text-gray-600 font-mono">{j.countyCode}</td>
-                  <td className="px-4 py-3 text-gray-600">{j.state}</td>
-                  <td className="px-4 py-3 text-right text-gray-700">
+                <tr key={j.id} className="hover:bg-muted/40 transition-colors">
+                  <td className="px-4 py-3 font-medium text-foreground">{j.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground font-mono">{j.countyCode}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{j.state}</td>
+                  <td className="px-4 py-3 text-right text-muted-foreground">
                     {j._count.requirements}
                   </td>
-                  <td className="px-4 py-3 text-right text-gray-700">
+                  <td className="px-4 py-3 text-right text-muted-foreground">
                     {j._count.packages}
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -120,14 +120,14 @@ export default function JurisdictionsPage() {
                       {j.isActive ? (
                         <CheckCircle2 className="w-4 h-4 text-green-500 inline" />
                       ) : (
-                        <XCircle className="w-4 h-4 text-gray-300 inline" />
+                        <XCircle className="w-4 h-4 text-muted-foreground inline" />
                       )}
                     </button>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link
                       href={`/admin/jurisdictions/${j.id}`}
-                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      className="inline-flex items-center gap-1 text-primary hover:text-primary text-sm font-medium"
                     >
                       Manage
                       <ChevronRight className="w-3 h-3" />

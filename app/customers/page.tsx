@@ -51,7 +51,7 @@ export default async function CustomersPage({
     <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
+          <h1 className="text-3xl font-bold text-foreground">Customers</h1>
           <Link href="/customers/new">
             <Button>New Customer</Button>
           </Link>
@@ -66,19 +66,19 @@ export default async function CustomersPage({
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Name</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Contact</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Email</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Phone</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Name</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Contact</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Email</th>
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">Phone</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.customers.map((customer) => (
-                    <tr key={customer.id} className="border-b hover:bg-gray-50">
+                    <tr key={customer.id} className="border-b hover:bg-muted/40">
                       <td className="px-4 py-2">
                         <Link
                           href={`/customers/${customer.id}`}
-                          className="text-sm text-blue-600 hover:underline"
+                          className="text-sm text-primary hover:underline"
                         >
                           {customer.name}
                         </Link>

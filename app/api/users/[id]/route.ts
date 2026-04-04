@@ -11,6 +11,7 @@ import { prisma } from '@/lib/prisma'
 import { userUpdateSchema } from '@/lib/validations'
 import { hashPassword } from '@/lib/auth'
 import { Prisma } from '@prisma/client'
+import { writeAdminAuditLog } from '@/lib/admin-audit-log'
 
 // GET /api/users/[id] - Get user by ID (admin only)
 export async function GET(
@@ -65,8 +66,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check authentication and admin role
-    await requireAdmin()
+    const session = await requireAdmin()
 
     const body = await request.json()
     
@@ -116,6 +116,18 @@ export async function PATCH(
         role: true,
         createdAt: true,
         updatedAt: true,
+      },
+    })
+
+    await writeAdminAuditLog({
+      userId: session.user?.id,
+      action: 'USER_UPDATE',
+      resourceType: 'User',
+      resourceId: user.id,
+      details: {
+        email: user.email,
+        role: user.role,
+        changed: Object.keys(updateData),
       },
     })
 
@@ -169,6 +181,14 @@ export async function DELETE(
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
+
+    await writeAdminAuditLog({
+      userId: session.user?.id,
+      action: 'USER_DELETE',
+      resourceType: 'User',
+      resourceId: params.id,
+      details: { email: user.email },
+    })
 
     // Delete user
     await prisma.user.delete({

@@ -170,7 +170,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
                 type="text"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                className="text-3xl font-bold text-gray-900 border-b-2 border-blue-500 px-2 py-1"
+                className="text-3xl font-bold text-foreground border-b-2 border-blue-500 px-2 py-1"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') saveField('name')
@@ -186,7 +186,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold text-gray-900">{customer.name}</h1>
+              <h1 className="text-3xl font-bold text-foreground">{customer.name}</h1>
               <Button
                 size="sm"
                 variant="ghost"
@@ -197,7 +197,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
             </div>
           )}
           {customer.contactName && (
-            <p className="text-gray-600">Contact: {customer.contactName}</p>
+            <p className="text-muted-foreground">Contact: {customer.contactName}</p>
           )}
         </div>
         <div className="flex gap-2">
@@ -222,14 +222,14 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
           <div className="grid gap-4 md:grid-cols-2">
             {/* Contact Name */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Contact Name</p>
+              <p className="text-sm font-medium text-muted-foreground">Contact Name</p>
               {editingField === 'contactName' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="text"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('contactName')} disabled={loading}>
@@ -255,7 +255,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
 
             {/* Phone */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Phone</p>
+              <p className="text-sm font-medium text-muted-foreground">Phone</p>
               {editingField === 'phone' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -265,7 +265,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
                       const formatted = formatPhoneNumber(e.target.value)
                       setEditValue(formatted)
                     }}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     placeholder="(555) 123-4567"
                     maxLength={14}
                     autoFocus
@@ -293,14 +293,14 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
 
             {/* Email */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Email</p>
+              <p className="text-sm font-medium text-muted-foreground">Email</p>
               {editingField === 'email' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="email"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('email')} disabled={loading}>
@@ -315,7 +315,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
                   {customer.email ? (
                     <a
                       href={`mailto:${customer.email}`}
-                      className="text-sm text-blue-600 hover:underline"
+                      className="text-sm text-primary hover:underline"
                     >
                       {customer.email}
                     </a>
@@ -335,14 +335,14 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
 
             {/* Main Address */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Main Address</p>
+              <p className="text-sm font-medium text-muted-foreground">Main Address</p>
               {editingField === 'mainAddress' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="text"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-input px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('mainAddress')} disabled={loading}>
@@ -368,13 +368,13 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
 
             {/* Notes */}
             <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Notes</p>
+              <p className="text-sm font-medium text-muted-foreground">Notes</p>
               {editingField === 'notes' ? (
                 <div className="mt-1">
                   <textarea
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="w-full rounded-md border border-input px-2 py-1 text-sm"
                     rows={4}
                     autoFocus
                   />
@@ -417,30 +417,30 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">
                       Project Name
                     </th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">
                       Type
                     </th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">
                       Status
                     </th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">
                       Contractor
                     </th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                    <th className="px-4 py-2 text-left text-sm font-medium text-muted-foreground">
                       Opened Date
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {customer.permitPackages.map((permit) => (
-                    <tr key={permit.id} className="border-b hover:bg-gray-50">
+                    <tr key={permit.id} className="border-b hover:bg-muted/40">
                       <td className="px-4 py-2">
                         <Link
                           href={`/permits/${permit.id}`}
-                          className="text-sm text-blue-600 hover:underline"
+                          className="text-sm text-primary hover:underline"
                         >
                           {permit.projectName}
                         </Link>
@@ -452,7 +452,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
                       <td className="px-4 py-2">
                         <Link
                           href={`/contractors/${permit.contractor.id}`}
-                          className="text-sm text-blue-600 hover:underline"
+                          className="text-sm text-primary hover:underline"
                         >
                           {permit.contractor.companyName}
                         </Link>
@@ -466,7 +466,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
               </table>
             </div>
           ) : (
-            <p className="text-gray-500">No permit packages for this customer</p>
+            <p className="text-muted-foreground">No permit packages for this customer</p>
           )}
         </CardContent>
       </Card>

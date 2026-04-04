@@ -58,34 +58,42 @@ export function formatFileSize(bytes: number): string {
 /**
  * Get status badge color class
  */
+/**
+ * Status chip colors — opacity backgrounds + contrasting text for light/dark.
+ */
 export function getStatusColor(status: string): string {
   const statusColors: Record<string, string> = {
     // Permit Status
-    'New': 'bg-gray-100 text-gray-800',
-    'Submitted': 'bg-blue-100 text-blue-800',
-    'InReview': 'bg-yellow-100 text-yellow-800',
-    'RevisionsNeeded': 'bg-orange-100 text-orange-800',
-    'Approved': 'bg-green-100 text-green-800',
-    'Issued': 'bg-green-200 text-green-900',
-    'Inspections': 'bg-purple-100 text-purple-800',
-    'FinaledClosed': 'bg-gray-200 text-gray-900',
-    'Canceled': 'bg-red-100 text-red-800',
+    New: "bg-slate-500/15 text-slate-800 dark:text-slate-200",
+    Submitted: "bg-blue-500/15 text-blue-800 dark:text-blue-200",
+    InReview: "bg-amber-500/15 text-amber-900 dark:text-amber-200",
+    RevisionsNeeded: "bg-orange-500/15 text-orange-900 dark:text-orange-200",
+    Approved: "bg-emerald-500/15 text-emerald-900 dark:text-emerald-200",
+    Issued: "bg-teal-500/15 text-teal-900 dark:text-teal-200",
+    Inspections: "bg-violet-500/15 text-violet-900 dark:text-violet-200",
+    FinaledClosed: "bg-slate-500/15 text-slate-800 dark:text-slate-200",
+    Canceled: "bg-red-500/15 text-red-800 dark:text-red-200",
     // Billing Status
-    'NotSent': 'bg-gray-100 text-gray-800',
-    'SentToBilling': 'bg-blue-100 text-blue-800',
-    'Billed': 'bg-yellow-100 text-yellow-800',
-    'Paid': 'bg-green-100 text-green-800',
+    NotSent: "bg-slate-500/15 text-slate-800 dark:text-slate-200",
+    SentToBilling: "bg-blue-500/15 text-blue-800 dark:text-blue-200",
+    Billed: "bg-amber-500/15 text-amber-900 dark:text-amber-200",
+    Paid: "bg-emerald-500/15 text-emerald-900 dark:text-emerald-200",
     // Document Status
-    'Pending': 'bg-gray-100 text-gray-800',
-    'Verified': 'bg-green-100 text-green-800',
-    'Rejected': 'bg-red-100 text-red-800',
+    Pending: "bg-slate-500/15 text-slate-800 dark:text-slate-200",
+    Verified: "bg-emerald-500/15 text-emerald-900 dark:text-emerald-200",
+    Rejected: "bg-red-500/15 text-red-800 dark:text-red-200",
     // Task Status
-    'NotStarted': 'bg-gray-100 text-gray-800',
-    'InProgress': 'bg-blue-100 text-blue-800',
-    'Waiting': 'bg-yellow-100 text-yellow-800',
-    'Completed': 'bg-green-100 text-green-800',
-  }
-  return statusColors[status] || 'bg-gray-100 text-gray-800'
+    NotStarted: "bg-slate-500/15 text-slate-800 dark:text-slate-200",
+    InProgress: "bg-blue-500/15 text-blue-800 dark:text-blue-200",
+    Waiting: "bg-amber-500/15 text-amber-900 dark:text-amber-200",
+    Completed: "bg-emerald-500/15 text-emerald-900 dark:text-emerald-200",
+    // Roles
+    admin: "bg-violet-500/15 text-violet-900 dark:text-violet-200",
+    coordinator: "bg-blue-500/15 text-blue-800 dark:text-blue-200",
+    reviewer: "bg-teal-500/15 text-teal-900 dark:text-teal-200",
+    user: "bg-slate-500/15 text-slate-800 dark:text-slate-200",
+  };
+  return statusColors[status] || "bg-muted text-muted-foreground";
 }
 
 /**

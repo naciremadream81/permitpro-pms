@@ -131,7 +131,7 @@ export default function NewCustomerPage() {
     <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">New Customer</h1>
+          <h1 className="text-3xl font-bold text-foreground">New Customer</h1>
           <Link href="/customers">
             <Button variant="outline">Cancel</Button>
           </Link>
@@ -150,7 +150,7 @@ export default function NewCustomerPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="name" className="block text-sm font-medium text-muted-foreground mb-1">
                   Customer Name *
                 </label>
                 <input
@@ -160,13 +160,13 @@ export default function NewCustomerPage() {
                   required
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="Enter customer name"
                 />
               </div>
 
               <div>
-                <label htmlFor="contactName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="contactName" className="block text-sm font-medium text-muted-foreground mb-1">
                   Contact Name
                 </label>
                 <input
@@ -175,14 +175,14 @@ export default function NewCustomerPage() {
                   name="contactName"
                   value={formData.contactName}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="Enter contact person name"
                 />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="phone" className="block text-sm font-medium text-muted-foreground mb-1">
                     Phone
                   </label>
                   <input
@@ -191,14 +191,14 @@ export default function NewCustomerPage() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                     placeholder="(555) 123-4567"
                     maxLength={14}
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-1">
                     Email
                   </label>
                   <input
@@ -207,14 +207,14 @@ export default function NewCustomerPage() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                     placeholder="customer@example.com"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="mainAddress" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="mainAddress" className="block text-sm font-medium text-muted-foreground mb-1">
                   Main Address
                 </label>
                 <input
@@ -223,13 +223,13 @@ export default function NewCustomerPage() {
                   name="mainAddress"
                   value={formData.mainAddress}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="123 Main Street, City, State ZIP"
                 />
               </div>
 
               <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="notes" className="block text-sm font-medium text-muted-foreground mb-1">
                   Notes
                 </label>
                 <textarea
@@ -238,7 +238,7 @@ export default function NewCustomerPage() {
                   value={formData.notes}
                   onChange={handleChange}
                   rows={4}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="Additional notes about the customer..."
                 />
               </div>

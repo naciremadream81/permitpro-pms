@@ -43,7 +43,7 @@ export default function NewJurisdictionPage() {
 
   return (
     <div className="p-6 max-w-lg mx-auto">
-      <h1 className="text-2xl font-semibold text-gray-900 mb-6">New Jurisdiction</h1>
+      <h1 className="text-2xl font-semibold text-foreground mb-6">New Jurisdiction</h1>
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -53,19 +53,19 @@ export default function NewJurisdictionPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
             County Name <span className="text-red-500">*</span>
           </label>
           <input
             name="name"
             required
             placeholder="Hillsborough County"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
             County Code <span className="text-red-500">*</span>
           </label>
           <input
@@ -73,32 +73,32 @@ export default function NewJurisdictionPage() {
             required
             placeholder="HILLSBOROUGH"
             maxLength={20}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-input rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
           />
-          <p className="text-xs text-gray-400 mt-1">Unique identifier. Cannot be changed after creation.</p>
+          <p className="text-xs text-muted-foreground/80 mt-1">Unique identifier. Cannot be changed after creation.</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
             State
           </label>
           <input
             name="state"
             defaultValue="FL"
             maxLength={2}
-            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-24 border border-input rounded-lg px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">
             Notes
           </label>
           <textarea
             name="notes"
             rows={3}
             placeholder="Any notes about this jurisdiction's submission process…"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -106,14 +106,14 @@ export default function NewJurisdictionPage() {
           <button
             type="submit"
             disabled={saving}
-            className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="bg-primary text-primary-foreground px-5 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
             {saving ? 'Creating…' : 'Create Jurisdiction'}
           </button>
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-5 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+            className="px-5 py-2 rounded-lg text-sm font-medium border border-input text-muted-foreground hover:bg-muted/40 transition-colors"
           >
             Cancel
           </button>

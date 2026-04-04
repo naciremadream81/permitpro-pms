@@ -37,8 +37,8 @@ export default async function ExportProfilesPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Export Profiles</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Jurisdiction-specific ZIP assembly templates</p>
+            <h1 className="text-2xl font-bold text-foreground">Export Profiles</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Jurisdiction-specific ZIP assembly templates</p>
           </div>
           <Button asChild>
             <Link href="/admin/export-profiles/new">
@@ -50,9 +50,9 @@ export default async function ExportProfilesPage() {
         {profiles.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <Package className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 font-medium">No export profiles yet</p>
-              <p className="text-sm text-gray-400 mt-1">Create profiles to control how permit packages are zipped for submission.</p>
+              <Package className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground font-medium">No export profiles yet</p>
+              <p className="text-sm text-muted-foreground/80 mt-1">Create profiles to control how permit packages are zipped for submission.</p>
               <Button asChild className="mt-4">
                 <Link href="/admin/export-profiles/new">Create first profile</Link>
               </Button>
@@ -67,21 +67,21 @@ export default async function ExportProfilesPage() {
                     <div>
                       <CardTitle className="text-base">{profile.name}</CardTitle>
                       {profile.jurisdiction && (
-                        <p className="text-xs text-gray-500 mt-0.5">{profile.jurisdiction.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{profile.jurisdiction.name}</p>
                       )}
                     </div>
                     {profile.isDefault && (
-                      <span className="text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 font-medium">Default</span>
+                      <span className="text-xs bg-primary/15 text-primary rounded-full px-2 py-0.5 font-medium">Default</span>
                     )}
                   </div>
                 </CardHeader>
                 <CardContent>
                   {profile.description && (
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{profile.description}</p>
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{profile.description}</p>
                   )}
-                  <div className="flex items-center justify-between text-xs text-gray-500">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{profile._count.exportLogs} export{profile._count.exportLogs !== 1 ? 's' : ''}</span>
-                    <Link href={`/admin/export-profiles/${profile.id}`} className="text-blue-600 hover:underline">
+                    <Link href={`/admin/export-profiles/${profile.id}`} className="text-primary hover:underline">
                       Edit
                     </Link>
                   </div>

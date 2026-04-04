@@ -201,7 +201,7 @@ export default function NewPermitPage() {
     return (
       <AppLayout>
         <div className="flex items-center justify-center py-12">
-          <p className="text-gray-600">Loading form data...</p>
+          <p className="text-muted-foreground">Loading form data...</p>
         </div>
       </AppLayout>
     )
@@ -211,7 +211,7 @@ export default function NewPermitPage() {
     <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">New Permit</h1>
+          <h1 className="text-3xl font-bold text-foreground">New Permit</h1>
           <Link href="/permits">
             <Button variant="outline">Cancel</Button>
           </Link>
@@ -231,7 +231,7 @@ export default function NewPermitPage() {
 
               {/* Customer Name (Text Input) */}
               <div>
-                <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="customerName" className="block text-sm font-medium text-muted-foreground mb-1">
                   Customer Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -241,17 +241,17 @@ export default function NewPermitPage() {
                   required
                   value={formData.customerName}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-ring"
                   placeholder="Enter customer name (e.g., ABC Development LLC)"
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Enter the customer name. A new customer will be created if one doesn&apos;t exist.
                 </p>
               </div>
 
               {/* Contractor Selection */}
               <div>
-                <label htmlFor="contractorId" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="contractorId" className="block text-sm font-medium text-muted-foreground mb-1">
                   Contractor <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -260,7 +260,7 @@ export default function NewPermitPage() {
                   required
                   value={formData.contractorId}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-ring"
                 >
                   <option value="">Select a contractor...</option>
                   {contractors.map((contractor) => (
@@ -273,7 +273,7 @@ export default function NewPermitPage() {
 
               {/* Project Name */}
               <div>
-                <label htmlFor="projectName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="projectName" className="block text-sm font-medium text-muted-foreground mb-1">
                   Project Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -283,14 +283,14 @@ export default function NewPermitPage() {
                   required
                   value={formData.projectName}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-ring"
                   placeholder="e.g., Office Building Renovation"
                 />
               </div>
 
               {/* Project Address */}
               <div>
-                <label htmlFor="projectAddress" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="projectAddress" className="block text-sm font-medium text-muted-foreground mb-1">
                   Project Address <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -300,14 +300,14 @@ export default function NewPermitPage() {
                   required
                   value={formData.projectAddress}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-ring"
                   placeholder="e.g., 123 Main Street, City, State ZIP"
                 />
               </div>
 
               {/* Permit Type */}
               <div>
-                <label htmlFor="permitType" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="permitType" className="block text-sm font-medium text-muted-foreground mb-1">
                   Permit Type <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -316,7 +316,7 @@ export default function NewPermitPage() {
                   required
                   value={formData.permitType}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-ring"
                 >
                   <option value="Building">Building</option>
                   <option value="Electrical">Electrical</option>
@@ -332,7 +332,7 @@ export default function NewPermitPage() {
 
               {/* County */}
               <div>
-                <label htmlFor="county" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="county" className="block text-sm font-medium text-muted-foreground mb-1">
                   County
                 </label>
                 <select
@@ -340,7 +340,7 @@ export default function NewPermitPage() {
                   name="county"
                   value={formData.county}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-ring"
                 >
                   <option value="">Select a county...</option>
                   {FLORIDA_COUNTIES.map((c) => (
@@ -351,7 +351,7 @@ export default function NewPermitPage() {
 
               {/* Jurisdiction Notes */}
               <div>
-                <label htmlFor="jurisdictionNotes" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="jurisdictionNotes" className="block text-sm font-medium text-muted-foreground mb-1">
                   Jurisdiction Notes
                 </label>
                 <textarea
@@ -360,14 +360,14 @@ export default function NewPermitPage() {
                   rows={3}
                   value={formData.jurisdictionNotes}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-ring"
                   placeholder="Any special requirements or notes about the jurisdiction..."
                 />
               </div>
 
               {/* Target Issue Date */}
               <div>
-                <label htmlFor="targetIssueDate" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="targetIssueDate" className="block text-sm font-medium text-muted-foreground mb-1">
                   Target Issue Date
                 </label>
                 <input
@@ -376,13 +376,13 @@ export default function NewPermitPage() {
                   name="targetIssueDate"
                   value={formData.targetIssueDate}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-ring"
                 />
               </div>
 
               {/* Billing Notes */}
               <div>
-                <label htmlFor="billingNotes" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="billingNotes" className="block text-sm font-medium text-muted-foreground mb-1">
                   Billing Notes
                 </label>
                 <textarea
@@ -391,7 +391,7 @@ export default function NewPermitPage() {
                   rows={2}
                   value={formData.billingNotes}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-ring"
                   placeholder="Any notes for the billing department..."
                 />
               </div>

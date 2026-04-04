@@ -196,7 +196,7 @@ export default function NewContractorPage() {
     <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">New Contractor</h1>
+          <h1 className="text-3xl font-bold text-foreground">New Contractor</h1>
           <Link href="/contractors">
             <Button variant="outline">Cancel</Button>
           </Link>
@@ -215,7 +215,7 @@ export default function NewContractorPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="companyName" className="block text-sm font-medium text-muted-foreground mb-1">
                   Company Name *
                 </label>
                 <input
@@ -225,13 +225,13 @@ export default function NewContractorPage() {
                   required
                   value={formData.companyName}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="Enter company name"
                 />
               </div>
 
               <div>
-                <label htmlFor="licenseNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="licenseNumber" className="block text-sm font-medium text-muted-foreground mb-1">
                   License Number
                 </label>
                 <input
@@ -240,14 +240,14 @@ export default function NewContractorPage() {
                   name="licenseNumber"
                   value={formData.licenseNumber}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="Enter license number"
                 />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="phone" className="block text-sm font-medium text-muted-foreground mb-1">
                     Phone
                   </label>
                   <input
@@ -256,13 +256,13 @@ export default function NewContractorPage() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                     placeholder="(555) 555-5555"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-1">
                     Email
                   </label>
                   <input
@@ -271,14 +271,14 @@ export default function NewContractorPage() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                     placeholder="contractor@example.com"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="address" className="block text-sm font-medium text-muted-foreground mb-1">
                   Address
                 </label>
                 <input
@@ -287,13 +287,13 @@ export default function NewContractorPage() {
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="Enter address"
                 />
               </div>
 
               <div>
-                <label htmlFor="preferredContactMethod" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="preferredContactMethod" className="block text-sm font-medium text-muted-foreground mb-1">
                   Preferred Contact Method
                 </label>
                 <select
@@ -301,7 +301,7 @@ export default function NewContractorPage() {
                   name="preferredContactMethod"
                   value={formData.preferredContactMethod}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   <option value="">Select...</option>
                   <option value="phone">Phone</option>
@@ -311,10 +311,10 @@ export default function NewContractorPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Specialties *
                 </label>
-                <p className="text-xs text-gray-500 mb-3">
+                <p className="text-xs text-muted-foreground mb-3">
                   Select all specialties that apply to this contractor
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -329,14 +329,14 @@ export default function NewContractorPage() {
                         onChange={(e) =>
                           handleSpecialtyChange(specialty, e.target.checked)
                         }
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-input text-primary focus:ring-ring"
                       />
-                      <span className="text-sm text-gray-700">{specialty}</span>
+                      <span className="text-sm text-muted-foreground">{specialty}</span>
                     </label>
                   ))}
                 </div>
                 <div className="mt-3">
-                  <label htmlFor="otherSpecialty" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="otherSpecialty" className="block text-sm font-medium text-muted-foreground mb-1">
                     Other Specialty
                   </label>
                   <input
@@ -345,7 +345,7 @@ export default function NewContractorPage() {
                     name="otherSpecialty"
                     value={formData.otherSpecialty}
                     onChange={handleChange}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                     placeholder="Enter other specialty (optional)"
                   />
                 </div>
@@ -353,7 +353,7 @@ export default function NewContractorPage() {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label htmlFor="workersCompExpirationDate" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="workersCompExpirationDate" className="block text-sm font-medium text-muted-foreground mb-1">
                     Workers Comp Expiration Date
                   </label>
                   <input
@@ -362,12 +362,12 @@ export default function NewContractorPage() {
                     name="workersCompExpirationDate"
                     value={formData.workersCompExpirationDate}
                     onChange={handleChange}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="liabilityExpirationDate" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="liabilityExpirationDate" className="block text-sm font-medium text-muted-foreground mb-1">
                     Liability Expiration Date
                   </label>
                   <input
@@ -376,13 +376,13 @@ export default function NewContractorPage() {
                     name="liabilityExpirationDate"
                     value={formData.liabilityExpirationDate}
                     onChange={handleChange}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="notes" className="block text-sm font-medium text-muted-foreground mb-1">
                   Notes
                 </label>
                 <textarea
@@ -391,7 +391,7 @@ export default function NewContractorPage() {
                   value={formData.notes}
                   onChange={handleChange}
                   rows={4}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full rounded-md border border-input px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="Add any additional notes about this contractor..."
                 />
               </div>

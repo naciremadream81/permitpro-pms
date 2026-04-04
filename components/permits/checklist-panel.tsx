@@ -53,12 +53,12 @@ interface Props {
 }
 
 const STATUS_CONFIG: Record<ChecklistItemStatus, { label: string; icon: typeof CheckCircle2; color: string }> = {
-  PENDING:        { label: 'Pending',      icon: Clock,          color: 'text-gray-400' },
+  PENDING:        { label: 'Pending',      icon: Clock,          color: 'text-muted-foreground/80' },
   UPLOADED:       { label: 'Uploaded',     icon: AlertCircle,    color: 'text-blue-500' },
   VERIFIED:       { label: 'Verified',     icon: CheckCircle2,   color: 'text-green-500' },
   REJECTED:       { label: 'Rejected',     icon: XCircle,        color: 'text-red-500' },
   WAIVED:         { label: 'Waived',       icon: MinusCircle,    color: 'text-yellow-500' },
-  NOT_APPLICABLE: { label: 'N/A',          icon: MinusCircle,    color: 'text-gray-300' },
+  NOT_APPLICABLE: { label: 'N/A',          icon: MinusCircle,    color: 'text-muted-foreground' },
 }
 
 export function ChecklistPanel({ packageId, isAdmin = false }: Props) {
@@ -111,13 +111,13 @@ export function ChecklistPanel({ packageId, isAdmin = false }: Props) {
 
   if (loading) {
     return (
-      <div className="p-4 text-sm text-gray-400">Loading checklist…</div>
+      <div className="p-4 text-sm text-muted-foreground/80">Loading checklist…</div>
     )
   }
 
   if (items.length === 0) {
     return (
-      <div className="p-6 text-center text-gray-400 text-sm border border-dashed border-gray-200 rounded-xl">
+      <div className="p-6 text-center text-muted-foreground/80 text-sm border border-dashed border-border rounded-xl">
         <p className="font-medium">No checklist items</p>
         <p className="mt-1">Link a jurisdiction to this package to auto-generate a checklist.</p>
       </div>
@@ -129,11 +129,11 @@ export function ChecklistPanel({ packageId, isAdmin = false }: Props) {
       {/* Progress bar + readiness badge */}
       <div className="flex items-center gap-4">
         <div className="flex-1">
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
             <span>Checklist completion</span>
             <span className="font-medium">{completionPct}%</span>
           </div>
-          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
                 completionPct === 100 ? 'bg-green-500' : completionPct >= 50 ? 'bg-blue-500' : 'bg-orange-400'
@@ -186,7 +186,7 @@ export function ChecklistPanel({ packageId, isAdmin = false }: Props) {
       )}
 
       {/* Items */}
-      <div className="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
+      <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
         {items.map((item) => {
           const cfg = STATUS_CONFIG[item.status]
           const Icon = cfg.icon
@@ -196,13 +196,13 @@ export function ChecklistPanel({ packageId, isAdmin = false }: Props) {
           return (
             <div key={item.id} className={`${isBlocked ? 'bg-red-50/40' : ''}`}>
               <button
-                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
                 onClick={() => setExpandedId(isExpanded ? null : item.id)}
               >
                 <Icon className={`w-4 h-4 shrink-0 ${cfg.color}`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-900 truncate">
+                    <span className="text-sm font-medium text-foreground truncate">
                       {item.requirement.documentName}
                     </span>
                     {item.requirement.isMandatoryForSubmission && (
@@ -211,23 +211,23 @@ export function ChecklistPanel({ packageId, isAdmin = false }: Props) {
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-400 mt-0.5">
+                  <div className="text-xs text-muted-foreground/80 mt-0.5">
                     {item.requirement.documentCategory}
                     {item.document && ` · ${item.document.fileName}`}
                   </div>
                 </div>
                 <span className={`text-xs font-medium ${cfg.color} shrink-0`}>{cfg.label}</span>
                 {isExpanded ? (
-                  <ChevronUp className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <ChevronUp className="w-3.5 h-3.5 text-muted-foreground/80 shrink-0" />
                 ) : (
-                  <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground/80 shrink-0" />
                 )}
               </button>
 
               {isExpanded && (
-                <div className="px-4 pb-4 pt-1 bg-gray-50 border-t border-gray-100 space-y-3">
+                <div className="px-4 pb-4 pt-1 bg-muted/40 border-t border-border space-y-3">
                   {item.requirement.description && (
-                    <p className="text-xs text-gray-600">{item.requirement.description}</p>
+                    <p className="text-xs text-muted-foreground">{item.requirement.description}</p>
                   )}
                   {item.requirement.helpText && (
                     <p className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
@@ -235,11 +235,11 @@ export function ChecklistPanel({ packageId, isAdmin = false }: Props) {
                     </p>
                   )}
                   {item.document && (
-                    <div className="text-xs text-gray-600 space-y-0.5">
+                    <div className="text-xs text-muted-foreground space-y-0.5">
                       <p>
                         <span className="font-medium">File:</span> {item.document.fileName}{' '}
                         {item.document.versionTag && (
-                          <span className="text-gray-400">({item.document.versionTag})</span>
+                          <span className="text-muted-foreground/80">({item.document.versionTag})</span>
                         )}
                       </p>
                       <p>
@@ -260,7 +260,7 @@ export function ChecklistPanel({ packageId, isAdmin = false }: Props) {
                     </div>
                   )}
                   {item.notes && (
-                    <p className="text-xs text-gray-500 italic">{item.notes}</p>
+                    <p className="text-xs text-muted-foreground italic">{item.notes}</p>
                   )}
 
                   {/* Admin waiver action */}
@@ -272,7 +272,7 @@ export function ChecklistPanel({ packageId, isAdmin = false }: Props) {
                           onChange={(e) => setWaiverReason(e.target.value)}
                           placeholder="Waiver reason (min 10 characters)…"
                           rows={2}
-                          className="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-yellow-400"
+                          className="w-full text-xs border border-input rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-yellow-400"
                         />
                         <div className="flex gap-2">
                           <button
@@ -284,7 +284,7 @@ export function ChecklistPanel({ packageId, isAdmin = false }: Props) {
                           </button>
                           <button
                             onClick={() => { setWaiverItemId(null); setWaiverReason('') }}
-                            className="text-xs text-gray-500 px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 transition-colors"
+                            className="text-xs text-muted-foreground px-3 py-1 rounded border border-input hover:bg-muted transition-colors"
                           >
                             Cancel
                           </button>
