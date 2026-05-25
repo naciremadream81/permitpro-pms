@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:critical": "node scripts/test-critical-correctness.mjs",
+    "test:critical": "tsx scripts/test-critical-correctness.mjs",
     "db:setup": "./setup-db.sh",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force && npm run db:seed",

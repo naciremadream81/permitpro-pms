@@ -2,10 +2,15 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
+import seedData from '../lib/counties-seed-data'
+import permitTypeHelpers from '../lib/permit-types'
 
 const require = createRequire(import.meta.url)
 const Database = require('better-sqlite3')
+const { DEFAULT_PERMIT_TYPES } = seedData
+const { ensureDefaultPermitTypes } = permitTypeHelpers
 
 const repoRoot = path.resolve(new URL('..', import.meta.url).pathname)
 
@@ -95,14 +100,99 @@ function testSeedBatchMigrationPreservesAuditData() {
 }
 
 function testDockerEntrypointFailsFastOnMigrationErrors() {
-  const entrypoint = readRepoFile('docker-entrypoint.sh')
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'permitpro-entrypoint-'))
+  const nodeMarker = path.join(tempDir, 'node-started')
 
-  assert.match(entrypoint, /prisma migrate deploy/, 'entrypoint must run Prisma migrations before startup')
-  assert.doesNotMatch(
-    entrypoint,
-    /prisma migrate deploy\s*\|\|/,
-    'entrypoint must not swallow Prisma migration failures'
+  fs.writeFileSync(
+    path.join(tempDir, 'prisma'),
+    '#!/bin/sh\n[ "$1 $2" = "migrate deploy" ] || exit 64\nexit 42\n',
+    { mode: 0o755 }
   )
+  fs.writeFileSync(
+    path.join(tempDir, 'node'),
+    `#!/bin/sh\ntouch "${nodeMarker}"\nexit 0\n`,
+    { mode: 0o755 }
+  )
+
+  try {
+    const result = spawnSync(path.join(repoRoot, 'docker-entrypoint.sh'), {
+      cwd: repoRoot,
+      env: { ...process.env, PATH: `${tempDir}:${process.env.PATH}` },
+      encoding: 'utf8',
+    })
+
+    assert.equal(result.status, 42, 'entrypoint must exit with the Prisma failure status')
+    assert.equal(fs.existsSync(nodeMarker), false, 'entrypoint must not start Next.js after migration failure')
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true })
+  }
+}
+
+async function testPermitTypeDefaultsBackfillPartialTables() {
+  const rows = [
+    {
+      id: 'custom_1',
+      code: 'Custom',
+      label: 'Custom',
+      description: null,
+      isBuiltIn: false,
+      isActive: true,
+      order: 99,
+    },
+    {
+      id: 'Building',
+      code: 'Building',
+      label: 'Building',
+      description: 'New construction, additions, and alterations',
+      isBuiltIn: true,
+      isActive: true,
+      order: 1,
+    },
+  ]
+  const upsertedCodes = []
+  const db = {
+    permitTypeDefinition: {
+      findMany: async () => [...rows].sort((a, b) => a.order - b.order || a.label.localeCompare(b.label)),
+      upsert: async ({ where, create }) => {
+        upsertedCodes.push(where.code)
+        const existing = rows.find(row => row.code === where.code)
+        if (existing) return existing
+
+        const row = {
+          id: create.code,
+          code: create.code,
+          label: create.label,
+          description: create.description,
+          isBuiltIn: create.isBuiltIn,
+          isActive: true,
+          order: create.order,
+          createdBy: create.createdBy,
+        }
+        rows.push(row)
+        return row
+      },
+    },
+  }
+
+  const result = await ensureDefaultPermitTypes(db, 'admin_1')
+  const resultCodes = new Set(result.map(row => row.code))
+
+  for (const permitType of DEFAULT_PERMIT_TYPES) {
+    assert.ok(resultCodes.has(permitType.code), `missing default permit type ${permitType.code}`)
+  }
+  assert.ok(resultCodes.has('Custom'), 'custom permit types must be preserved')
+  assert.equal(upsertedCodes.includes('Building'), false, 'existing defaults should not be rewritten')
+
+  const missingDefaultCodes = DEFAULT_PERMIT_TYPES
+    .map(permitType => permitType.code)
+    .filter(code => code !== 'Building')
+  assert.deepEqual(upsertedCodes, missingDefaultCodes)
+
+  for (const code of missingDefaultCodes) {
+    const row = rows.find(permitType => permitType.code === code)
+    assert.equal(row.isBuiltIn, true)
+    assert.equal(row.createdBy, 'admin_1')
+  }
 }
 
 function testPermitTypesPageDoesNotRunFullCountySeed() {
@@ -115,8 +205,9 @@ function testPermitTypesPageDoesNotRunFullCountySeed() {
   )
 }
 
-testSeedBatchMigrationPreservesAuditData()
-testDockerEntrypointFailsFastOnMigrationErrors()
-testPermitTypesPageDoesNotRunFullCountySeed()
+await testSeedBatchMigrationPreservesAuditData()
+await testDockerEntrypointFailsFastOnMigrationErrors()
+await testPermitTypeDefaultsBackfillPartialTables()
+await testPermitTypesPageDoesNotRunFullCountySeed()
 
 console.log('Critical correctness regression checks passed')
