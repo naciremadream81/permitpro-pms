@@ -5,7 +5,7 @@ echo "Starting PermitPro PMS..."
 
 # Run database migrations
 echo "Running database migrations..."
-prisma migrate deploy || echo "Migration failed or already up to date"
+prisma migrate deploy
 
 # Start the application
 echo "Starting Next.js application..."

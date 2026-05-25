@@ -31,8 +31,6 @@ export default function PermitTypesPage() {
   async function fetchTypes() {
     setLoading(true)
     try {
-      // Trigger seed if empty
-      await fetch('/api/admin/counties/seed', { method: 'POST' }).catch(() => {})
       const res = await fetch('/api/admin/permit-types')
       const json = await res.json()
       setTypes(json.data ?? [])
