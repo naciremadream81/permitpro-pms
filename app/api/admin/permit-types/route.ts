@@ -6,6 +6,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
+import { DEFAULT_PERMIT_TYPES } from '@/lib/counties-seed-data'
+
+async function ensureBuiltInPermitTypes(createdBy: string) {
+  for (const permitType of DEFAULT_PERMIT_TYPES) {
+    await prisma.permitTypeDefinition.upsert({
+      where: { code: permitType.code },
+      update: {},
+      create: {
+        code: permitType.code,
+        label: permitType.label,
+        description: permitType.description,
+        isBuiltIn: true,
+        isActive: true,
+        order: permitType.order,
+        createdBy,
+      },
+    })
+  }
+}
 
 export async function GET() {
   try {
@@ -16,9 +35,20 @@ export async function GET() {
       orderBy: [{ order: 'asc' }, { label: 'asc' }],
     })
 
-    // Seed built-in types if table is empty
-    if (types.length === 0) {
-      return NextResponse.json({ data: [] })
+    const existingCodes = new Set(types.map((type) => type.code))
+    const hasMissingBuiltIns = DEFAULT_PERMIT_TYPES.some((type) => !existingCodes.has(type.code))
+
+    if (hasMissingBuiltIns) {
+      if (session.user?.role !== 'admin') {
+        return NextResponse.json({ data: types })
+      }
+
+      await ensureBuiltInPermitTypes(session.user?.id as string)
+      const refreshedTypes = await prisma.permitTypeDefinition.findMany({
+        orderBy: [{ order: 'asc' }, { label: 'asc' }],
+      })
+
+      return NextResponse.json({ data: refreshedTypes })
     }
 
     return NextResponse.json({ data: types })
