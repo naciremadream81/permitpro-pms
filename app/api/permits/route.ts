@@ -6,12 +6,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth-helpers'
+import { getSession, ForbiddenError } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { permitPackageSchema } from '@/lib/validations'
 import { generateChecklist } from '@/lib/checklist-engine'
 import { Prisma } from '@prisma/client'
 import { FL_COUNTIES } from '@/lib/counties-seed-data'
+import { enforce, normalizeRole } from '@/lib/permissions'
 
 function normalizeCountyName(value: string) {
   return value
@@ -138,6 +139,7 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    enforce(normalizeRole(session.user?.role), 'create', 'package')
 
     const body = await request.json()
     
@@ -193,6 +195,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: permitPackage }, { status: 201 })
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
         { error: 'Validation error', details: error },

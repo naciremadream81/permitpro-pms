@@ -26,6 +26,7 @@ export async function POST(
 
     const role = normalizeRole(session.user?.role)
     if (!role) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    enforce(role, 'update', 'package')
 
     const body = await request.json()
     const validatedData = permitStatusUpdateSchema.parse(body)
