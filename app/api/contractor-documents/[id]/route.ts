@@ -40,6 +40,8 @@ export async function PATCH(
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const role = normalizeRole(session.user?.role)
+    if (!role) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
     const body = await request.json()
 
     // Verification requires coordinator or admin

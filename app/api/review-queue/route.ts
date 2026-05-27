@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const role = normalizeRole(session.user?.role)
+    if (!role) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
     const { searchParams } = request.nextUrl
     const status = searchParams.get('status')
 

@@ -51,6 +51,8 @@ export async function POST(
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const role = normalizeRole(session.user?.role)
+    if (!role) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
     const body = await request.json()
 
     const permit = await prisma.permitPackage.findUnique({ where: { id: params.id } })

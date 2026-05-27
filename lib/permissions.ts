@@ -149,7 +149,7 @@ const MATRIX: PermissionMatrix = {
  *   return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
  * }
  */
-export function can(role: string, action: Action, resource: Resource): boolean {
+export function can(role: string | null | undefined, action: Action, resource: Resource): boolean {
   const allowed = MATRIX[resource]?.[action]
   if (!allowed) return false
   return allowed.includes(role as UserRole)
@@ -159,7 +159,7 @@ export function can(role: string, action: Action, resource: Resource): boolean {
  * Throws a Forbidden error if the role is not permitted.
  * Use in API routes that already have a session.
  */
-export function enforce(role: string, action: Action, resource: Resource): void {
+export function enforce(role: string | null | undefined, action: Action, resource: Resource): void {
   if (!can(role, action, resource)) {
     throw new ForbiddenError(`Role '${role}' cannot '${action}' on '${resource}'`)
   }
@@ -179,9 +179,10 @@ export class UnauthorizedError extends Error {
   }
 }
 
-/** Normalize legacy role strings to the canonical UserRole union */
-export function normalizeRole(role: string | null | undefined): UserRole {
+/** Normalize role strings to the canonical UserRole union, failing closed on unknown values. */
+export function normalizeRole(role: string | null | undefined): UserRole | undefined {
   if (role === 'admin') return 'admin'
   if (role === 'reviewer') return 'reviewer'
-  return 'coordinator' // 'user' and anything unknown defaults to coordinator
+  if (role === 'coordinator') return 'coordinator'
+  return undefined
 }

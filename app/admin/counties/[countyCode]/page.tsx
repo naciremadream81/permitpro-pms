@@ -341,7 +341,7 @@ export default function CountyDetailPage() {
       const found = all.find((j: Jurisdiction) => j.countyCode === countyCode)
       if (found) {
         // Fetch full detail with requirements
-        const detail = await fetch(`/api/jurisdictions/${found.id}`)
+        const detail = await fetch(`/api/jurisdictions/${found.id}?includeInactive=true`)
         const d = await detail.json()
         setJurisdiction(d.data)
       } else {

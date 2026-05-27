@@ -11,6 +11,37 @@ import { prisma } from '@/lib/prisma'
 import { permitPackageSchema } from '@/lib/validations'
 import { generateChecklist } from '@/lib/checklist-engine'
 import { Prisma } from '@prisma/client'
+import { FL_COUNTIES } from '@/lib/counties-seed-data'
+
+function normalizeCountyName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\./g, '')
+    .replace(/\s+county$/i, '')
+    .replace(/^st\s+/, 'saint ')
+    .replace(/\s+/g, ' ')
+}
+
+async function resolveJurisdictionId(
+  jurisdictionId: string | undefined,
+  county: string | undefined
+) {
+  if (jurisdictionId || !county) return jurisdictionId
+
+  const normalizedCounty = normalizeCountyName(county)
+  const countyMeta = FL_COUNTIES.find(
+    (candidate) => normalizeCountyName(candidate.name) === normalizedCounty
+  )
+  if (!countyMeta) return undefined
+
+  const jurisdiction = await prisma.jurisdiction.findUnique({
+    where: { countyCode: countyMeta.code },
+    select: { id: true },
+  })
+
+  return jurisdiction?.id
+}
 
 // GET /api/permits - List all permits with filters, search, and pagination
 export async function GET(request: NextRequest) {
@@ -116,10 +147,12 @@ export async function POST(request: NextRequest) {
     // Convert date strings to Date objects and structure for Prisma
     // Note: We use customerId/contractorId directly as Prisma accepts both formats at runtime
     const { customerId, contractorId, targetIssueDate, ...rest } = validatedData
+    const jurisdictionId = await resolveJurisdictionId(rest.jurisdictionId, rest.county)
     const data = {
       ...rest,
       customerId,
       contractorId,
+      ...(jurisdictionId ? { jurisdictionId } : {}),
       targetIssueDate: targetIssueDate ? new Date(targetIssueDate) : undefined,
     } as unknown as Parameters<typeof prisma.permitPackage.create>[0]['data']
 

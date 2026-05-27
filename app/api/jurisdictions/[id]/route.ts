@@ -9,18 +9,19 @@ import { prisma } from '@/lib/prisma'
 import { jurisdictionUpdateSchema } from '@/lib/validations'
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const includeInactive = request.nextUrl.searchParams.get('includeInactive') === 'true'
 
     const jurisdiction = await prisma.jurisdiction.findUnique({
       where: { id: params.id },
       include: {
         requirements: {
-          where: { isActive: true },
+          ...(includeInactive ? {} : { where: { isActive: true } }),
           orderBy: [{ permitTypes: 'asc' }, { order: 'asc' }],
         },
         exportProfiles: true,
