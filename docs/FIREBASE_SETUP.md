@@ -82,13 +82,14 @@ gcloud storage buckets create gs://BUCKET \
 
 ## Part D — Create the App Hosting backend (connects GitHub)
 
-App Hosting builds from a GitHub branch, so the repo must be pushed (it is). Decide the
-deploy branch first — typically **`main`**, so merge PR #1 before/after creating the backend.
+App Hosting builds from a GitHub branch. The app — including all the migration/checklist/
+storage work — is already pushed to **`master`** on this repo, so no merge step is needed.
 
 In the Firebase console (easiest for the GitHub OAuth step):
 1. **Build → App Hosting → Get started.**
-2. Authorize GitHub and select the repo **`Seandaniel1/permitpro-pms`**.
-3. **Live branch:** `main` (enable automatic rollouts on push).
+2. Authorize GitHub and select the repo **`naciremadream81/permitpro-pms`**.
+3. **Live branch:** `master` (enable automatic rollouts on push). Note: this repo's `main`
+   branch holds unrelated history — `master` is the source of truth for the deployed app.
 4. **Region:** `us-east1`. Root directory: `/`. Finish — it kicks off the first rollout.
 
 CLI equivalent:
