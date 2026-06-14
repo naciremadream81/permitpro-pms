@@ -77,8 +77,14 @@ as requested.
 - [x] Sean picked **Option 1** (free Postgres now; all-Firebase is a later roadmap item)
 - [x] Production SQLite snapshotted from the Docker container
       (`data/prod-snapshot-2026-06-12.db`, gitignored)
-- [x] Postgres schema migration generated: `supabase/migrations/0001_init_postgres.sql`
-      (23 tables, via scratch Prisma CLI in /tmp — repo CLI blocked by root-owned node_modules)
+- [x] Postgres schema migration generated: `supabase/migrations/20260612211348_init_permitpro_schema.sql`
+      (23 tables, via scratch Prisma CLI in /tmp — repo CLI blocked by root-owned node_modules).
+      **Filename version `20260612211348` matches the row already in the remote
+      `supabase_migrations.schema_migrations` (applied via MCP as `init_permitpro_schema`)**, so
+      `supabase db push` treats it as already applied and will NOT re-run the DDL. Do not rename
+      it to a different version — that would make `db push` re-run the schema and fail on duplicate
+      types/tables. If history ever diverges, reconcile with
+      `supabase migration repair --status applied 20260612211348` rather than force-pushing.
 - [x] Production data exported as FK-ordered Postgres inserts: `supabase/data/*.sql`
       (6,430 rows; **gitignored — contains PII + password hashes**;
       regenerate with `scripts/export-sqlite-to-postgres.py`)
