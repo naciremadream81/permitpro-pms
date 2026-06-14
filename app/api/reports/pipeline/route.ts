@@ -64,10 +64,13 @@ export async function GET(request: NextRequest) {
     const now = new Date()
 
     const rows = packages.map((pkg) => {
-      // Checklist completion
+      // Checklist completion — an item counts as done once a document is
+      // attached (UPLOADED); verification is tracked separately. Keep aligned
+      // with checklistCompletionPct (lib/checklist-engine.ts) and the readiness
+      // and snapshot engines.
       const mandatory = pkg.checklistItems.filter((i) => i.requirement.isMandatoryForSubmission)
       const done = mandatory.filter((i) =>
-        i.status === 'VERIFIED' || i.status === 'WAIVED' || i.status === 'NOT_APPLICABLE'
+        i.status === 'UPLOADED' || i.status === 'VERIFIED' || i.status === 'WAIVED' || i.status === 'NOT_APPLICABLE'
       )
       const checklistPct = mandatory.length === 0 ? 100 : Math.round((done.length / mandatory.length) * 100)
 

@@ -56,10 +56,13 @@ export async function runDailySnapshot(): Promise<SnapshotResult> {
 
   for (const pkg of packages) {
     try {
-      // Checklist %
+      // Checklist % — an item counts as done once a document is attached
+      // (UPLOADED); final verification is tracked separately via verifiedDocPct.
+      // Keep this aligned with checklistCompletionPct (lib/checklist-engine.ts)
+      // and the readiness engine (lib/readiness-engine.ts).
       const mandatory = pkg.checklistItems.filter(i => i.requirement.isMandatoryForSubmission)
       const done = mandatory.filter(i =>
-        i.status === 'VERIFIED' || i.status === 'WAIVED' || i.status === 'NOT_APPLICABLE'
+        i.status === 'UPLOADED' || i.status === 'VERIFIED' || i.status === 'WAIVED' || i.status === 'NOT_APPLICABLE'
       )
       const checklistPct = mandatory.length === 0 ? 100 : Math.round((done.length / mandatory.length) * 100)
 
