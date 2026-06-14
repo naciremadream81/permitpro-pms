@@ -26,9 +26,9 @@ file storage (Cloud Storage). Follow the parts in order.
 |---|---|
 | `PROJECT_ID` | `permitpro-pms-e596b` |
 | `BUCKET` | `permit_storage-1` |
-| `REGION` | `us-east1` (near the Supabase `us-east-1` DB) |
+| `REGION` | `us-east4` (App Hosting backend region; near the Supabase `us-east-1` DB) |
 | App Hosting repo / branch | `naciremadream81/permitpro-pms` / `master` |
-| `NEXTAUTH_URL` | *not yet known — set after the backend is created in Part D* |
+| `NEXTAUTH_URL` | `https://permitpro-pms--permitpro-pms-e596b.us-east4.hosted.app` |
 
 ---
 

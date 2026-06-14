@@ -11,11 +11,8 @@ runConfig:
   memoryMiB: 1024
 
 env:
-  # TODO: set after the App Hosting backend is created (Part D) — its public URL
-  # isn't known until then. Update this value and trigger a new rollout, or
-  # NextAuth callbacks/redirects will break. Project: permitpro-pms-e596b.
   - variable: NEXTAUTH_URL
-    value: https://REPLACE-WITH-APP-HOSTING-DOMAIN
+    value: https://permitpro-pms--permitpro-pms-e596b.us-east4.hosted.app
     availability:
       - RUNTIME
   - variable: NEXTAUTH_SECRET
