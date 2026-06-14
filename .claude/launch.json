@@ -1,0 +1,24 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Next.js Dev Server",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--prefix", "/home/archie/codebase/permitpro-pms", "next", "dev"],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "Design Direction Mockups",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4173", "--directory", "/home/archie/codebase/permitpro-pms/design-directions"],
+      "port": 4173
+    },
+    {
+      "name": "Prisma Studio",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "db:studio"],
+      "port": 5555
+    }
+  ]
+}

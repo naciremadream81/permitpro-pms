@@ -1,0 +1,30 @@
+tunnel: c9dc2d8d-c7e5-4ead-a7a6-fbe396fe63ea
+credentials-file: /home/nonroot/.cloudflared/c9dc2d8d-c7e5-4ead-a7a6-fbe396fe63ea.json
+
+ingress:
+  # PermitPro PMS - Main application
+  - hostname: permitpro.permitpro.icu
+    service: http://traefik:80
+    originRequest:
+      noHappyEyeballs: true
+  
+  # Traefik Dashboard
+  - hostname: traefik.permitpro.icu
+    service: http://traefik:8080
+    originRequest:
+      noHappyEyeballs: true
+  
+  # n8n - Workflow automation
+  - hostname: n8n.permitpro.icu
+    service: http://traefik:80
+    originRequest:
+      noHappyEyeballs: true
+  
+  # Guacamole - Remote desktop (if enabled)
+  - hostname: guacamole.permitpro.icu
+    service: http://traefik:80
+    originRequest:
+      noHappyEyeballs: true
+  
+  # Catch-all rule - must be last
+  - service: http_status:404

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PermitPro — Design Direction Comparison</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1c1e21; color: #e8e8e8; font-family: system-ui, sans-serif; padding: 24px; }
+  h1 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  p.sub { font-size: 13px; color: #9aa0a6; margin-bottom: 20px; }
+  .row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .col h2 { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+  .col h2 a { color: #8ab4f8; text-decoration: none; font-weight: 400; font-size: 12px; margin-left: 8px; }
+  .frame-wrap {
+    height: 64vh;
+    overflow: hidden;
+    border: 1px solid #3c4043;
+    border-radius: 6px;
+    background: #fff;
+  }
+  iframe {
+    width: 1440px;
+    height: 1900px;
+    border: none;
+    transform: scale(0.46);
+    transform-origin: 0 0;
+  }
+</style>
+</head>
+<body>
+  <h1>PermitPro PMS — Phase 1 design directions</h1>
+  <p class="sub">Scaled previews of the package list / dashboard. Click "open full size" to view any direction at native scale.</p>
+  <div class="row">
+    <div class="col">
+      <h2>A — The Docket <a href="a-docket.html" target="_blank">open full size ↗</a></h2>
+      <div class="frame-wrap"><iframe src="a-docket.html" title="Direction A — The Docket"></iframe></div>
+    </div>
+    <div class="col">
+      <h2>B — Signal Console <a href="b-signal-console.html" target="_blank">open full size ↗</a></h2>
+      <div class="frame-wrap"><iframe src="b-signal-console.html" title="Direction B — Signal Console"></iframe></div>
+    </div>
+    <div class="col">
+      <h2>C — Fieldsheet <a href="c-fieldsheet.html" target="_blank">open full size ↗</a></h2>
+      <div class="frame-wrap"><iframe src="c-fieldsheet.html" title="Direction C — Fieldsheet"></iframe></div>
+    </div>
+    <div class="col">
+      <h2>D — Unigrid <a href="d-unigrid.html" target="_blank">open full size ↗</a></h2>
+      <div class="frame-wrap"><iframe src="d-unigrid.html" title="Direction D — Unigrid"></iframe></div>
+    </div>
+  </div>
+</body>
+</html>

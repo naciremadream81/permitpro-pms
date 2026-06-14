@@ -1,0 +1,33 @@
+# Firebase App Hosting configuration — see docs/FIREBASE_MIGRATION.md
+# Secrets are created with: firebase apphosting:secrets:set <NAME>
+runConfig:
+  # Internal tool: keep the instance floor at zero so idle time costs nothing.
+  minInstances: 0
+  maxInstances: 1
+  concurrency: 80
+  cpu: 1
+  # Next.js SSR + Prisma + the Cloud Storage SDK can exceed 512MiB on cold
+  # starts / heavier requests; 1024 avoids OOM. maxInstances:1 keeps cost low.
+  memoryMiB: 1024
+
+env:
+  - variable: NEXTAUTH_URL
+    value: https://REPLACE-WITH-APP-HOSTING-DOMAIN
+    availability:
+      - RUNTIME
+  - variable: NEXTAUTH_SECRET
+    secret: NEXTAUTH_SECRET
+  - variable: DATABASE_URL
+    secret: DATABASE_URL
+  # Shared secret guarding POST /api/cron/snapshot. The Cloud Scheduler job
+  # (see FIREBASE_SETUP.md Part I) sends it as `Authorization: Bearer <secret>`.
+  - variable: CRON_SECRET
+    secret: CRON_SECRET
+  - variable: STORAGE_DRIVER
+    value: gcs
+    availability:
+      - RUNTIME
+  - variable: GCS_BUCKET
+    value: REPLACE-WITH-PROJECT-ID.appspot.com
+    availability:
+      - RUNTIME

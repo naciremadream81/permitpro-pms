@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Direction A — The Docket</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..600&family=Public+Sans:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f7f3ea;
+    --paper-deep: #efe9db;
+    --ink: #211d14;
+    --ink-soft: #5c5546;
+    --rule: #d4cab4;
+    --rule-strong: #9c927e;
+    --stamp-red: #9e2b25;
+    --st-new: #5c5546;
+    --st-submitted: #1f4e8c;
+    --st-review: #7c5800;
+    --st-revisions: #9e2b25;
+    --st-approved: #2f6b3a;
+    --st-issued: #146a6a;
+    --st-inspections: #5b3da6;
+    --st-finaled: #6e6757;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Public Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    min-height: 100vh;
+  }
+  .mono { font-family: 'Spline Sans Mono', monospace; }
+  .serif { font-family: 'Source Serif 4', serif; }
+
+  /* ── Masthead ─────────────────────────────── */
+  .masthead {
+    border-bottom: 3px double var(--ink);
+    padding: 18px 40px 0;
+  }
+  .masthead-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 14px;
+  }
+  .wordmark {
+    font-family: 'Source Serif 4', serif;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .wordmark em { font-style: italic; font-weight: 400; color: var(--stamp-red); }
+  .dateline {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .dateline b { color: var(--ink); font-weight: 600; }
+
+  /* folder tabs */
+  .tabs { display: flex; gap: 2px; }
+  .tab {
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-decoration: none;
+    padding: 8px 16px 9px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 3px 3px 0 0;
+    position: relative;
+    top: 1px;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active {
+    color: var(--ink);
+    background: var(--paper);
+    border-color: var(--ink);
+    border-bottom: 3px solid var(--paper);
+    margin-bottom: -3px;
+  }
+
+  .page { padding: 26px 40px 60px; max-width: 1320px; margin: 0 auto; }
+
+  /* ── Notices ─────────────────────────────── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .notices { border-top: 1px solid var(--ink); margin-bottom: 34px; }
+  .notice {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 9px 2px;
+    border-bottom: 1px solid var(--rule);
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .notice:hover .notice-text { text-decoration: underline; }
+  .notice-mark {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 1px 7px 2px;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .notice-mark.urgent { color: var(--stamp-red); }
+  .notice-mark.warn { color: var(--st-review); }
+  .notice-mark.info { color: var(--st-submitted); }
+  .notice-text { flex: 1; font-size: 14px; }
+  .notice-text b { font-weight: 600; }
+  .notice-count {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  /* ── Docket table ─────────────────────────── */
+  .docket-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .docket-title {
+    font-family: 'Source Serif 4', serif;
+    font-size: 21px;
+    font-weight: 700;
+  }
+  .docket-title .count {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-left: 10px;
+  }
+  .docket-tools { display: flex; gap: 18px; align-items: baseline; }
+  .tool-link {
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--st-submitted);
+    text-decoration: none;
+    border-bottom: 1px solid currentColor;
+    padding-bottom: 1px;
+  }
+  .tool-link.primary { color: var(--stamp-red); }
+  .search {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 13px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--ink);
+    padding: 3px 2px;
+    width: 220px;
+    color: var(--ink);
+  }
+  .search::placeholder { color: var(--ink-soft); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-align: left;
+    padding: 10px 12px 8px 2px;
+    border-top: 2px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    white-space: nowrap;
+  }
+  thead th.num { text-align: right; padding-right: 2px; }
+  tbody td {
+    padding: 11px 12px 11px 2px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: baseline;
+  }
+  tbody tr:hover { background: var(--paper-deep); }
+  td.permit-no a {
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--st-submitted);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+  td.permit-no a:hover { border-bottom-color: currentColor; }
+  td.project {
+    font-family: 'Source Serif 4', serif;
+    font-size: 15.5px;
+    font-weight: 600;
+  }
+  td.project .addr {
+    display: block;
+    font-family: 'Public Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--ink-soft);
+    margin-top: 1px;
+  }
+  td.dim { color: var(--ink-soft); font-size: 13px; }
+  td.num {
+    text-align: right;
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    padding-right: 2px;
+  }
+  td.num .stall {
+    display: block;
+    color: var(--stamp-red);
+    font-weight: 600;
+  }
+
+  .stamp {
+    display: inline-block;
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+    padding: 2px 7px;
+    white-space: nowrap;
+  }
+  .st-new { color: var(--st-new); }
+  .st-submitted { color: var(--st-submitted); }
+  .st-review { color: var(--st-review); }
+  .st-revisions { color: var(--st-revisions); }
+  .st-approved { color: var(--st-approved); }
+  .st-issued { color: var(--st-issued); }
+  .st-inspections { color: var(--st-inspections); }
+  .st-finaled { color: var(--st-finaled); }
+
+  .billing { font-size: 12px; color: var(--ink-soft); }
+  .billing.due { color: var(--stamp-red); font-weight: 600; }
+
+  /* ── Footer ─────────────────────────────── */
+  .colophon {
+    margin-top: 18px;
+    padding-top: 10px;
+    border-top: 3px double var(--ink);
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Spline Sans Mono', monospace;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+  }
+  .colophon a { color: var(--st-submitted); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-row">
+    <div class="wordmark">PermitPro <em>Docket</em></div>
+    <div class="dateline">Thursday, June 12, 2026 · <b>S. Swonger</b> · Coordinator</div>
+  </div>
+  <nav class="tabs">
+    <a class="tab active" href="#">Docket</a>
+    <a class="tab" href="#">Permits</a>
+    <a class="tab" href="#">Review</a>
+    <a class="tab" href="#">Contractors</a>
+    <a class="tab" href="#">Customers</a>
+    <a class="tab" href="#">Reports</a>
+    <a class="tab" href="#">Admin</a>
+  </nav>
+</header>
+
+<main class="page">
+
+  <p class="section-label">Notices — requires action</p>
+  <div class="notices">
+    <a class="notice" href="#">
+      <span class="notice-mark urgent">STALLED</span>
+      <span class="notice-text"><b>3 packages</b> show no activity in 3+ days — oldest is Maddox Residence Addition (5 days)</span>
+      <span class="notice-count">3 →</span>
+    </a>
+    <a class="notice" href="#">
+      <span class="notice-mark warn">EXPIRING</span>
+      <span class="notice-text"><b>2 contractor compliance documents</b> expire within 30 days — Suncoast Electric GL policy lapses June 28</span>
+      <span class="notice-count">2 →</span>
+    </a>
+    <a class="notice" href="#">
+      <span class="notice-mark info">COMMENTS</span>
+      <span class="notice-text"><b>9 review comments</b> remain unresolved across 4 packages</span>
+      <span class="notice-count">9 →</span>
+    </a>
+  </div>
+
+  <div class="docket-head">
+    <h1 class="docket-title">Active Docket <span class="count">47 PACKAGES</span></h1>
+    <div class="docket-tools">
+      <input class="search" type="search" placeholder="search docket…">
+      <a class="tool-link" href="#">Filter</a>
+      <a class="tool-link primary" href="#">+ Open new package</a>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>No.</th>
+        <th>Project</th>
+        <th>Customer</th>
+        <th>Contractor</th>
+        <th>County</th>
+        <th>Status</th>
+        <th>Billing</th>
+        <th class="num">Opened / Idle</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="permit-no"><a href="#">BLD-2026-04417</a></td>
+        <td class="project">Maddox Residence Addition<span class="addr">4112 W Euclid Ave, Tampa FL 33629</span></td>
+        <td class="dim">Maddox, R. &amp; T.</td>
+        <td class="dim">Gulfwind Builders</td>
+        <td class="dim">Hillsborough</td>
+        <td><span class="stamp st-review">In Review</span></td>
+        <td><span class="billing">Deposit held</span></td>
+        <td class="num">May 12<span class="stall">5d idle</span></td>
+      </tr>
+      <tr>
+        <td class="permit-no"><a href="#">ELE-2026-01988</a></td>
+        <td class="project">Brightline Dental Buildout<span class="addr">220 S Pineapple Ave, Sarasota FL 34236</span></td>
+        <td class="dim">Brightline Dental PA</td>
+        <td class="dim">Suncoast Electric</td>
+        <td class="dim">Sarasota</td>
+        <td><span class="stamp st-revisions">Revisions Needed</span></td>
+        <td><span class="billing due">Invoice due</span></td>
+        <td class="num">May 28<span class="stall">4d idle</span></td>
+      </tr>
+      <tr>
+        <td class="permit-no"><a href="#">MEC-2026-00731</a></td>
+        <td class="project">Coastal Storage HVAC Replacement<span class="addr">7800 Ulmerton Rd, Largo FL 33771</span></td>
+        <td class="dim">Coastal Storage LLC</td>
+        <td class="dim">Bayside Mechanical</td>
+        <td class="dim">Pinellas</td>
+        <td><span class="stamp st-submitted">Submitted</span></td>
+        <td><span class="billing">Paid</span></td>
+        <td class="num">Jun 02</td>
+      </tr>
+      <tr>
+        <td class="permit-no"><a href="#">BLD-2026-04561</a></td>
+        <td class="project">Veranda Townhomes, Phase 2<span class="addr">1530 Curlew Rd, Palm Harbor FL 34683</span></td>
+        <td class="dim">Veranda Dev. Group</td>
+        <td class="dim">Gulfwind Builders</td>
+        <td class="dim">Pinellas</td>
+        <td><span class="stamp st-new">New</span></td>
+        <td><span class="billing">Quote sent</span></td>
+        <td class="num">Jun 09</td>
+      </tr>
+      <tr>
+        <td class="permit-no"><a href="#">PLB-2026-02204</a></td>
+        <td class="project">Hideaway Café Remodel<span class="addr">668 Central Ave, St. Petersburg FL 33701</span></td>
+        <td class="dim">Hideaway Hospitality</td>
+        <td class="dim">Pelican Plumbing</td>
+        <td class="dim">Pinellas</td>
+        <td><span class="stamp st-approved">Approved</span></td>
+        <td><span class="billing">Paid</span></td>
+        <td class="num">Apr 30</td>
+      </tr>
+      <tr>
+        <td class="permit-no"><a href="#">BLD-2026-03987</a></td>
+        <td class="project">Sunstate Warehouse Re-roof<span class="addr">9100 Adamo Dr, Tampa FL 33619</span></td>
+        <td class="dim">Sunstate Logistics</td>
+        <td class="dim">Apex Roofing FL</td>
+        <td class="dim">Hillsborough</td>
+        <td><span class="stamp st-issued">Issued</span></td>
+        <td><span class="billing">Paid</span></td>
+        <td class="num">Apr 17</td>
+      </tr>
+      <tr>
+        <td class="permit-no"><a href="#">FIR-2026-00412</a></td>
+        <td class="project">Meridian Office Sprinkler Retrofit<span class="addr">501 E Kennedy Blvd, Tampa FL 33602</span></td>
+        <td class="dim">Meridian Property Tr.</td>
+        <td class="dim">FlowSafe Fire Prot.</td>
+        <td class="dim">Hillsborough</td>
+        <td><span class="stamp st-inspections">Inspections</span></td>
+        <td><span class="billing due">Invoice due</span></td>
+        <td class="num">Mar 24</td>
+      </tr>
+      <tr>
+        <td class="permit-no"><a href="#">DEM-2026-00118</a></td>
+        <td class="project">Gandy Self-Storage Demolition<span class="addr">4310 W Gandy Blvd, Tampa FL 33611</span></td>
+        <td class="dim">StoreRight Partners</td>
+        <td class="dim">Bayline Demo &amp; Haul</td>
+        <td class="dim">Hillsborough</td>
+        <td><span class="stamp st-review">In Review</span></td>
+        <td><span class="billing">Deposit held</span></td>
+        <td class="num">May 30</td>
+      </tr>
+      <tr>
+        <td class="permit-no"><a href="#">BLD-2025-09871</a></td>
+        <td class="project">Palma Ceia Pool Enclosure<span class="addr">3402 W San Jose St, Tampa FL 33629</span></td>
+        <td class="dim">Whitfield, A.</td>
+        <td class="dim">ClearSpan Aluminum</td>
+        <td class="dim">Hillsborough</td>
+        <td><span class="stamp st-finaled">Finaled</span></td>
+        <td><span class="billing">Closed</span></td>
+        <td class="num">Nov 03</td>
+      </tr>
+      <tr>
+        <td class="permit-no"><a href="#">ELE-2026-02071</a></td>
+        <td class="project">Seabreeze Marina Dock Power<span class="addr">200 Bayshore Dr, Dunedin FL 34698</span></td>
+        <td class="dim">Seabreeze Marina</td>
+        <td class="dim">Suncoast Electric</td>
+        <td class="dim">Pinellas</td>
+        <td><span class="stamp st-submitted">Submitted</span></td>
+        <td><span class="billing">Quote sent</span></td>
+        <td class="num">Jun 05</td>
+      </tr>
+      <tr>
+        <td class="permit-no"><a href="#">BLD-2026-04610</a></td>
+        <td class="project">Ozona Cottage Elevation<span class="addr">310 Orange St, Ozona FL 34660</span></td>
+        <td class="dim">Hartley, M.</td>
+        <td class="dim">Gulfwind Builders</td>
+        <td class="dim">Pinellas</td>
+        <td><span class="stamp st-new">New</span></td>
+        <td><span class="billing">—</span></td>
+        <td class="num">Jun 11</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="colophon">
+    <span>SHOWING 1–10 OF 47 · <a href="#">NEXT PAGE →</a></span>
+    <span>PERMITPRO PMS · RECORD OF ACTIVE PERMIT PACKAGES</span>
+  </div>
+
+</main>
+</body>
+</html>

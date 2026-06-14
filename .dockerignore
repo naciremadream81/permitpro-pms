@@ -1,0 +1,75 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js
+.next
+out
+build
+dist
+
+# Environment files
+.env
+.env*.local
+.env.backup
+.env.backup.*
+.env.*.backup
+*.env.backup
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Database files (will be mounted as volumes)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+prisma/dev.db
+dev.db
+
+# Storage (will be mounted as volumes)
+storage
+
+# Logs
+logs
+*.log
+
+# Testing
+coverage
+.nyc_output
+
+# Documentation
+*.md
+!README.md
+
+# Scripts (not needed in container)
+scripts
+setup-db.sh
+
+# Cloudflare tunnel config
+.cloudflared
+cloudflare-tunnel-setup.md
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml
+
+# Other
+.vercel
+

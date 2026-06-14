@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Direction D — Unigrid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --white: #ffffff;
+    --black: #121212;
+    --gray-soft: #6b6f73;
+    --gray-faint: #e6e8ea;
+    --rule: #121212;
+    --hairline: #d9dcdf;
+    --urgent: #d92d20;
+    --own-us: #b42318;      /* ball in our court */
+    --own-county: #1849a9;  /* waiting on jurisdiction */
+    --own-contractor: #b54708; /* waiting on contractor */
+    --own-field: #067647;   /* issued / fieldwork */
+    --own-closed: #475467;  /* closing out */
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--white);
+    color: var(--black);
+    font-family: 'Archivo', sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+  }
+  a { color: inherit; }
+
+  /* ── Black band (Unigrid) ─────────────────── */
+  .band {
+    background: var(--black);
+    color: var(--white);
+    padding: 26px 48px 22px;
+  }
+  .band-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .band-title {
+    font-size: 40px;
+    font-weight: 800;
+    font-stretch: 115%;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+  .band-title .thin { font-weight: 300; font-stretch: 100%; }
+  .band-meta {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #b9bdc1;
+    text-align: right;
+  }
+  .band-meta b { color: var(--white); font-weight: 600; }
+  .band nav { display: flex; gap: 30px; }
+  .band nav a {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: #b9bdc1;
+    padding-bottom: 6px;
+  }
+  .band nav a:hover { color: var(--white); }
+  .band nav a.active { color: var(--white); border-bottom: 3px solid var(--white); }
+
+  .page { padding: 0 48px 64px; max-width: 1380px; }
+
+  /* ── Action row ───────────────────────────── */
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 2px solid var(--rule);
+  }
+  .search {
+    font-family: 'Archivo', sans-serif;
+    font-size: 14px;
+    border: none;
+    border-bottom: 2px solid var(--black);
+    background: transparent;
+    padding: 6px 2px;
+    width: 320px;
+    color: var(--black);
+  }
+  .search::placeholder { color: var(--gray-soft); }
+  .grow { flex: 1; }
+  .pill-filter {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--gray-soft);
+    padding: 6px 0;
+  }
+  .pill-filter.on { color: var(--black); border-bottom: 3px solid var(--black); }
+  .btn {
+    font-family: 'Archivo', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--black);
+    color: var(--white);
+    border: none;
+    padding: 11px 22px;
+    cursor: pointer;
+  }
+  .btn:hover { background: #2e2e2e; }
+
+  /* ── Pipeline distribution bar ────────────── */
+  .distribution { padding: 22px 0 26px; border-bottom: 2px solid var(--rule); }
+  .dist-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gray-soft);
+    margin-bottom: 10px;
+  }
+  .dist-bar { display: flex; height: 34px; }
+  .dist-bar a {
+    display: grid;
+    place-items: center;
+    color: var(--white);
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .dist-bar a:hover { filter: brightness(1.15); }
+  .dist-legend { display: flex; gap: 26px; margin-top: 10px; flex-wrap: wrap; }
+  .leg {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray-soft);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .leg i { width: 10px; height: 10px; display: inline-block; }
+  .leg b { color: var(--black); font-weight: 700; }
+
+  /* ── Court groups ─────────────────────────── */
+  .group { padding-top: 30px; }
+  .group-head {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    border-bottom: 4px solid var(--rule);
+    padding-bottom: 8px;
+  }
+  .group-count {
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .group-title {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .group-sub { font-size: 13px; color: var(--gray-soft); }
+  .group-head .view-all {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+  .group-head .view-all:hover { text-decoration: underline; }
+  .group.us .group-count, .group.us .group-title { color: var(--own-us); }
+  .group.county .group-count, .group.county .group-title { color: var(--own-county); }
+  .group.field .group-count, .group.field .group-title { color: var(--own-field); }
+
+  /* rows */
+  .row {
+    display: grid;
+    grid-template-columns: 96px 1.7fr 1fr 0.7fr 150px 1.3fr 90px;
+    gap: 18px;
+    align-items: center;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--hairline);
+    text-decoration: none;
+  }
+  .row:hover { background: var(--gray-faint); }
+  .days {
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+  }
+  .days small {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gray-soft);
+    margin-top: 3px;
+  }
+  .days.hot { color: var(--urgent); }
+  .what .no {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--gray-soft);
+  }
+  .what .name { font-size: 15.5px; font-weight: 700; }
+  .what .addr { font-size: 12px; color: var(--gray-soft); }
+  .who { font-size: 13px; }
+  .who span { display: block; color: var(--gray-soft); font-size: 12px; }
+  .where { font-size: 13px; color: var(--gray-soft); }
+  .chip {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--white);
+    padding: 5px 10px;
+    text-align: center;
+    justify-self: start;
+  }
+  .next { font-size: 13px; }
+  .next.urgent { color: var(--urgent); font-weight: 600; }
+  .opened {
+    font-size: 12px;
+    color: var(--gray-soft);
+    text-align: right;
+    letter-spacing: 0.04em;
+  }
+
+  .colhead {
+    display: grid;
+    grid-template-columns: 96px 1.7fr 1fr 0.7fr 150px 1.3fr 90px;
+    gap: 18px;
+    padding: 8px 0 6px;
+    border-bottom: 1px solid var(--black);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gray-soft);
+  }
+  .colhead .r { text-align: right; }
+
+  @media (max-width: 1100px) {
+    .row, .colhead { grid-template-columns: 80px 1.7fr 1fr 130px 1.3fr; gap: 14px; }
+    .where, .opened, .colhead span:nth-child(4), .colhead span.r { display: none; }
+    .band, .page { padding-left: 28px; padding-right: 28px; }
+  }
+
+  .foot {
+    margin-top: 44px;
+    border-top: 4px solid var(--rule);
+    padding-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gray-soft);
+  }
+</style>
+</head>
+<body>
+
+<header class="band">
+  <div class="band-top">
+    <h1 class="band-title">Permit<span class="thin">Pro</span> — Operations</h1>
+    <div class="band-meta">Thu Jun 12 2026<br><b>S. Swonger</b> · Coordinator</div>
+  </div>
+  <nav>
+    <a href="#" class="active">Board</a>
+    <a href="#">Permits</a>
+    <a href="#">Review</a>
+    <a href="#">Contractors</a>
+    <a href="#">Customers</a>
+    <a href="#">Reports</a>
+    <a href="#">Admin</a>
+  </nav>
+</header>
+
+<main class="page">
+
+  <div class="action-row">
+    <input class="search" type="search" placeholder="Search permit no., address, customer…">
+    <span class="grow"></span>
+    <a class="pill-filter on" href="#">My packages</a>
+    <a class="pill-filter" href="#">Team</a>
+    <a class="pill-filter" href="#">All counties</a>
+    <button class="btn">+ New Package</button>
+  </div>
+
+  <section class="distribution" aria-label="Pipeline distribution">
+    <p class="dist-label">Active pipeline — 47 packages by court</p>
+    <div class="dist-bar">
+      <a href="#" style="background:var(--own-us); flex: 11">11</a>
+      <a href="#" style="background:var(--own-county); flex: 21">21</a>
+      <a href="#" style="background:var(--own-contractor); flex: 4">4</a>
+      <a href="#" style="background:var(--own-field); flex: 7">7</a>
+      <a href="#" style="background:var(--own-closed); flex: 4">4</a>
+    </div>
+    <div class="dist-legend">
+      <span class="leg"><i style="background:var(--own-us)"></i><b>11</b> our court</span>
+      <span class="leg"><i style="background:var(--own-county)"></i><b>21</b> with jurisdiction</span>
+      <span class="leg"><i style="background:var(--own-contractor)"></i><b>4</b> with contractor</span>
+      <span class="leg"><i style="background:var(--own-field)"></i><b>7</b> fieldwork</span>
+      <span class="leg"><i style="background:var(--own-closed)"></i><b>4</b> closing</span>
+    </div>
+  </section>
+
+  <section class="group us">
+    <div class="group-head">
+      <span class="group-count">11</span>
+      <span class="group-title">Our court</span>
+      <span class="group-sub">revisions to return, intakes to assemble, comments to answer — sorted by days held</span>
+      <a class="view-all" href="#">View all 11 →</a>
+    </div>
+    <div class="colhead">
+      <span>Held</span><span>Package</span><span>Customer / Contractor</span><span>County</span><span>Stage</span><span>Next action</span><span class="r">Opened</span>
+    </div>
+    <a class="row" href="#">
+      <span class="days hot">5<small>days held</small></span>
+      <span class="what"><span class="no">BLD-2026-04417</span><br><span class="name">Maddox Residence Addition</span><br><span class="addr">4112 W Euclid Ave, Tampa — Hillsborough</span></span>
+      <span class="who">Maddox, R. &amp; T.<span>Gulfwind Builders</span></span>
+      <span class="where">Hillsborough</span>
+      <span class="chip" style="background:var(--own-us)">In Review · C2</span>
+      <span class="next urgent">Answer 4 plan comments</span>
+      <span class="opened">May 12</span>
+    </a>
+    <a class="row" href="#">
+      <span class="days hot">4<small>days held</small></span>
+      <span class="what"><span class="no">ELE-2026-01988</span><br><span class="name">Brightline Dental Buildout</span><br><span class="addr">220 S Pineapple Ave, Sarasota — Sarasota</span></span>
+      <span class="who">Brightline Dental PA<span>Suncoast Electric</span></span>
+      <span class="where">Sarasota</span>
+      <span class="chip" style="background:var(--own-us)">Revisions</span>
+      <span class="next urgent">Upload revised load calcs</span>
+      <span class="opened">May 28</span>
+    </a>
+    <a class="row" href="#">
+      <span class="days">1<small>day held</small></span>
+      <span class="what"><span class="no">BLD-2026-04561</span><br><span class="name">Veranda Townhomes, Phase 2</span><br><span class="addr">1530 Curlew Rd, Palm Harbor — Pinellas</span></span>
+      <span class="who">Veranda Dev. Group<span>Gulfwind Builders</span></span>
+      <span class="where">Pinellas</span>
+      <span class="chip" style="background:var(--own-us)">New · Intake</span>
+      <span class="next">Assemble site plan set</span>
+      <span class="opened">Jun 09</span>
+    </a>
+    <a class="row" href="#">
+      <span class="days">0<small>days held</small></span>
+      <span class="what"><span class="no">BLD-2026-04610</span><br><span class="name">Ozona Cottage Elevation</span><br><span class="addr">310 Orange St, Ozona — Pinellas</span></span>
+      <span class="who">Hartley, M.<span>Gulfwind Builders</span></span>
+      <span class="where">Pinellas</span>
+      <span class="chip" style="background:var(--own-us)">New · Intake</span>
+      <span class="next">Intake checklist</span>
+      <span class="opened">Jun 11</span>
+    </a>
+  </section>
+
+  <section class="group county">
+    <div class="group-head">
+      <span class="group-count">21</span>
+      <span class="group-title">With jurisdiction</span>
+      <span class="group-sub">submitted or in plan review — nothing owed by us; watch for comment cycles</span>
+      <a class="view-all" href="#">View all 21 →</a>
+    </div>
+    <div class="colhead">
+      <span>Waiting</span><span>Package</span><span>Customer / Contractor</span><span>County</span><span>Stage</span><span>Next action</span><span class="r">Opened</span>
+    </div>
+    <a class="row" href="#">
+      <span class="days">9<small>days out</small></span>
+      <span class="what"><span class="no">MEC-2026-00702</span><br><span class="name">Bayfront Clinic Chiller Swap</span><br><span class="addr">701 6th St S, St. Petersburg — Pinellas</span></span>
+      <span class="who">Bayfront Health<span>Bayside Mechanical</span></span>
+      <span class="where">Pinellas</span>
+      <span class="chip" style="background:var(--own-county)">In Review · C2</span>
+      <span class="next">Await cycle-2 comments</span>
+      <span class="opened">May 08</span>
+    </a>
+    <a class="row" href="#">
+      <span class="days">7<small>days out</small></span>
+      <span class="what"><span class="no">BLD-2026-04298</span><br><span class="name">Westshore Retail Shell, Unit C</span><br><span class="addr">5210 W Kennedy Blvd, Tampa — Hillsborough</span></span>
+      <span class="who">Westshore Partners<span>Meridian Const. Group</span></span>
+      <span class="where">Hillsborough</span>
+      <span class="chip" style="background:var(--own-county)">In Review · C1</span>
+      <span class="next">Await cycle-1 comments</span>
+      <span class="opened">May 21</span>
+    </a>
+    <a class="row" href="#">
+      <span class="days">1<small>day out</small></span>
+      <span class="what"><span class="no">MEC-2026-00731</span><br><span class="name">Coastal Storage HVAC Replacement</span><br><span class="addr">7800 Ulmerton Rd, Largo — Pinellas</span></span>
+      <span class="who">Coastal Storage LLC<span>Bayside Mechanical</span></span>
+      <span class="where">Pinellas</span>
+      <span class="chip" style="background:var(--own-county)">Submitted</span>
+      <span class="next">Await intake confirmation</span>
+      <span class="opened">Jun 02</span>
+    </a>
+    <a class="row" href="#">
+      <span class="days">1<small>day out</small></span>
+      <span class="what"><span class="no">ELE-2026-02071</span><br><span class="name">Seabreeze Marina Dock Power</span><br><span class="addr">200 Bayshore Dr, Dunedin — Pinellas</span></span>
+      <span class="who">Seabreeze Marina<span>Suncoast Electric</span></span>
+      <span class="where">Pinellas</span>
+      <span class="chip" style="background:var(--own-county)">Submitted</span>
+      <span class="next">Confirm NOA attachments</span>
+      <span class="opened">Jun 05</span>
+    </a>
+  </section>
+
+  <section class="group field">
+    <div class="group-head">
+      <span class="group-count">7</span>
+      <span class="group-title">Fieldwork</span>
+      <span class="group-sub">issued — inspections in progress; coordinate scheduling with contractors</span>
+      <a class="view-all" href="#">View all 7 →</a>
+    </div>
+    <div class="colhead">
+      <span>In stage</span><span>Package</span><span>Customer / Contractor</span><span>County</span><span>Stage</span><span>Next action</span><span class="r">Opened</span>
+    </div>
+    <a class="row" href="#">
+      <span class="days">80<small>days open</small></span>
+      <span class="what"><span class="no">FIR-2026-00412</span><br><span class="name">Meridian Office Sprinkler Retrofit</span><br><span class="addr">501 E Kennedy Blvd, Tampa — Hillsborough</span></span>
+      <span class="who">Meridian Property Tr.<span>FlowSafe Fire Prot.</span></span>
+      <span class="where">Hillsborough</span>
+      <span class="chip" style="background:var(--own-field)">Inspections</span>
+      <span class="next">Rough-in inspection Jun 16</span>
+      <span class="opened">Mar 24</span>
+    </a>
+    <a class="row" href="#">
+      <span class="days">56<small>days open</small></span>
+      <span class="what"><span class="no">BLD-2026-03987</span><br><span class="name">Sunstate Warehouse Re-roof</span><br><span class="addr">9100 Adamo Dr, Tampa — Hillsborough</span></span>
+      <span class="who">Sunstate Logistics<span>Apex Roofing FL</span></span>
+      <span class="where">Hillsborough</span>
+      <span class="chip" style="background:var(--own-field)">Issued</span>
+      <span class="next">Dry-in inspection pending</span>
+      <span class="opened">Apr 17</span>
+    </a>
+  </section>
+
+  <div class="foot">
+    <span>2 contractor compliance docs expire within 30 days — Contractors / Vault</span>
+    <span>PermitPro PMS · Operations Board</span>
+  </div>
+
+</main>
+</body>
+</html>

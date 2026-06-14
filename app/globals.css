@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Unigrid / Heritage Teal — flat federal-modern system.
+     Paper-white field, deep teal band, solid ownership colors.
+     All status/court solids carry near-white foregrounds at WCAG AA. */
+  --canvas: #fbfaf6;
+  --surface: #ffffff;
+  --surface-inset: #f0efe7;
+  --ink: #1c2b29;
+  --muted: #5d6b68;
+  --border: #dde1da;
+  --accent: #123f3b;
+  --accent-hover: #0d302d;
+  --accent-foreground: #f4f1e7;
+  --accent-muted: #e3eae5;
+  --destructive: #b3382c;
+  --destructive-foreground: #fdf6f4;
+  --warning: #7d5113;
+  --warning-foreground: #fdf8ef;
+  --review: #5b3da6;
+  --review-foreground: #f7f4fd;
+  --success: #2f6b40;
+  --success-foreground: #f3faf5;
+  --status-neutral: #5d6a66;
+  --status-neutral-foreground: #fbfaf6;
+  --status-info: #0f6066;
+  --status-info-foreground: #f2fbfb;
+  --status-warning: #7d5113;
+  --status-warning-foreground: #fdf8ef;
+  --status-success: #2f6b40;
+  --status-success-foreground: #f3faf5;
+  --status-danger: #9e3b2e;
+  --status-danger-foreground: #fdf5f3;
+  --status-review: #5b3da6;
+  --status-review-foreground: #f7f4fd;
+  --focus-ring: #123f3b;
+
+  /* Band (masthead) */
+  --band: #123f3b;
+  --band-foreground: #f4f1e7;
+  --band-dim: #9db4ae;
+
+  /* Ball-in-court ownership colors (presentation-layer grouping) */
+  --court-us: #9e3b2e;
+  --court-county: #0f6066;
+  --court-contractor: #7d5113;
+  --court-field: #2f6b40;
+  --court-closed: #5d6a66;
+  --urgent: #b3382c;
+
+  /* Legacy aliases */
+  --background: var(--canvas);
+  --foreground: var(--ink);
+
+  /* Flat system: no rounding */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+}
+
+.dark {
+  --canvas: #131c1a;
+  --surface: #192422;
+  --surface-inset: #16201e;
+  --ink: #eef0e9;
+  --muted: #9fafa9;
+  --border: #2e3b38;
+  --accent: #7fc0b4;
+  --accent-hover: #93cfc4;
+  --accent-foreground: #102723;
+  --accent-muted: #1d3330;
+  --destructive: #e07b6c;
+  --destructive-foreground: #2a100c;
+  --warning: #d9a44a;
+  --warning-foreground: #261a05;
+  --review: #b49ae8;
+  --review-foreground: #1d1230;
+  --success: #7cc28f;
+  --success-foreground: #0c2414;
+  --status-neutral: #46544f;
+  --status-neutral-foreground: #eef0e9;
+  --status-info: #15777e;
+  --status-info-foreground: #eafdfd;
+  --status-warning: #94642a;
+  --status-warning-foreground: #fdf4e4;
+  --status-success: #3a7d4e;
+  --status-success-foreground: #ecf9f0;
+  --status-danger: #b3493a;
+  --status-danger-foreground: #fdf0ee;
+  --status-review: #7257b8;
+  --status-review-foreground: #f4eefd;
+  --focus-ring: #7fc0b4;
+
+  --band: #0e2f2c;
+  --band-foreground: #f4f1e7;
+  --band-dim: #8aa49e;
+
+  --court-us: #b3493a;
+  --court-county: #15777e;
+  --court-contractor: #94642a;
+  --court-field: #3a7d4e;
+  --court-closed: #5b6b66;
+  --urgent: #e07b6c;
+
+  --background: var(--canvas);
+  --foreground: var(--ink);
+}
+
+body {
+  color: var(--ink);
+  background: var(--canvas);
+  font-family: var(--font-archivo), var(--font-geist-sans), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+@layer base {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea {
+    color: var(--ink);
+    background-color: var(--surface);
+    border-color: var(--border);
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):disabled,
+  select:disabled,
+  textarea:disabled {
+    color: var(--muted);
+    background-color: var(--surface-inset);
+  }
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+}
+
+@layer components {
+  .pp-input {
+    @apply block w-full rounded-md border px-3 py-2 text-sm transition-colors;
+    border-color: var(--border);
+    background-color: var(--surface);
+    color: var(--ink);
+  }
+
+  .pp-input:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-color: var(--accent);
+  }
+
+  .pp-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .pp-skip-link {
+    @apply sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:px-4 focus:py-2 focus:text-sm focus:font-medium;
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+
+  .pp-nav-active {
+    background: var(--accent-muted);
+    color: var(--ink);
+  }
+
+  /* Unigrid band navigation link */
+  .pp-band-link {
+    @apply text-[13px] font-semibold uppercase tracking-[0.1em] no-underline pb-1.5 border-b-[3px] border-transparent transition-colors;
+    color: var(--band-dim);
+  }
+  .pp-band-link:hover {
+    color: var(--band-foreground);
+  }
+  .pp-band-link.active {
+    color: var(--band-foreground);
+    border-color: var(--band-foreground);
+  }
+  .pp-band-link:focus-visible {
+    outline: 2px solid var(--band-foreground);
+    outline-offset: 3px;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

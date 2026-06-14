@@ -1,0 +1,74 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+.env
+.env.backup
+.env.backup.*
+.env.*.backup
+*.env.backup
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+dev.db
+prisma/dev.db
+
+/app/generated/prisma
+
+# cloudflare tunnel
+.cloudflared/*.json
+*.cloudflared.json
+cloudflared/*.json
+cloudflared/config.yml
+
+# Let's Encrypt certificates (contains sensitive SSL certificates)
+letsencrypt/
+!letsencrypt/.gitkeep
+
+# Claude Code tooling
+.claude/worktrees/
+.superpowers/
+
+# Uploaded permit documents (runtime storage)
+storage/
+
+# Postgres migration staging (contains prod data/PII)
+supabase/data/
+
+# Generated Prisma client (repo-local output; regenerate with prisma generate)
+lib/generated/

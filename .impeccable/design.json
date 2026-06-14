@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-11T00:00:00.000Z",
+  "title": "Design System: PermitPro",
+  "extensions": {
+    "colorMeta": {
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Warm Canvas",
+        "canonical": "oklch(98% 0.008 195)",
+        "tonalRamp": ["#1a2e2e", "#3d5252", "#5c6f6f", "#8a9999", "#b8c4c4", "#d4dede", "#eef3f3", "#f7fafa"]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Permit Teal",
+        "canonical": "oklch(42% 0.11 195)",
+        "tonalRamp": ["#052e2b", "#0d6560", "#0f766e", "#14938a", "#3db3ab", "#6ec9c2", "#a8ded9", "#e6f3f2"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(22% 0.022 195)",
+        "tonalRamp": ["#0f1919", "#1a2e2e", "#2a4040", "#3d5252", "#5c6f6f", "#8a9999", "#b8c4c4", "#eef3f3"]
+      }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Headline", "purpose": "Page titles via PageHeader — max 24px on ops pages." },
+      "body": { "displayName": "Body", "purpose": "Tables, forms, navigation labels." }
+    },
+    "motion": [
+      { "name": "drawer", "value": "200ms ease", "purpose": "Mobile nav drawer (disabled under prefers-reduced-motion)." }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary actions — New Permit, Sign in.",
+      "html": "<button class=\"ds-btn-primary\">New Permit</button>",
+      "css": ".ds-btn-primary { background: #0f766e; color: #f7fafa; padding: 10px 16px; font-size: 0.875rem; font-weight: 500; border: none; border-radius: 8px; cursor: pointer; transition: background 0.15s; } .ds-btn-primary:hover { background: #0d6560; } .ds-btn-primary:focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }"
+    },
+    {
+      "name": "Nav Link Active",
+      "kind": "nav",
+      "refersTo": "nav-active",
+      "description": "Active sidebar item with inset accent edge.",
+      "html": "<a class=\"ds-nav-active\" href=\"#\" aria-current=\"page\"><span class=\"ds-nav-icon\"></span> Dashboard</a>",
+      "css": ".ds-nav-active { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 6px; background: #e6f3f2; color: #1a2e2e; font-size: 0.875rem; font-weight: 600; text-decoration: none; box-shadow: inset 2px 0 0 0 #0f766e; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "description": "Standard form field with accent focus ring.",
+      "html": "<input class=\"ds-input\" type=\"email\" placeholder=\"you@company.com\" />",
+      "css": ".ds-input { display: block; width: 100%; padding: 8px 12px; font-size: 0.875rem; color: #1a2e2e; background: #ffffff; border: 1px solid #d4dede; border-radius: 6px; } .ds-input:focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; border-color: #0f766e; } .ds-input::placeholder { color: #5c6f6f; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Coordinator's Notebook",
+    "overview": "Warm integrated operations workspace with Permit Teal accent and Geist typography. App shell replaces legacy gray-900 sidebar and blue-600 defaults.",
+    "keyCharacteristics": [
+      "OKLCH token ramp hue 195",
+      "Integrated surface-inset sidebar",
+      "Flat cards with border only",
+      "Mobile drawer with focus trap"
+    ],
+    "rules": [
+      { "name": "The Restrained Warmth Rule", "body": "Tinted neutrals carry the interface; accent on ≤10% of screen.", "section": "colors" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces flat at rest; tonal steps not shadows.", "section": "elevation" },
+      { "name": "The Operational Type Rule", "body": "No display clamp heroes on ops pages.", "section": "typography" }
+    ],
+    "dos": [
+      "Do use CSS variables from globals.css",
+      "Do keep nav labels visible on mobile",
+      "Do use PageHeader for page titles"
+    ],
+    "donts": [
+      "Don't use gray-900 sidebar or blue-600 accent",
+      "Don't use generic KPI card grids as default dashboard",
+      "Don't duplicate user info in sidebar and header"
+    ]
+  }
+}

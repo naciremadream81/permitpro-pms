@@ -1,0 +1,3 @@
+-- Guacamole database initialization script
+-- This will be run automatically when the MySQL container starts for the first time
+-- The official Guacamole image will handle the schema creation

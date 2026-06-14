@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Direction C — Fieldsheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira:wght@400;500;600;700&family=Saira+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sheet: #f3f5f7;
+    --grid-line: rgba(96, 125, 149, 0.13);
+    --graphite: #272c31;
+    --graphite-soft: #5a646d;
+    --line: #c6d0d8;
+    --line-strong: #272c31;
+    --orange: #c14a09;
+    --orange-soft: #f6e3d7;
+    --st-new: #4a545d;
+    --st-submitted: #155e9e;
+    --st-review: #8a5800;
+    --st-revisions: #b3300f;
+    --st-approved: #1e6b40;
+    --st-issued: #0e6b6b;
+    --st-inspections: #5b3da6;
+    --st-finaled: #6b7480;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background:
+      repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px 24px),
+      repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px 24px),
+      var(--sheet);
+    color: var(--graphite);
+    font-family: 'Saira', sans-serif;
+    font-size: 13.5px;
+    line-height: 1.45;
+    padding: 22px;
+    min-height: 100vh;
+  }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+
+  /* ── Sheet frame ──────────────────────────── */
+  .sheet {
+    max-width: 1360px;
+    margin: 0 auto;
+    border: 2px solid var(--line-strong);
+    outline: 1px solid var(--line-strong);
+    outline-offset: 4px;
+    background: rgba(255,255,255,0.55);
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 44px);
+  }
+
+  /* ── Sheet header band ────────────────────── */
+  .band {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 2px solid var(--line-strong);
+  }
+  .band .cell {
+    padding: 12px 18px;
+    border-right: 1px solid var(--line-strong);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .cell .lbl {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--graphite-soft);
+  }
+  .cell .val {
+    font-family: 'Saira Semi Condensed', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .brand-cell { background: var(--graphite); color: #f3f5f7; }
+  .brand-cell .val { font-size: 19px; letter-spacing: 0.06em; }
+  .brand-cell .val span { color: #ff8c4d; }
+  .band nav {
+    display: flex;
+    align-items: stretch;
+    flex: 1;
+  }
+  .band nav a {
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    font-family: 'Saira Semi Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--graphite-soft);
+    text-decoration: none;
+    border-right: 1px solid var(--line);
+  }
+  .band nav a:hover { color: var(--graphite); background: rgba(255,255,255,0.7); }
+  .band nav a.active {
+    color: var(--orange);
+    box-shadow: inset 0 -3px 0 var(--orange);
+    background: rgba(255,255,255,0.8);
+  }
+  .band .user {
+    border-right: none;
+    border-left: 1px solid var(--line-strong);
+    text-align: right;
+  }
+  .band .user .val { font-size: 13px; }
+
+  /* ── Pipeline strip (primary nav idea) ────── */
+  .pipeline {
+    display: flex;
+    border-bottom: 2px solid var(--line-strong);
+    background: rgba(255,255,255,0.4);
+  }
+  .stage {
+    flex: 1;
+    padding: 12px 14px 10px;
+    border-right: 1px solid var(--line);
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+  }
+  .stage:last-child { border-right: none; }
+  .stage:hover { background: rgba(255,255,255,0.85); }
+  .stage.active { background: var(--orange-soft); box-shadow: inset 0 -3px 0 var(--orange); }
+  .stage .count {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1;
+    display: block;
+  }
+  .stage .name {
+    font-family: 'Saira Semi Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--graphite-soft);
+    margin-top: 4px;
+    display: block;
+  }
+  .stage .flag {
+    position: absolute;
+    top: 10px; right: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--st-revisions);
+  }
+  .stage.active .name { color: var(--orange); }
+  @media (max-width: 1100px) {
+    .stage .flag { position: static; display: block; margin-top: 2px; }
+  }
+
+  /* ── Work area ────────────────────────────── */
+  .work { flex: 1; padding: 20px 24px 0; }
+
+  .work-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .work-title {
+    font-family: 'Saira Semi Condensed', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .work-title .n {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--graphite-soft);
+    margin-left: 10px;
+  }
+  .work-tools { display: flex; gap: 10px; align-items: center; }
+  .field {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    border: 1px solid var(--graphite);
+    background: #fff;
+    padding: 6px 10px;
+    width: 240px;
+    color: var(--graphite);
+  }
+  .field::placeholder { color: var(--graphite-soft); }
+  .btn {
+    font-family: 'Saira Semi Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid var(--graphite);
+    background: #fff;
+    color: var(--graphite);
+    padding: 7px 16px;
+    cursor: pointer;
+  }
+  .btn.primary { background: var(--orange); border-color: var(--orange); color: #fff; }
+
+  /* annotation note */
+  .note {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--st-revisions);
+    margin-bottom: 12px;
+  }
+  .note .tri { font-size: 12px; }
+
+  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line-strong); }
+  thead th {
+    font-family: 'Saira Semi Condensed', sans-serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--graphite-soft);
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 2px solid var(--line-strong);
+    background: var(--sheet);
+    white-space: nowrap;
+  }
+  thead th.num, td.num { text-align: right; }
+  tbody td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+  tbody tr:hover { background: #fdf9f5; }
+  td.id a {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--st-submitted);
+    text-decoration: none;
+  }
+  td.id a:hover { text-decoration: underline; }
+  td.proj {
+    font-family: 'Saira Semi Condensed', sans-serif;
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  td.proj .addr {
+    display: block;
+    font-family: 'Saira', sans-serif;
+    font-size: 11.5px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--graphite-soft);
+  }
+  td.dim { color: var(--graphite-soft); font-size: 12.5px; }
+  td.num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--graphite-soft);
+    white-space: nowrap;
+  }
+  .rev-flag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--st-revisions);
+    white-space: nowrap;
+  }
+
+  .tag {
+    display: inline-block;
+    font-family: 'Saira Semi Condensed', sans-serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #fff;
+    padding: 3px 10px 3px 12px;
+    clip-path: polygon(6px 0, 100% 0, 100% 100%, 6px 100%, 0 50%);
+    white-space: nowrap;
+  }
+
+  /* ── Title block footer ───────────────────── */
+  .titleblock {
+    margin-top: 22px;
+    border-top: 2px solid var(--line-strong);
+    display: flex;
+    justify-content: flex-end;
+  }
+  .tb {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    border-left: 2px solid var(--line-strong);
+  }
+  .tb .cell {
+    border-right: 1px solid var(--line-strong);
+    border-bottom: none;
+    padding: 8px 16px 10px;
+    min-width: 120px;
+  }
+  .tb .cell:last-child { border-right: none; }
+  .tb .lbl {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--graphite-soft);
+    display: block;
+  }
+  .tb .val {
+    font-family: 'Saira Semi Condensed', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <div class="band">
+    <div class="cell brand-cell">
+      <span class="val">PERMITPRO<span>▲</span></span>
+    </div>
+    <nav>
+      <a href="#" class="active">Packages</a>
+      <a href="#">Review</a>
+      <a href="#">Contractors</a>
+      <a href="#">Customers</a>
+      <a href="#">Reports</a>
+      <a href="#">Admin</a>
+    </nav>
+    <div class="cell user">
+      <span class="lbl">Coordinator</span>
+      <span class="val">S. Swonger</span>
+    </div>
+  </div>
+
+  <nav class="pipeline" aria-label="Pipeline stages">
+    <a class="stage" href="#"><span class="count">6</span><span class="name">New</span></a>
+    <a class="stage" href="#"><span class="count">9</span><span class="name">Submitted</span></a>
+    <a class="stage active" href="#"><span class="count">12</span><span class="name">In Review</span><span class="flag">▲3 stalled</span></a>
+    <a class="stage" href="#"><span class="count">5</span><span class="name">Revisions</span><span class="flag">▲1 stalled</span></a>
+    <a class="stage" href="#"><span class="count">4</span><span class="name">Approved</span></a>
+    <a class="stage" href="#"><span class="count">7</span><span class="name">Issued</span></a>
+    <a class="stage" href="#"><span class="count">4</span><span class="name">Inspections</span></a>
+    <a class="stage" href="#"><span class="count">214</span><span class="name">Finaled</span></a>
+  </nav>
+
+  <div class="work">
+    <div class="work-head">
+      <h1 class="work-title">In Review — All Counties <span class="n">12 PACKAGES · SORT: IDLE DESC</span></h1>
+      <div class="work-tools">
+        <input class="field" type="search" placeholder="FIND: NO. / ADDRESS / NAME">
+        <button class="btn">Columns</button>
+        <button class="btn primary">+ New Package</button>
+      </div>
+    </div>
+
+    <p class="note"><span class="tri">▲</span> REVISION FLAG = NO ACTIVITY ≥ 3 DAYS. 2 CONTRACTOR COMPLIANCE DOCS EXPIRE WITHIN 30 DAYS — SEE CONTRACTORS / VAULT.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>No.</th>
+          <th>Project</th>
+          <th>Type</th>
+          <th>County</th>
+          <th>Contractor</th>
+          <th>Status</th>
+          <th>Next Action</th>
+          <th class="num">Idle</th>
+          <th class="num">Opened</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="id"><a href="#">BLD-2026-04417</a></td>
+          <td class="proj">Maddox Residence Addition<span class="addr">4112 W Euclid Ave, Tampa FL 33629</span></td>
+          <td class="dim">Building</td>
+          <td class="dim">Hillsborough</td>
+          <td class="dim">Gulfwind Builders</td>
+          <td><span class="tag" style="background:var(--st-review)">In Review</span></td>
+          <td class="dim">Respond to plan comments (4 open)</td>
+          <td class="num"><span class="rev-flag">▲ 5d</span></td>
+          <td class="num">05-12</td>
+        </tr>
+        <tr>
+          <td class="id"><a href="#">DEM-2026-00118</a></td>
+          <td class="proj">Gandy Self-Storage Demolition<span class="addr">4310 W Gandy Blvd, Tampa FL 33611</span></td>
+          <td class="dim">Demolition</td>
+          <td class="dim">Hillsborough</td>
+          <td class="dim">Bayline Demo &amp; Haul</td>
+          <td><span class="tag" style="background:var(--st-review)">In Review</span></td>
+          <td class="dim">Asbestos survey follow-up</td>
+          <td class="num"><span class="rev-flag">▲ 3d</span></td>
+          <td class="num">05-30</td>
+        </tr>
+        <tr>
+          <td class="id"><a href="#">BLD-2026-04298</a></td>
+          <td class="proj">Westshore Retail Shell, Unit C<span class="addr">5210 W Kennedy Blvd, Tampa FL 33609</span></td>
+          <td class="dim">Building</td>
+          <td class="dim">Hillsborough</td>
+          <td class="dim">Meridian Const. Group</td>
+          <td><span class="tag" style="background:var(--st-review)">In Review</span></td>
+          <td class="dim">Await cycle-1 comments</td>
+          <td class="num">2d</td>
+          <td class="num">05-21</td>
+        </tr>
+        <tr>
+          <td class="id"><a href="#">MEC-2026-00702</a></td>
+          <td class="proj">Bayfront Clinic Chiller Swap<span class="addr">701 6th St S, St. Petersburg FL 33701</span></td>
+          <td class="dim">Mechanical</td>
+          <td class="dim">Pinellas</td>
+          <td class="dim">Bayside Mechanical</td>
+          <td><span class="tag" style="background:var(--st-review)">In Review</span></td>
+          <td class="dim">Await cycle-2 comments</td>
+          <td class="num">1d</td>
+          <td class="num">05-08</td>
+        </tr>
+        <tr>
+          <td class="id"><a href="#">BLD-2026-04388</a></td>
+          <td class="proj">Curlew Creek Clubhouse Reno<span class="addr">2810 Curlew Rd, Clearwater FL 33761</span></td>
+          <td class="dim">Building</td>
+          <td class="dim">Pinellas</td>
+          <td class="dim">Gulfwind Builders</td>
+          <td><span class="tag" style="background:var(--st-review)">In Review</span></td>
+          <td class="dim">Fire dept. concurrent review</td>
+          <td class="num">1d</td>
+          <td class="num">05-19</td>
+        </tr>
+        <tr>
+          <td class="id"><a href="#">PLB-2026-02251</a></td>
+          <td class="proj">Tarpon Bakehouse Grease Trap<span class="addr">114 E Tarpon Ave, Tarpon Springs FL 34689</span></td>
+          <td class="dim">Plumbing</td>
+          <td class="dim">Pinellas</td>
+          <td class="dim">Pelican Plumbing</td>
+          <td><span class="tag" style="background:var(--st-review)">In Review</span></td>
+          <td class="dim">Health dept. sign-off pending</td>
+          <td class="num">1d</td>
+          <td class="num">06-01</td>
+        </tr>
+        <tr>
+          <td class="id"><a href="#">ELE-2026-02034</a></td>
+          <td class="proj">Ybor Microbrewery Service Upgrade<span class="addr">1812 N 15th St, Tampa FL 33605</span></td>
+          <td class="dim">Electrical</td>
+          <td class="dim">Hillsborough</td>
+          <td class="dim">Suncoast Electric</td>
+          <td><span class="tag" style="background:var(--st-review)">In Review</span></td>
+          <td class="dim">Await cycle-1 comments</td>
+          <td class="num">0d</td>
+          <td class="num">06-04</td>
+        </tr>
+        <tr>
+          <td class="id"><a href="#">BLD-2026-04532</a></td>
+          <td class="proj">Safety Harbor Spa Cabanas<span class="addr">105 N Bayshore Dr, Safety Harbor FL 34695</span></td>
+          <td class="dim">Building</td>
+          <td class="dim">Pinellas</td>
+          <td class="dim">ClearSpan Aluminum</td>
+          <td><span class="tag" style="background:var(--st-review)">In Review</span></td>
+          <td class="dim">Zoning verification</td>
+          <td class="num">0d</td>
+          <td class="num">06-06</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="titleblock">
+      <div class="tb">
+        <div class="cell"><span class="lbl">View</span><span class="val">PK-02 · In Review</span></div>
+        <div class="cell"><span class="lbl">Coordinator</span><span class="val">S. Swonger</span></div>
+        <div class="cell"><span class="lbl">Date</span><span class="val">2026-06-12</span></div>
+        <div class="cell"><span class="lbl">Showing</span><span class="val">8 / 12 · Page 1</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

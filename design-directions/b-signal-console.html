@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Direction B — Signal Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;500;600;700&family=Chivo+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c1116;
+    --panel: #11181f;
+    --panel-raised: #16202a;
+    --row-hover: #141d26;
+    --row-selected: #1b2836;
+    --line: #243140;
+    --line-soft: #1a2530;
+    --text: #d7e0e8;
+    --text-dim: #8295a5;
+    --text-faint: #5b6c7a;
+    --amber: #ffb454;
+    --amber-deep: #c97f1e;
+    --st-new: #9aa7b1;
+    --st-submitted: #62b6ff;
+    --st-review: #ffb454;
+    --st-revisions: #ff8672;
+    --st-approved: #4fd99a;
+    --st-issued: #43d6c5;
+    --st-inspections: #c9a2ff;
+    --st-finaled: #74858f;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Chivo', sans-serif;
+    font-size: 13.5px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .mono { font-family: 'Chivo Mono', monospace; }
+
+  /* ── Top status bar ───────────────────────── */
+  .statusbar {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 0 18px;
+    height: 42px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  .brand {
+    font-family: 'Chivo Mono', monospace;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    color: var(--text);
+  }
+  .brand span { color: var(--amber); }
+  .ticker { display: flex; gap: 22px; flex: 1; }
+  .tick {
+    font-family: 'Chivo Mono', monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    text-decoration: none;
+  }
+  .tick b { color: var(--text); font-weight: 600; margin-left: 6px; }
+  .tick.alert b { color: var(--st-revisions); }
+  .tick.warn b { color: var(--amber); }
+  .session {
+    font-family: 'Chivo Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+  }
+  .session b { color: var(--text-dim); font-weight: 500; }
+
+  /* ── Frame: rail + main + inspector ───────── */
+  .frame { display: flex; flex: 1; min-height: 0; }
+
+  .rail {
+    width: 52px;
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .rail a {
+    width: 36px; height: 36px;
+    display: grid; place-items: center;
+    border-radius: 6px;
+    color: var(--text-faint);
+    text-decoration: none;
+  }
+  .rail a:hover { color: var(--text); background: var(--panel-raised); }
+  .rail a.active { color: var(--amber); background: var(--panel-raised); }
+  .rail .spacer { flex: 1; }
+  .rail svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+
+  /* ── Main column ──────────────────────────── */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    flex-shrink: 0;
+  }
+  .view-title {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-right: 8px;
+  }
+  .view-title .n { color: var(--text-dim); font-weight: 400; font-family: 'Chivo Mono', monospace; font-size: 12px; }
+  .token {
+    font-family: 'Chivo Mono', monospace;
+    font-size: 11.5px;
+    color: var(--amber);
+    background: var(--panel-raised);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 3px 9px;
+    letter-spacing: 0.03em;
+  }
+  .token .k { color: var(--text-faint); }
+  .token .x { color: var(--text-faint); margin-left: 6px; cursor: pointer; }
+  .cmd {
+    flex: 1;
+    max-width: 380px;
+    font-family: 'Chivo Mono', monospace;
+    font-size: 12px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 5px 10px;
+  }
+  .cmd::placeholder { color: var(--text-faint); }
+  .toolbar .grow { flex: 1; }
+  .btn {
+    font-family: 'Chivo Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    background: var(--panel-raised);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .btn.primary { background: var(--amber); border-color: var(--amber); color: #20160a; }
+
+  /* ── Table ────────────────────────────────── */
+  .grid { flex: 1; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    position: sticky; top: 0;
+    background: var(--bg);
+    font-family: 'Chivo Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    text-align: left;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  thead th.num, td.num { text-align: right; }
+  tbody td {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  tbody tr { cursor: default; }
+  tbody tr:hover { background: var(--row-hover); }
+  tbody tr.selected { background: var(--row-selected); }
+  td.sel-mark { width: 8px; padding: 8px 0 8px 6px; color: transparent; font-family:'Chivo Mono',monospace; }
+  tr.selected td.sel-mark { color: var(--amber); }
+  td.id { font-family: 'Chivo Mono', monospace; font-size: 12px; font-weight: 500; color: var(--text); }
+  td.proj { font-weight: 500; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+  td.proj .sub { display: block; font-size: 11px; color: var(--text-faint); font-weight: 400; }
+  td.dim { color: var(--text-dim); font-size: 12.5px; }
+  td.num { font-family: 'Chivo Mono', monospace; font-size: 12px; color: var(--text-dim); }
+  td.num .stall { color: var(--st-revisions); font-weight: 600; }
+
+  .tag {
+    font-family: 'Chivo Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+  }
+  .tag::before { content: '['; color: var(--text-faint); font-weight: 400; }
+  .tag::after { content: ']'; color: var(--text-faint); font-weight: 400; }
+
+  /* ── Inspector ────────────────────────────── */
+  .inspector {
+    width: 360px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--line);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .insp-head { padding: 16px 18px 12px; border-bottom: 1px solid var(--line-soft); }
+  .insp-id {
+    font-family: 'Chivo Mono', monospace;
+    font-size: 11.5px;
+    color: var(--amber);
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+  .insp-title { font-size: 16px; font-weight: 700; line-height: 1.25; }
+  .insp-sub { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+  .insp-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .insp-section { padding: 14px 18px; border-bottom: 1px solid var(--line-soft); }
+  .insp-label {
+    font-family: 'Chivo Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 10px;
+  }
+  .kv { display: flex; justify-content: space-between; font-size: 12.5px; padding: 3px 0; }
+  .kv .k { color: var(--text-dim); }
+  .kv .v { font-family: 'Chivo Mono', monospace; font-size: 12px; }
+
+  .timeline { list-style: none; }
+  .timeline li {
+    position: relative;
+    padding: 0 0 14px 22px;
+    font-size: 12.5px;
+  }
+  .timeline li::before {
+    content: '';
+    position: absolute; left: 5px; top: 5px;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--line);
+  }
+  .timeline li::after {
+    content: '';
+    position: absolute; left: 8px; top: 14px; bottom: -2px;
+    width: 1px; background: var(--line-soft);
+  }
+  .timeline li:last-child::after { display: none; }
+  .timeline li.done::before { background: var(--st-approved); }
+  .timeline li.now::before { background: var(--amber); box-shadow: 0 0 0 3px rgba(255,180,84,0.18); }
+  .timeline .when {
+    display: block;
+    font-family: 'Chivo Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    margin-top: 1px;
+  }
+  .timeline li.now .evt { color: var(--amber); font-weight: 600; }
+
+  .doc { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; font-size: 12.5px; }
+  .doc .name { color: var(--text); }
+  .doc .meta { font-family: 'Chivo Mono', monospace; font-size: 10.5px; color: var(--text-faint); }
+  .doc.missing .name { color: var(--st-revisions); }
+  .doc.missing .meta { color: var(--st-revisions); }
+
+  /* ── Footer hints ─────────────────────────── */
+  .hints {
+    height: 30px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 0 18px;
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    font-family: 'Chivo Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+  .hints b {
+    color: var(--text-dim);
+    font-weight: 500;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0 5px;
+    margin-right: 5px;
+  }
+</style>
+</head>
+<body>
+
+<div class="statusbar">
+  <div class="brand">PERMITPRO<span>/OPS</span></div>
+  <nav class="ticker">
+    <a class="tick" href="#">ACTIVE<b>47</b></a>
+    <a class="tick alert" href="#">STALLED<b>3</b></a>
+    <a class="tick warn" href="#">IN REVIEW<b>12</b></a>
+    <a class="tick warn" href="#">OPEN COMMENTS<b>9</b></a>
+    <a class="tick" href="#">EXPIRING DOCS<b>2</b></a>
+  </nav>
+  <div class="session"><b>s.swonger</b> · coordinator · 14:32 EDT</div>
+</div>
+
+<div class="frame">
+
+  <nav class="rail" aria-label="Main">
+    <a href="#" class="active" title="Packages"><svg viewBox="0 0 24 24"><path d="M4 7l8-4 8 4v10l-8 4-8-4V7zM4 7l8 4 8-4M12 11v10"/></svg></a>
+    <a href="#" title="Review queue"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg></a>
+    <a href="#" title="Contractors"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM22 21v-2a4 4 0 00-3-3.87"/></svg></a>
+    <a href="#" title="Customers"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></a>
+    <a href="#" title="Reports"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M8 16v-5M13 16V8M18 16v-3"/></svg></a>
+    <span class="spacer"></span>
+    <a href="#" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a7.97 7.97 0 000-6M4.6 9a7.97 7.97 0 000 6M9 19.4a7.97 7.97 0 006 0M15 4.6a7.97 7.97 0 00-6 0"/></svg></a>
+  </nav>
+
+  <div class="main">
+    <div class="toolbar">
+      <span class="view-title">Packages <span class="n">47 / page 1</span></span>
+      <span class="token"><span class="k">status:</span>active <span class="x">×</span></span>
+      <span class="token"><span class="k">sort:</span>idle-desc <span class="x">×</span></span>
+      <input class="cmd" type="text" placeholder="/ filter — try county:pinellas or stalled:true">
+      <span class="grow"></span>
+      <button class="btn">Export</button>
+      <button class="btn primary">+ New Package</button>
+    </div>
+
+    <div class="grid">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>ID</th>
+            <th>Project</th>
+            <th>Status</th>
+            <th>County</th>
+            <th>Contractor</th>
+            <th>Next Task</th>
+            <th class="num">Idle</th>
+            <th class="num">Opened</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="selected">
+            <td class="sel-mark">▍</td>
+            <td class="id">BLD-2026-04417</td>
+            <td class="proj">Maddox Residence Addition<span class="sub">4112 W Euclid Ave, Tampa</span></td>
+            <td><span class="tag" style="color:var(--st-review)">IN REVIEW</span></td>
+            <td class="dim">Hillsborough</td>
+            <td class="dim">Gulfwind Builders</td>
+            <td class="dim">Respond to plan comments</td>
+            <td class="num"><span class="stall">5d ▲</span></td>
+            <td class="num">05-12</td>
+          </tr>
+          <tr>
+            <td class="sel-mark">▍</td>
+            <td class="id">ELE-2026-01988</td>
+            <td class="proj">Brightline Dental Buildout<span class="sub">220 S Pineapple Ave, Sarasota</span></td>
+            <td><span class="tag" style="color:var(--st-revisions)">REVISIONS</span></td>
+            <td class="dim">Sarasota</td>
+            <td class="dim">Suncoast Electric</td>
+            <td class="dim">Upload revised load calcs</td>
+            <td class="num"><span class="stall">4d ▲</span></td>
+            <td class="num">05-28</td>
+          </tr>
+          <tr>
+            <td class="sel-mark">▍</td>
+            <td class="id">DEM-2026-00118</td>
+            <td class="proj">Gandy Self-Storage Demolition<span class="sub">4310 W Gandy Blvd, Tampa</span></td>
+            <td><span class="tag" style="color:var(--st-review)">IN REVIEW</span></td>
+            <td class="dim">Hillsborough</td>
+            <td class="dim">Bayline Demo &amp; Haul</td>
+            <td class="dim">Asbestos survey follow-up</td>
+            <td class="num"><span class="stall">3d ▲</span></td>
+            <td class="num">05-30</td>
+          </tr>
+          <tr>
+            <td class="sel-mark">▍</td>
+            <td class="id">MEC-2026-00731</td>
+            <td class="proj">Coastal Storage HVAC Replacement<span class="sub">7800 Ulmerton Rd, Largo</span></td>
+            <td><span class="tag" style="color:var(--st-submitted)">SUBMITTED</span></td>
+            <td class="dim">Pinellas</td>
+            <td class="dim">Bayside Mechanical</td>
+            <td class="dim">Await intake confirmation</td>
+            <td class="num">1d</td>
+            <td class="num">06-02</td>
+          </tr>
+          <tr>
+            <td class="sel-mark">▍</td>
+            <td class="id">ELE-2026-02071</td>
+            <td class="proj">Seabreeze Marina Dock Power<span class="sub">200 Bayshore Dr, Dunedin</span></td>
+            <td><span class="tag" style="color:var(--st-submitted)">SUBMITTED</span></td>
+            <td class="dim">Pinellas</td>
+            <td class="dim">Suncoast Electric</td>
+            <td class="dim">Confirm NOA attachments</td>
+            <td class="num">1d</td>
+            <td class="num">06-05</td>
+          </tr>
+          <tr>
+            <td class="sel-mark">▍</td>
+            <td class="id">BLD-2026-04561</td>
+            <td class="proj">Veranda Townhomes, Phase 2<span class="sub">1530 Curlew Rd, Palm Harbor</span></td>
+            <td><span class="tag" style="color:var(--st-new)">NEW</span></td>
+            <td class="dim">Pinellas</td>
+            <td class="dim">Gulfwind Builders</td>
+            <td class="dim">Assemble site plan set</td>
+            <td class="num">0d</td>
+            <td class="num">06-09</td>
+          </tr>
+          <tr>
+            <td class="sel-mark">▍</td>
+            <td class="id">BLD-2026-04610</td>
+            <td class="proj">Ozona Cottage Elevation<span class="sub">310 Orange St, Ozona</span></td>
+            <td><span class="tag" style="color:var(--st-new)">NEW</span></td>
+            <td class="dim">Pinellas</td>
+            <td class="dim">Gulfwind Builders</td>
+            <td class="dim">Intake checklist</td>
+            <td class="num">0d</td>
+            <td class="num">06-11</td>
+          </tr>
+          <tr>
+            <td class="sel-mark">▍</td>
+            <td class="id">PLB-2026-02204</td>
+            <td class="proj">Hideaway Café Remodel<span class="sub">668 Central Ave, St. Petersburg</span></td>
+            <td><span class="tag" style="color:var(--st-approved)">APPROVED</span></td>
+            <td class="dim">Pinellas</td>
+            <td class="dim">Pelican Plumbing</td>
+            <td class="dim">Schedule pickup of card</td>
+            <td class="num">0d</td>
+            <td class="num">04-30</td>
+          </tr>
+          <tr>
+            <td class="sel-mark">▍</td>
+            <td class="id">BLD-2026-03987</td>
+            <td class="proj">Sunstate Warehouse Re-roof<span class="sub">9100 Adamo Dr, Tampa</span></td>
+            <td><span class="tag" style="color:var(--st-issued)">ISSUED</span></td>
+            <td class="dim">Hillsborough</td>
+            <td class="dim">Apex Roofing FL</td>
+            <td class="dim">—</td>
+            <td class="num">2d</td>
+            <td class="num">04-17</td>
+          </tr>
+          <tr>
+            <td class="sel-mark">▍</td>
+            <td class="id">FIR-2026-00412</td>
+            <td class="proj">Meridian Office Sprinkler Retrofit<span class="sub">501 E Kennedy Blvd, Tampa</span></td>
+            <td><span class="tag" style="color:var(--st-inspections)">INSPECTIONS</span></td>
+            <td class="dim">Hillsborough</td>
+            <td class="dim">FlowSafe Fire Prot.</td>
+            <td class="dim">Rough-in insp. 06-16</td>
+            <td class="num">1d</td>
+            <td class="num">03-24</td>
+          </tr>
+          <tr>
+            <td class="sel-mark">▍</td>
+            <td class="id">BLD-2025-09871</td>
+            <td class="proj">Palma Ceia Pool Enclosure<span class="sub">3402 W San Jose St, Tampa</span></td>
+            <td><span class="tag" style="color:var(--st-finaled)">FINALED</span></td>
+            <td class="dim">Hillsborough</td>
+            <td class="dim">ClearSpan Aluminum</td>
+            <td class="dim">—</td>
+            <td class="num">—</td>
+            <td class="num">11-03</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <aside class="inspector">
+    <div class="insp-head">
+      <div class="insp-id">BLD-2026-04417 · RESIDENTIAL ADDITION</div>
+      <div class="insp-title">Maddox Residence Addition</div>
+      <div class="insp-sub">4112 W Euclid Ave, Tampa FL 33629 · Hillsborough County</div>
+      <div class="insp-actions">
+        <button class="btn primary">Open Package</button>
+        <button class="btn">Log Activity</button>
+      </div>
+    </div>
+
+    <div class="insp-section">
+      <div class="insp-label">Package</div>
+      <div class="kv"><span class="k">Customer</span><span class="v">Maddox, R. &amp; T.</span></div>
+      <div class="kv"><span class="k">Contractor</span><span class="v">Gulfwind Builders</span></div>
+      <div class="kv"><span class="k">Coordinator</span><span class="v">s.swonger</span></div>
+      <div class="kv"><span class="k">Billing</span><span class="v">Deposit held</span></div>
+      <div class="kv"><span class="k">Idle</span><span class="v" style="color:var(--st-revisions)">5 days — stalled</span></div>
+    </div>
+
+    <div class="insp-section">
+      <div class="insp-label">Timeline</div>
+      <ul class="timeline">
+        <li class="now"><span class="evt">County review — cycle 2</span><span class="when">JUN 07 · plan comments received, 4 open</span></li>
+        <li class="done"><span class="evt">Resubmitted to Hillsborough ePermits</span><span class="when">JUN 02 · s.swonger</span></li>
+        <li class="done"><span class="evt">Revisions returned by county</span><span class="when">MAY 23 · 11 comments</span></li>
+        <li class="done"><span class="evt">Submitted — cycle 1</span><span class="when">MAY 14 · s.swonger</span></li>
+        <li class="done"><span class="evt">Package opened</span><span class="when">MAY 12 · intake complete</span></li>
+      </ul>
+    </div>
+
+    <div class="insp-section">
+      <div class="insp-label">Documents — 6 of 7</div>
+      <div class="doc"><span class="name">Site plan (rev B)</span><span class="meta">PDF · JUN 02</span></div>
+      <div class="doc"><span class="name">Structural calcs</span><span class="meta">PDF · JUN 02</span></div>
+      <div class="doc"><span class="name">Energy forms</span><span class="meta">PDF · MAY 14</span></div>
+      <div class="doc missing"><span class="name">Truss engineering — missing</span><span class="meta">REQUIRED</span></div>
+    </div>
+
+    <div class="insp-section">
+      <div class="insp-label">Open review comments — 4</div>
+      <div class="kv"><span class="k">Zoning setback, west elev.</span><span class="v" style="color:var(--amber)">OPEN</span></div>
+      <div class="kv"><span class="k">Egress window, bed 3</span><span class="v" style="color:var(--amber)">OPEN</span></div>
+      <div class="kv"><span class="k">Wind-load attachment detail</span><span class="v" style="color:var(--amber)">OPEN</span></div>
+      <div class="kv"><span class="k">Impervious area calc</span><span class="v" style="color:var(--amber)">OPEN</span></div>
+    </div>
+  </aside>
+
+</div>
+
+<div class="hints">
+  <span><b>/</b>filter</span>
+  <span><b>j k</b>move</span>
+  <span><b>↵</b>open package</span>
+  <span><b>s</b>stalled only</span>
+  <span><b>n</b>new package</span>
+  <span><b>⌘K</b>command palette</span>
+</div>
+
+</body>
+</html>
