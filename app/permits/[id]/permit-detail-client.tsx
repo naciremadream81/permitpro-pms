@@ -149,6 +149,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
   const [completionPct, setCompletionPct] = useState(0)
   const [checklistLoading, setChecklistLoading] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
+  const [uploadingItemId, setUploadingItemId] = useState<string | null>(null)
 
   // Fetch the county checklist for this permit
   const fetchChecklist = async () => {
@@ -180,6 +181,52 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
       console.error('Error regenerating checklist:', err)
     } finally {
       setRegenerating(false)
+    }
+  }
+
+  // Link (or unlink) an existing permit document to a checklist item.
+  // Setting a document marks the item UPLOADED; clearing it resets to PENDING.
+  const linkChecklistItem = async (itemId: string, documentId: string | null) => {
+    await fetch(`/api/permits/${permit.id}/checklist/${itemId}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ documentId, status: documentId ? 'UPLOADED' : 'PENDING' }),
+    })
+    await fetchChecklist()
+  }
+
+  // Upload a file for a checklist item (using the requirement's category),
+  // then link the new document to that item and mark it UPLOADED.
+  const uploadAndLinkChecklistItem = async (item: ChecklistItem, file: File) => {
+    setUploadingItemId(item.id)
+    setError('')
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('category', item.requirement.documentCategory)
+      formData.append('notes', `Checklist: ${item.requirement.documentName}`)
+      formData.append('isRequired', String(item.requirement.isRequired))
+
+      const res = await fetch(`/api/permits/${permit.id}/documents`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error || 'Upload failed')
+      }
+      const { data: doc } = await res.json()
+
+      await linkChecklistItem(item.id, doc.id)
+      // Refresh the permit so the Documents section reflects the new upload too.
+      await refreshPermit()
+    } catch (err) {
+      console.error('Checklist item upload failed:', err)
+      setError(err instanceof Error ? err.message : 'Failed to upload document for checklist item')
+    } finally {
+      setUploadingItemId(null)
     }
   }
 
@@ -771,16 +818,59 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                     </div>
                     <p className="text-xs text-muted">
                       {item.requirement.documentCategory}
-                      {item.document && <> · {item.document.fileName}</>}
+                      {item.document && (
+                        <>
+                          {' · '}
+                          <a
+                            href={`/api/documents/${item.document.id}/download`}
+                            className="text-accent hover:underline"
+                          >
+                            {item.document.fileName}
+                          </a>
+                        </>
+                      )}
                     </p>
                   </div>
-                  <span
-                    className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                      CHECKLIST_STATUS_STYLES[item.status] ?? 'text-muted bg-surface-inset'
-                    }`}
-                  >
-                    {item.status.replace(/_/g, ' ')}
-                  </span>
+                  <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                        CHECKLIST_STATUS_STYLES[item.status] ?? 'text-muted bg-surface-inset'
+                      }`}
+                    >
+                      {item.status.replace(/_/g, ' ')}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {/* Link an already-uploaded permit document */}
+                      {permit.documents.length > 0 && (
+                        <select
+                          value={item.document?.id ?? ''}
+                          onChange={(e) => linkChecklistItem(item.id, e.target.value || null)}
+                          disabled={uploadingItemId === item.id}
+                          className="max-w-[9rem] truncate rounded-md border border-border bg-surface px-1.5 py-0.5 text-xs text-ink"
+                          title="Link an existing document"
+                        >
+                          <option value="">Link doc…</option>
+                          {permit.documents.map((d) => (
+                            <option key={d.id} value={d.id}>{d.fileName}</option>
+                          ))}
+                        </select>
+                      )}
+                      {/* Upload a new file for this item */}
+                      <label className="cursor-pointer rounded-md border border-border px-2 py-0.5 text-xs font-medium text-ink transition-colors hover:bg-surface-inset">
+                        <input
+                          type="file"
+                          className="hidden"
+                          disabled={uploadingItemId === item.id}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0]
+                            if (f) uploadAndLinkChecklistItem(item, f)
+                            e.target.value = ''
+                          }}
+                        />
+                        {uploadingItemId === item.id ? 'Uploading…' : item.document ? 'Replace' : 'Upload'}
+                      </label>
+                    </div>
+                  </div>
                 </li>
               ))}
             </ul>
