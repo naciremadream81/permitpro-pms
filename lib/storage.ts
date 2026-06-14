@@ -200,7 +200,7 @@ class GcsStorageAdapter implements StorageAdapter {
   constructor(bucketName: string) {
     // Loaded lazily at runtime so local/dev (STORAGE_DRIVER=local) never
     // requires the package to be installed or present at import time.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
     const { Storage } = require('@google-cloud/storage') as { Storage: GcsStorageCtor }
     this.bucket = new Storage().bucket(bucketName)
   }
