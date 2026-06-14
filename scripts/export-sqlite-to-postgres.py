@@ -3,7 +3,7 @@
 Export the SQLite production snapshot as Postgres INSERT statements.
 
 Reads column types from the generated Postgres DDL
-(supabase/migrations/0001_init_postgres.sql) so SQLite's loose storage
+(supabase/migrations/20260612211348_init_permitpro_schema.sql) so SQLite's loose storage
 (epoch-ms datetimes, 0/1 booleans) is cast correctly, and orders tables
 topologically from the DDL's FOREIGN KEY constraints so inserts satisfy FKs.
 
@@ -17,7 +17,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-DDL = Path(__file__).resolve().parent.parent / "supabase/migrations/0001_init_postgres.sql"
+DDL = Path(__file__).resolve().parent.parent / "supabase/migrations/20260612211348_init_permitpro_schema.sql"
 
 
 def parse_ddl(ddl_text):
