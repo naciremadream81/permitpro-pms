@@ -26,9 +26,13 @@ import type { NextAuthConfig } from 'next-auth'
  * during sign-in, not in middleware, so this is safe.
  */
 export const authConfig: NextAuthConfig = {
-  // Trust the host in development (required for NextAuth v5)
-  // This ensures cookies are set correctly
+  // Trust the host (required for NextAuth v5 behind a proxy, e.g. Cloud Run)
+  // so the callback URL/cookies resolve correctly.
   trustHost: true,
+  // NextAuth v5 reads AUTH_SECRET by default; we provision the secret as
+  // NEXTAUTH_SECRET (apphosting.yaml), so wire it explicitly to avoid a
+  // MissingSecret failure in production.
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   providers: [
     Credentials({
       name: 'Credentials',

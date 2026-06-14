@@ -108,18 +108,6 @@ export default function LoginPage() {
               {loading ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>
-
-          <div className="border-t-2 border-ink pt-3">
-            <p className="text-xs text-muted">
-              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-ink">
-                Demo credentials
-              </span>
-              <br />
-              Admin: admin@permitco.com / admin123
-              <br />
-              User: user@permitco.com / user123
-            </p>
-          </div>
         </div>
       </div>
     </div>
