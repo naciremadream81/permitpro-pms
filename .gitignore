@@ -72,3 +72,11 @@ supabase/data/
 
 # Generated Prisma client (repo-local output; regenerate with prisma generate)
 lib/generated/
+
+# Firebase CLI artifacts (debug logs + local emulator/runtime cache)
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+database-debug.log*
+ui-debug.log*
+*-debug.log
