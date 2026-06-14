@@ -11,6 +11,9 @@ runConfig:
   memoryMiB: 1024
 
 env:
+  # TODO: set after the App Hosting backend is created (Part D) — its public URL
+  # isn't known until then. Update this value and trigger a new rollout, or
+  # NextAuth callbacks/redirects will break. Project: permitpro-pms-e596b.
   - variable: NEXTAUTH_URL
     value: https://REPLACE-WITH-APP-HOSTING-DOMAIN
     availability:
@@ -28,6 +31,6 @@ env:
     availability:
       - RUNTIME
   - variable: GCS_BUCKET
-    value: REPLACE-WITH-PROJECT-ID.appspot.com
+    value: permit_storage-1
     availability:
       - RUNTIME

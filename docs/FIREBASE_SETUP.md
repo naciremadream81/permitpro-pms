@@ -20,8 +20,15 @@ file storage (Cloud Storage). Follow the parts in order.
 | `GCS_BUCKET` | `apphosting.yaml` env | the bucket you create in Part C |
 | `CRON_SECRET` | App Hosting **secret** | generated in Part I (daily snapshot job) |
 
-Throughout, replace these placeholders: `PROJECT_ID`, `REGION` (use **`us-east1`** to sit
-near the Supabase `us-east-1` database), `BUCKET`.
+**This project's actual values** (substitute for the placeholders below):
+
+| Placeholder | Value |
+|---|---|
+| `PROJECT_ID` | `permitpro-pms-e596b` |
+| `BUCKET` | `permit_storage-1` |
+| `REGION` | `us-east1` (near the Supabase `us-east-1` DB) |
+| App Hosting repo / branch | `naciremadream81/permitpro-pms` / `master` |
+| `NEXTAUTH_URL` | *not yet known — set after the backend is created in Part D* |
 
 ---
 
@@ -49,9 +56,11 @@ You can do this in the console (https://console.firebase.google.com) or CLI. **B
 (pay-as-you-go) is required** — App Hosting has no free-plan path. Expected cost for this
 internal tool is **$0–$2/month**; a budget alert makes overruns impossible.
 
+The project already exists as **`permitpro-pms-e596b`** — just select it:
+
 ```bash
-# Create (or reuse an existing) project
-firebase projects:create permitpro-pms --display-name "PermitPro PMS"
+firebase use permitpro-pms-e596b
+gcloud config set project permitpro-pms-e596b
 ```
 
 Then in the console:
