@@ -31,6 +31,7 @@ export interface ReadinessWarning {
     | 'CONTRACTOR_LICENSE_EXPIRING_SOON'
     | 'NO_CHECKLIST_ITEMS'
     | 'UNVERIFIED_OPTIONAL_DOCUMENT'
+    | 'UNVERIFIED_REQUIRED_DOCUMENT'
     | 'MISSING_TARGET_DATE'
   message: string
 }
@@ -136,11 +137,11 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
         checklistItemId: item.id,
       })
     } else if (item.status !== 'VERIFIED' || !item.document.isVerified) {
-      blockers.push({
+      // Document is uploaded but not yet verified — this is the reviewer's job
+      // during review, so it's a warning, not a gate blocker.
+      warnings.push({
         type: 'UNVERIFIED_REQUIRED_DOCUMENT',
-        message: `Required document not verified: "${item.requirement.documentName}"`,
-        checklistItemId: item.id,
-        documentId: item.document.id,
+        message: `Required document awaiting verification in review: "${item.requirement.documentName}"`,
       })
     }
   }
@@ -255,7 +256,11 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
   // ── Checklist percentage ─────────────────────────────────────────────────
   const totalRequired = mandatoryItems.length
   const completedRequired = mandatoryItems.filter(
-    (i) => i.status === 'VERIFIED' || i.status === 'WAIVED' || i.status === 'NOT_APPLICABLE'
+    (i) =>
+      i.status === 'UPLOADED' ||
+      i.status === 'VERIFIED' ||
+      i.status === 'WAIVED' ||
+      i.status === 'NOT_APPLICABLE'
   ).length
   const checklistPct =
     totalRequired === 0 ? 100 : Math.round((completedRequired / totalRequired) * 100)

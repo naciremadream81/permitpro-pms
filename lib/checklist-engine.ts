@@ -168,8 +168,13 @@ export async function checklistCompletionPct(packageId: string): Promise<number>
   const required = items.filter((i) => i.requirement.isRequired)
   if (required.length === 0) return 100
 
+  // An item counts as done once a document is attached (UPLOADED) — the final
+  // verification happens during the review step, not as a precondition to it.
   const done = required.filter((i) =>
-    i.status === 'VERIFIED' || i.status === 'WAIVED' || i.status === 'NOT_APPLICABLE'
+    i.status === 'UPLOADED' ||
+    i.status === 'VERIFIED' ||
+    i.status === 'WAIVED' ||
+    i.status === 'NOT_APPLICABLE'
   )
 
   return Math.round((done.length / required.length) * 100)
