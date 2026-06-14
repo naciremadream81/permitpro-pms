@@ -100,10 +100,10 @@ export async function POST(
         },
       })
 
-      // Update package stage
+      // Move the package into review (not "ready to submit" — that happens on approval)
       await prisma.permitPackage.update({
         where: { id: params.id },
-        data: { internalStage: 'ReadyToSubmit', lastActivityAt: new Date() },
+        data: { internalStage: 'InProgress', lastActivityAt: new Date() },
       })
 
       await prisma.activityLog.create({

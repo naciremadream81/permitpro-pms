@@ -42,6 +42,8 @@ export async function GET(request: NextRequest) {
             projectName: true,
             projectAddress: true,
             permitType: true,
+            status: true,
+            internalStage: true,
             county: true,
             jurisdiction: { select: { name: true } },
             customer: { select: { name: true } },

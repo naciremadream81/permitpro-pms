@@ -79,6 +79,39 @@ const CHECKLIST_STATUS_STYLES: Record<string, string> = {
   NOT_APPLICABLE: 'text-muted bg-surface-inset',
 }
 
+interface ReviewComment {
+  id: string
+  body: string
+  isResolved: boolean
+  createdAt: string
+  author?: { id: string; name: string }
+}
+
+interface ReviewAssignment {
+  id: string
+  status: string
+  assignedAt: string
+  startedAt?: string | null
+  dueDate?: string | null
+  completedAt?: string | null
+  reviewer: { id: string; name: string; email: string }
+  comments: ReviewComment[]
+}
+
+interface ReviewUser {
+  id: string
+  name: string
+  email: string
+  role: string
+}
+
+const REVIEW_STATUS_STYLES: Record<string, string> = {
+  ASSIGNED: 'text-accent bg-accent-muted',
+  IN_REVIEW: 'text-warning bg-surface',
+  APPROVED: 'text-success bg-surface',
+  SENT_BACK: 'text-destructive bg-surface',
+}
+
 interface PermitData {
   id: string
   projectName: string
@@ -150,6 +183,18 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
   const [checklistLoading, setChecklistLoading] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
   const [uploadingItemId, setUploadingItemId] = useState<string | null>(null)
+
+  // Review workflow state
+  const [sessionRole, setSessionRole] = useState<string>('')
+  const [sessionUserId, setSessionUserId] = useState<string>('')
+  const [reviewAssignments, setReviewAssignments] = useState<ReviewAssignment[]>([])
+  const [reviewers, setReviewers] = useState<ReviewUser[]>([])
+  const [reviewBusy, setReviewBusy] = useState(false)
+  const [reviewBlockers, setReviewBlockers] = useState<string[]>([])
+  const [assignReviewerId, setAssignReviewerId] = useState('')
+  const [assignDueDate, setAssignDueDate] = useState('')
+  const [sendBackNote, setSendBackNote] = useState('')
+  const [showSendBack, setShowSendBack] = useState(false)
 
   // Fetch the county checklist for this permit
   const fetchChecklist = async () => {
@@ -245,6 +290,118 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
     fetchChecklist()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [permit.jurisdictionId])
+
+  // ── Review workflow ─────────────────────────────────────────────────────────
+  const fetchReview = async () => {
+    try {
+      const res = await fetch(`/api/permits/${permit.id}/review`, { credentials: 'include' })
+      if (res.ok) {
+        const d = await res.json()
+        setReviewAssignments(d.data ?? [])
+      }
+    } catch (err) {
+      console.error('Error fetching review:', err)
+    }
+  }
+
+  // Load session role + reviewer list once
+  useEffect(() => {
+    fetch('/api/auth/session', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((s) => {
+        setSessionRole(s?.user?.role ?? '')
+        setSessionUserId(s?.user?.id ?? '')
+      })
+      .catch(() => {})
+    fetch('/api/users', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : { data: [] }))
+      .then((d) => setReviewers((d.data ?? d ?? []).filter((u: ReviewUser) => u.role === 'reviewer' || u.role === 'admin')))
+      .catch(() => {})
+    fetchReview()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Assign a reviewer (admin). overrideReadiness bypasses the readiness gate.
+  const assignReviewer = async (overrideReadiness = false) => {
+    if (!assignReviewerId) return
+    setReviewBusy(true)
+    setError('')
+    setReviewBlockers([])
+    try {
+      const res = await fetch(`/api/permits/${permit.id}/review`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reviewerId: assignReviewerId,
+          dueDate: assignDueDate ? new Date(assignDueDate).toISOString() : undefined,
+          ...(overrideReadiness ? { overrideReadiness: true, overrideReason: 'Admin override from permit page' } : {}),
+        }),
+      })
+      const json = await res.json()
+      if (res.status === 422) {
+        // Not ready — surface the readiness blockers so an admin can override.
+        setReviewBlockers((json.blockers ?? []).map((b: { message?: string } | string) =>
+          typeof b === 'string' ? b : b.message ?? JSON.stringify(b)
+        ))
+        return
+      }
+      if (!res.ok) throw new Error(json.error || 'Failed to assign reviewer')
+      setAssignReviewerId('')
+      setAssignDueDate('')
+      await Promise.all([fetchReview(), refreshPermit()])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to assign reviewer')
+    } finally {
+      setReviewBusy(false)
+    }
+  }
+
+  // Reviewer action: start | approve | send_back
+  const reviewAction = async (action: 'start' | 'approve' | 'send_back', note?: string) => {
+    setReviewBusy(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/permits/${permit.id}/review`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, note }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error || `Failed to ${action.replace('_', ' ')}`)
+      }
+      setShowSendBack(false)
+      setSendBackNote('')
+      await Promise.all([fetchReview(), refreshPermit()])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Review action failed')
+    } finally {
+      setReviewBusy(false)
+    }
+  }
+
+  // Submit a Ready-to-Submit package to the county
+  const submitToCounty = async () => {
+    setReviewBusy(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/permits/${permit.id}/submit`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error || 'Failed to submit to county')
+      }
+      await refreshPermit()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to submit to county')
+    } finally {
+      setReviewBusy(false)
+    }
+  }
 
   // Refresh permit data
   const refreshPermit = async () => {
@@ -520,6 +677,17 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
     })
     setDocumentNotes(notes)
   }, [permit.documents])
+
+  // ── Derived review state for the Review panel ──────────────────────────────
+  const latestAssignment = reviewAssignments[0] ?? null
+  const activeAssignment = reviewAssignments.find(
+    (a) => a.status === 'ASSIGNED' || a.status === 'IN_REVIEW'
+  )
+  const isAdmin = sessionRole === 'admin'
+  const canReviewAct = sessionRole === 'admin' || sessionRole === 'reviewer'
+  const canSubmit = sessionRole === 'admin' || sessionRole === 'coordinator' || sessionRole === 'user'
+  const isReadyToSubmit = permit.internalStage === 'ReadyToSubmit'
+  const reviewComments = reviewAssignments.flatMap((a) => a.comments ?? [])
 
   return (
     <div className="space-y-6">
@@ -874,6 +1042,156 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                 </li>
               ))}
             </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Review — internal QA before county submission */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>
+            Review
+            {latestAssignment && (
+              <span
+                className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                  REVIEW_STATUS_STYLES[latestAssignment.status] ?? 'text-muted bg-surface-inset'
+                }`}
+              >
+                {latestAssignment.status.replace(/_/g, ' ')}
+              </span>
+            )}
+          </CardTitle>
+          {isReadyToSubmit && canSubmit && (
+            <Button size="sm" onClick={submitToCounty} disabled={reviewBusy}>
+              {reviewBusy ? 'Submitting…' : 'Submit to county'}
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isReadyToSubmit && (
+            <div className="rounded-lg border border-success bg-surface p-3 text-sm">
+              <span className="font-medium text-success">Ready to submit.</span>{' '}
+              {canSubmit
+                ? 'Review approved — submit to the county when ready.'
+                : 'Review approved — a coordinator can now submit to the county.'}
+            </div>
+          )}
+
+          {latestAssignment ? (
+            <p className="text-sm text-muted">
+              Reviewer: <span className="text-ink">{latestAssignment.reviewer.name}</span>
+              {latestAssignment.dueDate && <> · Due {formatDate(new Date(latestAssignment.dueDate))}</>}
+            </p>
+          ) : (
+            !isReadyToSubmit && <p className="text-sm text-muted">Not yet in review.</p>
+          )}
+
+          {/* Reviewer actions on the active assignment */}
+          {activeAssignment && canReviewAct && (
+            <div className="flex flex-wrap gap-2">
+              {activeAssignment.status === 'ASSIGNED' && (
+                <Button size="sm" onClick={() => reviewAction('start')} disabled={reviewBusy}>
+                  Start review
+                </Button>
+              )}
+              {activeAssignment.status === 'IN_REVIEW' && (
+                <Button size="sm" onClick={() => reviewAction('approve')} disabled={reviewBusy}>
+                  Approve
+                </Button>
+              )}
+              <Button size="sm" variant="outline" onClick={() => setShowSendBack((v) => !v)} disabled={reviewBusy}>
+                Send back
+              </Button>
+            </div>
+          )}
+
+          {showSendBack && activeAssignment && canReviewAct && (
+            <div className="space-y-2 rounded-lg border border-border bg-surface-inset p-3">
+              <label className="block text-xs font-medium text-muted">Reason for sending back (required)</label>
+              <textarea
+                value={sendBackNote}
+                onChange={(e) => setSendBackNote(e.target.value)}
+                rows={2}
+                className="w-full rounded-md border border-border px-2 py-1 text-sm"
+                placeholder="What needs correction?"
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => reviewAction('send_back', sendBackNote)}
+                  disabled={reviewBusy || sendBackNote.trim().length < 5}
+                >
+                  Send back for corrections
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => { setShowSendBack(false); setSendBackNote('') }}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Assign a reviewer (admin) — only when nothing is in flight */}
+          {isAdmin && !activeAssignment && !isReadyToSubmit && (
+            <div className="space-y-2 rounded-lg border border-border bg-surface-inset p-3">
+              <p className="text-sm font-semibold text-ink">Send to review</p>
+              <div className="flex flex-wrap items-end gap-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted">Reviewer</label>
+                  <select
+                    value={assignReviewerId}
+                    onChange={(e) => setAssignReviewerId(e.target.value)}
+                    className="rounded-md border border-border bg-surface px-2 py-1 text-sm text-ink"
+                  >
+                    <option value="">Select…</option>
+                    {reviewers.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted">Due date (optional)</label>
+                  <input
+                    type="date"
+                    value={assignDueDate}
+                    onChange={(e) => setAssignDueDate(e.target.value)}
+                    className="rounded-md border border-border bg-surface px-2 py-1 text-sm text-ink"
+                  />
+                </div>
+                <Button size="sm" onClick={() => assignReviewer(false)} disabled={reviewBusy || !assignReviewerId}>
+                  {reviewBusy ? 'Assigning…' : 'Send to review'}
+                </Button>
+              </div>
+
+              {reviewBlockers.length > 0 && (
+                <div className="rounded-md border border-warning bg-surface p-2 text-xs">
+                  <p className="font-semibold text-warning">Not ready for review:</p>
+                  <ul className="mt-1 list-disc pl-4 text-warning">
+                    {reviewBlockers.map((b, i) => <li key={i}>{b}</li>)}
+                  </ul>
+                  <Button size="sm" variant="outline" className="mt-2" onClick={() => assignReviewer(true)} disabled={reviewBusy}>
+                    Override &amp; assign anyway
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {reviewComments.length > 0 && (
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted">Review comments</p>
+              <ul className="space-y-1.5">
+                {reviewComments.map((c) => (
+                  <li key={c.id} className="rounded-md border border-border px-2.5 py-1.5 text-sm">
+                    <span className="text-ink">{c.body}</span>
+                    <span className="ml-2 text-xs text-muted">— {c.author?.name ?? 'Reviewer'}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {!isAdmin && !activeAssignment && !isReadyToSubmit && reviewAssignments.length === 0 && (
+            <p className="text-sm text-muted">No active review. An admin can send this package to review.</p>
           )}
         </CardContent>
       </Card>

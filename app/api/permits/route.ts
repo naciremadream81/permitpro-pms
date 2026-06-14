@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status')
+    const internalStage = searchParams.get('internalStage')
     const permitType = searchParams.get('permitType')
     const county = searchParams.get('county')
     const billingStatus = searchParams.get('billingStatus')
@@ -51,6 +52,7 @@ export async function GET(request: NextRequest) {
     // Apply filters
     // Type assertions are safe here as the values come from URL query params and Prisma will validate at runtime
     if (status) where.status = status as unknown as Prisma.PermitPackageWhereInput['status']
+    if (internalStage) where.internalStage = internalStage as unknown as Prisma.PermitPackageWhereInput['internalStage']
     if (permitType) where.permitType = permitType as unknown as Prisma.PermitPackageWhereInput['permitType']
     if (county) where.county = { contains: county }
     if (billingStatus) where.billingStatus = billingStatus as unknown as Prisma.PermitPackageWhereInput['billingStatus']
