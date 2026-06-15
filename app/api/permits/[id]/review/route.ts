@@ -169,15 +169,28 @@ export async function POST(
     }
 
     if (action === 'approve') {
-      const updated = await prisma.reviewAssignment.update({
-        where: { id: activeAssignment.id },
-        data: { status: 'APPROVED', completedAt: new Date() },
-      })
-
-      await prisma.permitPackage.update({
-        where: { id: params.id },
-        data: { internalStage: 'ReadyToSubmit', lastActivityAt: new Date() },
-      })
+      // Approval is the verification step: documents that were uploaded and
+      // awaiting review are now confirmed good, and their checklist items move
+      // from UPLOADED → VERIFIED. This is what flips the "Pending" badges in
+      // the Documents section once a reviewer signs off.
+      const [updated, verifiedDocs, verifiedItems] = await prisma.$transaction([
+        prisma.reviewAssignment.update({
+          where: { id: activeAssignment.id },
+          data: { status: 'APPROVED', completedAt: new Date() },
+        }),
+        prisma.permitDocument.updateMany({
+          where: { permitPackageId: params.id, status: 'Pending' },
+          data: { status: 'Verified', isVerified: true },
+        }),
+        prisma.checklistItem.updateMany({
+          where: { packageId: params.id, status: 'UPLOADED' },
+          data: { status: 'VERIFIED' },
+        }),
+        prisma.permitPackage.update({
+          where: { id: params.id },
+          data: { internalStage: 'ReadyToSubmit', lastActivityAt: new Date() },
+        }),
+      ])
 
       await prisma.activityLog.create({
         data: {
@@ -186,11 +199,15 @@ export async function POST(
           activityType: 'ReviewApproved',
           description: note
             ? `Review approved: ${note}`
-            : 'Review approved — package ready for county submission',
+            : `Review approved — ${verifiedDocs.count} document(s) verified, package ready for county submission`,
         },
       })
 
-      return NextResponse.json({ data: updated })
+      return NextResponse.json({
+        data: updated,
+        verifiedDocuments: verifiedDocs.count,
+        verifiedChecklistItems: verifiedItems.count,
+      })
     }
 
     if (action === 'send_back') {
