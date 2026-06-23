@@ -619,7 +619,7 @@ export default function ReportsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-extrabold uppercase tracking-tight text-ink">Reports</h1>
+            <h1 className="text-[22px] font-semibold tracking-tight text-ink">Reports</h1>
             <p className="text-sm text-muted mt-0.5">Operational analytics and compliance tracking</p>
           </div>
           <div className="flex gap-2">

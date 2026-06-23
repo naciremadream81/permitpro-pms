@@ -16,7 +16,7 @@ import Link from 'next/link'
 const STALL_DAYS = 3
 
 const thClass =
-  'px-4 py-2 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-muted'
+  'px-4 py-2 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-muted'
 const tdLinkClass =
   'text-[12px] font-bold tracking-[0.06em] text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
@@ -159,7 +159,7 @@ export default async function PermitsPage({
 
         <form
           method="get"
-          className="flex flex-col gap-3 border-b-2 border-ink py-4 sm:flex-row sm:items-center"
+          className="flex flex-col gap-3 border-b border-border py-4 sm:flex-row sm:items-center"
         >
           {stalledFilter && <input type="hidden" name="stalled" value="1" />}
           {courtFilter && <input type="hidden" name="court" value={courtFilter} />}
@@ -243,14 +243,14 @@ export default async function PermitsPage({
         )}
 
         <section aria-label="Permit register" className="pt-5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted">
+          <p className="text-xs font-medium uppercase tracking-[0.08em] text-muted">
             Register — {data.total} permit{data.total !== 1 ? 's' : ''}
           </p>
           <div className="mt-1 overflow-x-auto">
             <table className="w-full text-sm" aria-label="Permit packages">
               <caption className="sr-only">All permit packages matching current filters</caption>
               <thead>
-                <tr className="border-b-2 border-ink">
+                <tr className="border-b border-border">
                   <th scope="col" className={thClass}>No.</th>
                   <th scope="col" className={thClass}>Project</th>
                   <th scope="col" className={thClass}>Customer</th>
@@ -303,7 +303,7 @@ export default async function PermitsPage({
             </table>
           </div>
 
-          <div className="mt-0 flex flex-wrap items-center justify-between gap-2 border-t-2 border-ink pt-3">
+          <div className="mt-0 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
             <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
               Page {data.page} of {Math.max(data.totalPages, 1)}
             </p>

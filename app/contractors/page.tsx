@@ -85,7 +85,7 @@ export default async function ContractorsPage({
           }
         />
 
-        <form method="get" className="flex flex-col gap-3 border-b-2 border-ink py-4 sm:flex-row sm:items-center">
+        <form method="get" className="flex flex-col gap-3 border-b border-border py-4 sm:flex-row sm:items-center">
           {data.complianceExpiring && <input type="hidden" name="compliance" value="expiring" />}
           <label htmlFor="contractors-search" className="sr-only">
             Search contractors
@@ -121,17 +121,17 @@ export default async function ContractorsPage({
         )}
 
         <section aria-label="Contractor register" className="pt-5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted">
+          <p className="text-xs font-medium uppercase tracking-[0.08em] text-muted">
             Register — {data.total} contractor{data.total !== 1 ? 's' : ''}
           </p>
           <div className="mt-1 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b-2 border-ink">
-                  <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-muted">Company</th>
-                  <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-muted">License</th>
-                  <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-muted">Email</th>
-                  <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-[0.14em] text-muted">Phone</th>
+                <tr className="border-b border-border">
+                  <th className="px-4 py-2 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-muted">Company</th>
+                  <th className="px-4 py-2 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-muted">License</th>
+                  <th className="px-4 py-2 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-muted">Email</th>
+                  <th className="px-4 py-2 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-muted">Phone</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">

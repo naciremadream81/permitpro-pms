@@ -1,9 +1,3 @@
-/**
- * Login Page
- *
- * Authentication page aligned with PermitPro shell tokens.
- */
-
 'use client'
 
 import { useState } from 'react'
@@ -44,67 +38,62 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-canvas">
-      <div className="bg-band px-6 py-5 text-band-foreground">
-        <p className="text-2xl font-extrabold uppercase leading-none tracking-tight [font-stretch:115%]">
-          Permit<span className="font-light [font-stretch:100%]">Pro</span>
-        </p>
-      </div>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-canvas px-4 py-12">
+      <div className="w-full max-w-sm">
+        {/* Wordmark */}
+        <div className="mb-8 text-center">
+          <p className="text-[22px] font-bold tracking-tight text-ink">
+            Permit<span className="font-light text-muted">Pro</span>
+          </p>
+          <p className="mt-1 text-sm text-muted">Permit coordination &amp; document management</p>
+        </div>
 
-      <div className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8">
-          <div>
-            <h1 className="border-b-2 border-ink pb-3 text-2xl font-extrabold uppercase tracking-tight text-ink">
-              Sign in
-            </h1>
-            <p className="mt-3 text-sm text-muted">
-              Permit coordination and document management
-            </p>
-          </div>
+        {/* Card */}
+        <div className="rounded-lg border border-border bg-surface p-8 shadow-card-md">
+          <h1 className="mb-6 text-[17px] font-semibold text-ink">Sign in to your account</h1>
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
             {error && (
-              <div className="border border-destructive px-4 py-3" role="alert">
-                <p className="text-sm font-semibold text-destructive">{error}</p>
+              <div className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3" role="alert">
+                <p className="text-sm font-medium text-destructive">{error}</p>
               </div>
             )}
 
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-ink">
-                  Email address
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pp-input mt-1"
-                  placeholder="you@company.com"
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-ink">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pp-input mt-1"
-                  placeholder="Enter your password"
-                />
-              </div>
+            <div>
+              <label htmlFor="email" className="block text-[13px] font-medium text-ink">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="pp-input mt-1.5"
+                placeholder="you@company.com"
+              />
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <div>
+              <label htmlFor="password" className="block text-[13px] font-medium text-ink">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pp-input mt-1.5"
+                placeholder="Enter your password"
+              />
+            </div>
+
+            <Button type="submit" className="mt-2 w-full" disabled={loading}>
               {loading ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>

@@ -180,7 +180,7 @@ export function SettingsClient() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold uppercase tracking-tight text-ink">Settings</h1>
+        <h1 className="text-[22px] font-semibold tracking-tight text-ink">Settings</h1>
         {!showUserForm && (
           <Button onClick={() => setShowUserForm(true)}>Add User</Button>
         )}

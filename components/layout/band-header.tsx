@@ -1,19 +1,11 @@
 'use client'
 
-/**
- * BandHeader — Unigrid masthead band.
- *
- * Replaces the sidebar + top header shell: deep teal band with the wordmark,
- * session meta, and the primary navigation as an underlined link row.
- * Mobile keeps the existing drawer (toggled from the band).
- */
-
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTheme } from 'next-themes'
-import { Menu, Moon, Sun, X, LogOut } from 'lucide-react'
+import { Menu, Moon, Sun, X, LogOut, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   adminNav,
@@ -38,40 +30,41 @@ export function BandHeader() {
   const settingsItem = adminNav.find(item => item.href === '/settings')
 
   return (
-    <header className="flex-shrink-0 bg-band px-4 pt-4 text-band-foreground md:px-10 md:pt-5">
-      <div className="flex items-baseline justify-between gap-4 pb-3 md:pb-4">
+    <header className="flex-shrink-0 bg-band text-band-foreground">
+      {/* Top row: wordmark + meta + controls */}
+      <div className="flex h-14 items-center justify-between gap-4 border-b border-white/10 px-4 md:px-8">
         <Link
           href="/dashboard"
-          className="text-2xl font-extrabold uppercase leading-none tracking-tight [font-stretch:115%] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-band-foreground md:text-[28px]"
+          className="flex items-baseline gap-px text-[17px] font-semibold tracking-tight text-band-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-band-foreground"
         >
-          Permit<span className="font-light [font-stretch:100%]">Pro</span>
+          <span className="font-bold">Permit</span>
+          <span className="font-light opacity-70">Pro</span>
         </Link>
 
-        <div className="flex items-center gap-3 md:gap-4">
-          <div className="hidden text-right text-[11px] font-medium uppercase tracking-[0.08em] text-band-dim sm:block">
+        <div className="flex items-center gap-1 md:gap-2">
+          {/* Session info — desktop only */}
+          <div className="mr-2 hidden text-right text-[12px] text-band-dim sm:block">
             {mounted && (
               <span suppressHydrationWarning>
                 {new Date().toLocaleDateString('en-US', {
                   weekday: 'short',
                   month: 'short',
                   day: 'numeric',
-                  year: 'numeric',
                 })}
                 {' · '}
               </span>
             )}
-            <span className="font-semibold text-band-foreground">
+            <span className="font-medium text-band-foreground">
               {session?.user?.name ?? '—'}
             </span>
-            {' · '}
-            {role}
+            <span className="ml-1 capitalize opacity-60">{role}</span>
           </div>
 
           <button
             type="button"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="p-1.5 text-band-dim transition-colors hover:text-band-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-band-foreground"
+            className="rounded p-1.5 text-band-dim transition-colors hover:bg-white/10 hover:text-band-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-band-foreground"
           >
             {!mounted ? (
               <span className="block h-4 w-4" />
@@ -85,7 +78,7 @@ export function BandHeader() {
           <Link
             href="/api/auth/signout"
             aria-label="Sign out"
-            className="p-1.5 text-band-dim transition-colors hover:text-band-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-band-foreground"
+            className="rounded p-1.5 text-band-dim transition-colors hover:bg-white/10 hover:text-band-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-band-foreground"
           >
             <LogOut className="h-4 w-4" aria-hidden />
           </Link>
@@ -96,19 +89,24 @@ export function BandHeader() {
             aria-expanded={mobileOpen}
             aria-controls="mobile-navigation"
             aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'}
-            className="p-1.5 text-band-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-band-foreground md:hidden"
+            className="rounded p-1.5 text-band-foreground transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-band-foreground md:hidden"
           >
             {mobileOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
           </button>
         </div>
       </div>
 
-      <nav className="hidden gap-7 md:flex" aria-label="Main">
+      {/* Nav row — desktop only */}
+      <nav
+        className="hidden items-center gap-1 px-4 md:flex md:px-8"
+        aria-label="Main"
+        style={{ height: '40px' }}
+      >
         {mainNav.map(item => (
           <Link
             key={item.href}
             href={item.href}
-            className={cn('pp-band-link', isNavItemActive(pathname, item.href) && 'active')}
+            className={cn('pp-band-link px-3', isNavItemActive(pathname, item.href) && 'active')}
             aria-current={isNavItemActive(pathname, item.href) ? 'page' : undefined}
           >
             {item.name}
@@ -119,7 +117,7 @@ export function BandHeader() {
             <Link
               href="/admin/counties"
               className={cn(
-                'pp-band-link',
+                'pp-band-link px-3',
                 isAdminSectionActive(pathname) && !isNavItemActive(pathname, '/settings') && 'active'
               )}
             >
@@ -128,7 +126,7 @@ export function BandHeader() {
             {settingsItem && (
               <Link
                 href={settingsItem.href}
-                className={cn('pp-band-link', isNavItemActive(pathname, settingsItem.href) && 'active')}
+                className={cn('pp-band-link px-3', isNavItemActive(pathname, settingsItem.href) && 'active')}
                 aria-current={isNavItemActive(pathname, settingsItem.href) ? 'page' : undefined}
               >
                 {settingsItem.name}
@@ -137,8 +135,6 @@ export function BandHeader() {
           </>
         )}
       </nav>
-      {/* Mobile: nav lives in the drawer; keep band bottom edge */}
-      <div className="pb-3 md:hidden" />
     </header>
   )
 }

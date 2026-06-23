@@ -131,7 +131,7 @@ export default function NewCustomerPage() {
     <AppLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-extrabold uppercase tracking-tight text-ink">New Customer</h1>
+          <h1 className="text-[22px] font-semibold tracking-tight text-ink">New Customer</h1>
           <Link href="/customers">
             <Button variant="outline">Cancel</Button>
           </Link>

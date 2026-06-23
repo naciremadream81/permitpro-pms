@@ -692,14 +692,14 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-ink pb-4">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
         <div className="min-w-0">
           {permit.permitNumber && (
             <p className="text-[11px] font-bold tracking-[0.1em] text-muted">
               {permit.permitNumber}
             </p>
           )}
-          <h1 className="text-2xl font-extrabold uppercase tracking-tight text-ink">
+          <h1 className="text-[22px] font-semibold tracking-tight text-ink">
             {permit.projectName}
           </h1>
           <p className="text-sm text-muted">{permit.projectAddress}</p>

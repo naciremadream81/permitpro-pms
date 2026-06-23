@@ -1,10 +1,3 @@
-/**
- * Card Component
- * 
- * A card component for displaying content in a contained, elevated container.
- * Used for displaying permit information, customer details, and other content blocks.
- */
-
 import React from 'react'
 import { cn } from '@/lib/utils'
 
@@ -15,7 +8,10 @@ export function Card({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('rounded-lg border border-border bg-surface', className)}
+      className={cn(
+        'rounded-lg border border-border bg-surface shadow-card',
+        className
+      )}
       {...props}
     >
       {children}
@@ -30,7 +26,7 @@ export function CardHeader({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('flex flex-col space-y-1.5 border-b border-ink p-6 pb-3', className)}
+      className={cn('flex flex-col space-y-1 border-b border-border px-5 py-4', className)}
       {...props}
     >
       {children}
@@ -46,7 +42,7 @@ export function CardTitle({
   return (
     <h3
       className={cn(
-        'text-[13px] font-extrabold uppercase leading-none tracking-[0.08em]',
+        'text-[13px] font-semibold leading-none tracking-[0.01em] text-ink',
         className
       )}
       {...props}
@@ -62,7 +58,7 @@ export function CardContent({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('p-6 pt-4', className)} {...props}>
+    <div className={cn('px-5 py-4', className)} {...props}>
       {children}
     </div>
   )
@@ -75,11 +71,10 @@ export function CardFooter({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('flex items-center p-6 pt-0', className)}
+      className={cn('flex items-center px-5 py-4 pt-0', className)}
       {...props}
     >
       {children}
     </div>
   )
 }
-

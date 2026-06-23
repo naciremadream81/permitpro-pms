@@ -86,9 +86,10 @@ const config: Config = {
         sm: "var(--radius-sm)",
         md: "var(--radius-md)",
         lg: "var(--radius-lg)",
+        full: "9999px",
       },
       fontFamily: {
-        sans: ["var(--font-archivo)", "var(--font-geist-sans)", "system-ui", "sans-serif"],
+        sans: ["var(--font-jakarta)", "system-ui", "sans-serif"],
         mono: ["var(--font-geist-mono)", "monospace"],
       },
     },

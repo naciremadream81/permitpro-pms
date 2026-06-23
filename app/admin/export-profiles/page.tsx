@@ -37,7 +37,7 @@ export default async function ExportProfilesPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-extrabold uppercase tracking-tight text-ink">Export Profiles</h1>
+            <h1 className="text-[22px] font-semibold tracking-tight text-ink">Export Profiles</h1>
             <p className="text-sm text-muted mt-0.5">Jurisdiction-specific ZIP assembly templates</p>
           </div>
           <Link href="/admin/export-profiles/new">
