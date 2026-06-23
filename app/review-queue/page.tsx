@@ -176,7 +176,7 @@ export default function ReviewQueuePage() {
           description={`${inReviewCount} in review · ${readyPackages.length} ready to submit`}
         />
 
-        <div role="tablist" aria-label="Review queue lanes" className="flex flex-wrap gap-6 border-b-2 border-ink">
+        <div role="tablist" aria-label="Review queue lanes" className="flex flex-wrap gap-6 border-b border-border">
           {LANE_TABS.map((tab) => {
             const count =
               tab.value === 'ready_to_submit'

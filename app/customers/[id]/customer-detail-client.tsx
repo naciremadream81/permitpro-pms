@@ -170,7 +170,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
                 type="text"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                className="text-2xl font-extrabold uppercase tracking-tight text-ink border-b-2 border-accent px-2 py-1"
+                className="text-[22px] font-semibold tracking-tight text-ink border-b-2 border-accent px-2 py-1"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') saveField('name')
@@ -186,7 +186,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-extrabold uppercase tracking-tight text-ink">{customer.name}</h1>
+              <h1 className="text-[22px] font-semibold tracking-tight text-ink">{customer.name}</h1>
               <Button
                 size="sm"
                 variant="ghost"

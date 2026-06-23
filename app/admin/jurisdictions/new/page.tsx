@@ -45,7 +45,7 @@ export default function NewJurisdictionPage() {
   return (
     <AppLayout>
     <div className="mx-auto max-w-lg">
-      <h1 className="text-2xl font-extrabold uppercase tracking-tight text-ink mb-6">New Jurisdiction</h1>
+      <h1 className="text-[22px] font-semibold tracking-tight text-ink mb-6">New Jurisdiction</h1>
 
       {error && (
         <div className="mb-4 p-3 bg-surface border border-destructive rounded-lg text-sm text-destructive">

@@ -11,12 +11,12 @@ export function PageHeader({ title, description, actions, className }: PageHeade
   return (
     <div
       className={cn(
-        'flex flex-col gap-4 border-b-2 border-ink pb-4 sm:flex-row sm:items-end sm:justify-between',
+        'flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between',
         className
       )}
     >
       <div className="min-w-0">
-        <h1 className="text-2xl font-extrabold uppercase tracking-tight text-ink">{title}</h1>
+        <h1 className="text-[22px] font-semibold leading-tight tracking-tight text-ink">{title}</h1>
         {description && (
           <p className="mt-1 text-sm text-muted">{description}</p>
         )}

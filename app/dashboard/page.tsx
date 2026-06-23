@@ -199,18 +199,18 @@ function NoticeRow({
   return (
     <Link
       href={href}
-      className="group flex items-baseline gap-4 border-b border-border py-2.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className="group flex items-center gap-3 rounded-md border border-border bg-surface px-4 py-3 transition-colors hover:bg-surface-inset focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
     >
       <span
         className={cn(
-          'whitespace-nowrap border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em]',
+          'whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-medium',
           markClass
         )}
       >
         {mark}
       </span>
-      <span className="flex-1 text-sm text-ink group-hover:underline">{children}</span>
-      <span className="text-sm font-bold text-muted">{count} →</span>
+      <span className="flex-1 text-sm text-ink">{children}</span>
+      <span className="text-xs font-medium text-muted group-hover:text-ink">{count} →</span>
     </Link>
   )
 }
@@ -221,17 +221,17 @@ function DistributionBar({ counts }: { counts: Record<Court, number> }) {
   if (total === 0) return null
 
   return (
-    <section aria-label="Active pipeline by court" className="border-b-2 border-ink pb-5 pt-4">
-      <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-muted">
-        Active pipeline — {total} package{total !== 1 ? 's' : ''} by court
+    <section aria-label="Active pipeline by court" className="rounded-lg border border-border bg-surface p-4 shadow-card">
+      <p className="mb-3 text-xs font-medium text-muted">
+        Active pipeline — <span className="font-semibold text-ink">{total} package{total !== 1 ? 's' : ''}</span> by court
       </p>
-      <div className="flex h-8" role="img" aria-label={active.map(c => `${COURT_META[c].label}: ${counts[c]}`).join(', ')}>
+      <div className="flex h-7 overflow-hidden rounded-md" role="img" aria-label={active.map(c => `${COURT_META[c].label}: ${counts[c]}`).join(', ')}>
         {active.map(court => (
           <div
             key={court}
             style={{ flexGrow: counts[court] }}
             className={cn(
-              'grid min-w-[2.5rem] place-items-center text-[13px] font-bold text-white',
+              'grid min-w-[2rem] place-items-center text-[12px] font-semibold text-white',
               COURT_META[court].barClass
             )}
           >
@@ -239,15 +239,16 @@ function DistributionBar({ counts }: { counts: Record<Court, number> }) {
           </div>
         ))}
       </div>
-      <div className="mt-2.5 flex flex-wrap gap-x-6 gap-y-1">
+      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5">
         {active.map(court => (
           <Link
             key={court}
             href={`/permits?court=${court}`}
-            className="flex items-center gap-2 text-xs text-muted hover:text-ink hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="flex items-center gap-2 text-xs text-muted hover:text-ink hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
           >
-            <i className={cn('h-2.5 w-2.5', COURT_META[court].barClass)} aria-hidden />
-            <b className="font-bold text-ink">{counts[court]}</b> {COURT_META[court].label.toLowerCase()}
+            <span className={cn('h-2 w-2 rounded-sm flex-shrink-0', COURT_META[court].barClass)} aria-hidden />
+            <span className="font-semibold text-ink">{counts[court]}</span>
+            <span>{COURT_META[court].label.toLowerCase()}</span>
           </Link>
         ))}
       </div>
@@ -256,7 +257,7 @@ function DistributionBar({ counts }: { counts: Record<Court, number> }) {
 }
 
 const colHead =
-  'text-[10px] font-bold uppercase tracking-[0.14em] text-muted'
+  'text-[11px] font-medium uppercase tracking-[0.08em] text-muted'
 
 function PackageRow({ pkg, court }: { pkg: BoardPackage; court: Court }) {
   const days = packageDays(pkg, court)
@@ -268,19 +269,19 @@ function PackageRow({ pkg, court }: { pkg: BoardPackage; court: Court }) {
       href={`/permits/${pkg.id}`}
       className="grid grid-cols-[64px_1fr] items-center gap-x-4 gap-y-1 border-b border-border py-3 transition-colors hover:bg-surface-inset focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:grid-cols-[80px_1.7fr_1fr_150px_1.2fr] md:gap-x-5"
     >
-      <span className={cn('text-[26px] font-extrabold leading-none', stalled ? 'text-urgent' : 'text-ink')}>
+      <span className={cn('text-[24px] font-bold leading-none tabular-nums', stalled ? 'text-urgent' : 'text-ink')}>
         {days}
-        <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.12em] text-muted">
+        <span className="mt-1 block text-[9px] font-medium uppercase tracking-[0.1em] text-muted">
           {COURT_META[court].daysLabel}
           {stalled && <span className="sr-only"> — stalled</span>}
         </span>
       </span>
 
       <span className="min-w-0">
-        <span className="block text-[11px] font-bold tracking-[0.08em] text-muted">
+        <span className="block text-[11px] font-medium tracking-[0.04em] text-muted">
           {pkg.permitNumber ?? pkg.id.slice(0, 8).toUpperCase()}
         </span>
-        <span className="block truncate text-[15px] font-bold text-ink">{pkg.projectName}</span>
+        <span className="block truncate text-[14px] font-semibold text-ink">{pkg.projectName}</span>
         <span className="block truncate text-xs text-muted">
           {pkg.projectAddress} — {pkg.jurisdiction?.name ?? pkg.county ?? '—'}
         </span>
@@ -306,16 +307,16 @@ function CourtGroup({ court, packages }: { court: Court; packages: BoardPackage[
   const meta = COURT_META[court]
   return (
     <section className="pt-8" aria-label={meta.label}>
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-4 border-ink pb-2">
-        <span className={cn('text-4xl font-extrabold leading-none', meta.textClass)}>
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <div className={cn('flex h-7 w-7 items-center justify-center rounded text-sm font-bold text-white flex-shrink-0', meta.barClass)}>
           {packages.length}
-        </span>
-        <h2 className={cn('text-base font-extrabold uppercase tracking-[0.08em]', meta.textClass)}>
+        </div>
+        <h2 className={cn('text-[15px] font-semibold', meta.textClass)}>
           {meta.label}
         </h2>
-        <span className="text-[13px] text-muted">{meta.description}</span>
+        <span className="text-sm text-muted">{meta.description}</span>
       </div>
-      <div className="hidden grid-cols-[80px_1.7fr_1fr_150px_1.2fr] gap-x-5 border-b border-ink py-1.5 md:grid">
+      <div className="hidden grid-cols-[80px_1.7fr_1fr_150px_1.2fr] gap-x-5 border-b border-border py-2 md:grid">
         <span className={colHead}>{meta.daysLabel}</span>
         <span className={colHead}>Package</span>
         <span className={colHead}>Customer / Contractor</span>
@@ -366,7 +367,7 @@ export default async function DashboardPage() {
 
         {hasNotices && (
           <section aria-label="Notices" className="pt-4">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
               Notices — requires action
             </p>
             {data.stalledCount > 0 && (
@@ -421,17 +422,15 @@ export default async function DashboardPage() {
 
         {role === 'reviewer' ? (
           <section className="pt-8" aria-label="Your review queue">
-            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-4 border-ink pb-2">
-              <span className="text-4xl font-extrabold leading-none text-court-county">
+            <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <div className="flex h-7 w-7 items-center justify-center rounded bg-court-county text-sm font-bold text-white flex-shrink-0">
                 {data.reviewAssignments.length}
-              </span>
-              <h2 className="text-base font-extrabold uppercase tracking-[0.08em] text-court-county">
-                Your review queue
-              </h2>
-              <span className="text-[13px] text-muted">oldest assignments first</span>
+              </div>
+              <h2 className="text-[15px] font-semibold text-court-county">Your review queue</h2>
+              <span className="text-sm text-muted">oldest assignments first</span>
               <Link
                 href="/review-queue"
-                className="ml-auto text-xs font-bold uppercase tracking-[0.08em] text-accent hover:underline"
+                className="ml-auto text-xs font-medium text-[var(--focus-ring)] hover:underline"
               >
                 Open review queue →
               </Link>
@@ -473,7 +472,7 @@ export default async function DashboardPage() {
           </section>
         ) : boardPackages.length === 0 ? (
           <section className="border-b border-border py-14 text-center">
-            <p className="font-bold uppercase tracking-[0.06em] text-ink">Nothing on your board</p>
+            <p className="font-semibold text-ink">Nothing on your board</p>
             <p className="mx-auto mt-1 max-w-sm text-sm text-muted">
               Start a new permit package or browse the full list to pick up work from the team.
             </p>
@@ -494,7 +493,7 @@ export default async function DashboardPage() {
           })
         )}
 
-        <div className="mt-12 flex flex-wrap justify-between gap-2 border-t-4 border-ink pt-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+        <div className="mt-12 flex flex-wrap justify-between gap-2 border-t border-border pt-3 text-[11px] font-medium text-muted">
           <span>
             {data.contractorAlerts > 0
               ? `${data.contractorAlerts} compliance doc${data.contractorAlerts !== 1 ? 's' : ''} expiring — see Contractors`

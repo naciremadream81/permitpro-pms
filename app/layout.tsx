@@ -1,19 +1,16 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Archivo } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers/session-provider";
 
-const archivo = Archivo({
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  axes: ["wdth"],
-  variable: "--font-archivo",
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-jakarta",
+  display: "swap",
 });
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
+
 const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
@@ -21,7 +18,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Permit Processing & Document Management",
+  title: "PermitPro — Permit Processing & Document Management",
   description: "Permit coordination and document management system",
 };
 
@@ -33,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${archivo.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${jakarta.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>{children}</Providers>
       </body>

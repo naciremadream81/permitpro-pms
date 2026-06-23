@@ -153,7 +153,7 @@ export default function JurisdictionDetailPage() {
             <ArrowLeft className="w-3 h-3" />
             Jurisdictions
           </button>
-          <h1 className="text-2xl font-extrabold uppercase tracking-tight text-ink">{jurisdiction.name}</h1>
+          <h1 className="text-[22px] font-semibold tracking-tight text-ink">{jurisdiction.name}</h1>
           <p className="text-sm text-muted">
             {jurisdiction.countyCode} · {jurisdiction.state} ·{' '}
             <span className={jurisdiction.isActive ? 'text-success' : 'text-destructive'}>
