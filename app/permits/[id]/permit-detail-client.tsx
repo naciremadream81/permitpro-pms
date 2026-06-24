@@ -14,6 +14,7 @@ import { StatusBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatDateTime, formatPermitType } from '@/lib/utils'
 import { PropertyPanel } from '@/components/permits/property-panel'
+import { PermitValidator } from '@/components/ai/permit-validator'
 import Link from 'next/link'
 
 // Types
@@ -1565,6 +1566,9 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Package Check */}
+      <PermitValidator permitId={permit.id} />
     </div>
   )
 }

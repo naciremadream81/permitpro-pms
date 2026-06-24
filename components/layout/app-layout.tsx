@@ -4,6 +4,7 @@ import { NavProvider } from './nav-context'
 import { MobileNav } from './mobile-nav'
 import { SidebarPanel } from './sidebar'
 import { BandHeader } from './band-header'
+import { AssistantChat } from '@/components/ai/assistant-chat'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -26,6 +27,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         >
           {children}
         </main>
+
+        <AssistantChat />
       </div>
     </NavProvider>
   )
