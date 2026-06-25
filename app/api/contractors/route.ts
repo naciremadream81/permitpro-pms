@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
+import { enforce, ForbiddenError, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { contractorSchema } from '@/lib/validations'
 
@@ -75,6 +76,7 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    enforce(normalizeRole(session.user?.role), 'create', 'contractor')
 
     const body = await request.json()
     
@@ -88,6 +90,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: contractor }, { status: 201 })
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
     // Handle Zod validation errors
     if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
       console.error('Validation error:', error)

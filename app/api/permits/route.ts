@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
+import { enforce, ForbiddenError, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { permitPackageSchema } from '@/lib/validations'
 import { generateChecklist } from '@/lib/checklist-engine'
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    enforce(normalizeRole(session.user?.role), 'create', 'package')
 
     const body = await request.json()
     
@@ -160,6 +162,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: permitPackage }, { status: 201 })
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
         { error: 'Validation error', details: error },

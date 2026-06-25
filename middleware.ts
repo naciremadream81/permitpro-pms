@@ -6,21 +6,15 @@
  * This middleware:
  * - Allows public routes (login, API auth) to pass through
  * - Allows all API routes to pass through (they handle their own auth)
- * - For protected pages, authentication is checked in the page component itself
+ * - Redirects unauthenticated page requests to login before protected server pages render
  * 
- * IMPORTANT: We're not using NextAuth's auth() wrapper here because:
- * 1. It would require loading Prisma Client, which doesn't work in Edge runtime
- * 2. Since we're using JWT strategy, authentication is handled at the page/API route level
- * 
- * If you need to use NextAuth v5's auth() wrapper in middleware in the future:
- * - The wrapper provides the request with an `auth` property (not a destructurable field)
- * - Correct pattern: `export default auth((req) => { const session = req.auth; ... })`
- * - Incorrect pattern: `const { nextUrl, auth } = req` (auth will be undefined)
- * - The session is available as `req.auth`, not as a destructured variable
+ * IMPORTANT: We inspect the JWT directly here instead of importing the full
+ * NextAuth config. That keeps middleware Edge-safe and avoids bundling Prisma.
  */
 
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
 /**
  * Middleware function that runs on every request
@@ -28,16 +22,13 @@ import type { NextRequest } from 'next/server'
  * This is a lightweight middleware that only handles route filtering.
  * Actual authentication checks happen in:
  * - API routes: using getSession() from lib/auth-helpers
- * - Server components: using getSession() from lib/auth-helpers
+ * - Protected pages: this middleware redirects unauthenticated requests before render
  * - Client components: using useSession() from next-auth/react
  * 
- * Note: We only destructure `nextUrl` from the request. If using NextAuth's auth()
- * wrapper, the session would be available as `req.auth` (a property), not as a
- * destructurable field. Attempting to destructure `auth` would result in `undefined`.
+ * Note: API routes still perform their own auth checks because they need route-
+ * specific 401/403 handling and role enforcement.
  */
-export function middleware(request: NextRequest) {
-  // Only destructure nextUrl - do NOT attempt to destructure 'auth' from request
-  // If using NextAuth v5's auth() wrapper, access session via req.auth property
+export async function middleware(request: NextRequest) {
   const { nextUrl } = request
 
   // Public routes that don't require authentication
@@ -56,8 +47,17 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // For protected pages, authentication is checked in the page component itself
-  // This allows for more granular control and better error handling
+  const token = await getToken({
+    req: request,
+    secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  })
+
+  if (!token) {
+    const loginUrl = new URL('/login', nextUrl)
+    loginUrl.searchParams.set('callbackUrl', nextUrl.href)
+    return NextResponse.redirect(loginUrl)
+  }
+
   return NextResponse.next()
 }
 

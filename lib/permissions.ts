@@ -11,7 +11,7 @@
  *   reviewer    — reviews packages, approves or sends back
  */
 
-export type UserRole = 'admin' | 'coordinator' | 'reviewer'
+export type UserRole = 'admin' | 'coordinator' | 'reviewer' | 'unauthorized'
 
 export type Resource =
   | 'package'
@@ -182,6 +182,7 @@ export class UnauthorizedError extends Error {
 /** Normalize legacy role strings to the canonical UserRole union */
 export function normalizeRole(role: string | null | undefined): UserRole {
   if (role === 'admin') return 'admin'
+  if (role === 'coordinator') return 'coordinator'
   if (role === 'reviewer') return 'reviewer'
-  return 'coordinator' // 'user' and anything unknown defaults to coordinator
+  return 'unauthorized' // Fail closed: legacy/unknown roles get no matrix permissions.
 }

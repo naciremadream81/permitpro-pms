@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
+import { enforce, ForbiddenError, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { storage } from '@/lib/storage'
 import { documentUpdateSchema } from '@/lib/validations'
@@ -67,6 +68,7 @@ export async function PATCH(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    enforce(normalizeRole(session.user?.role), 'update', 'document')
 
     const body = await request.json()
     
@@ -102,6 +104,9 @@ export async function PATCH(
 
     return NextResponse.json({ data: document })
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
         { error: 'Validation error', details: error },
@@ -130,6 +135,7 @@ export async function DELETE(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    enforce(normalizeRole(session.user?.role), 'delete', 'document')
 
     const document = await prisma.permitDocument.findUnique({
       where: { id: params.id },
@@ -164,6 +170,9 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Document deleted successfully' })
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
