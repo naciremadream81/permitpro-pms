@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
+import { enforce, ForbiddenError, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { generateChecklist, checklistCompletionPct } from '@/lib/checklist-engine'
 
@@ -65,6 +66,7 @@ export async function POST(
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    enforce(normalizeRole(session.user?.role), 'update', 'checklist')
 
     const permit = await prisma.permitPackage.findUnique({ where: { id: params.id } })
     if (!permit) return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
@@ -73,6 +75,8 @@ export async function POST(
 
     return NextResponse.json({ data: result }, { status: 201 })
   } catch (error) {
+    if (error instanceof ForbiddenError)
+      return NextResponse.json({ error: error.message }, { status: 403 })
     console.error('POST /api/permits/[id]/checklist:', error)
     return NextResponse.json({ error: 'Failed to generate checklist' }, { status: 500 })
   }

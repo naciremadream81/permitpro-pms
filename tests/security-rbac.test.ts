@@ -67,6 +67,12 @@ test('permit status route cannot bypass package update authorization', () => {
   assertPermissionGuard(route, 'POST', 'update', 'package')
 })
 
+test('permit checklist regeneration enforces the centralized permission matrix', () => {
+  const route = readRoute('app/api/permits/[id]/checklist/route.ts')
+
+  assertPermissionGuard(route, 'POST', 'update', 'checklist')
+})
+
 test('document mutation routes enforce the centralized permission matrix', () => {
   const route = readRoute('app/api/documents/[id]/route.ts')
   const uploadRoute = readRoute('app/api/permits/[id]/documents/route.ts')
