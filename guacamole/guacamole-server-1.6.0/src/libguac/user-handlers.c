@@ -29,7 +29,9 @@
 #include "guacamole/user.h"
 #include "user-handlers.h"
 
+#include <errno.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -163,17 +165,44 @@ int __guac_handle_sync(guac_user* user, int argc, char** argv) {
 }
 
 int __guac_handle_touch(guac_user* user, int argc, char** argv) {
-    if (user->touch_handler)
+    if (user->touch_handler) {
+        char* endptr;
+        errno = 0;
+        long id_long = strtol(argv[0], &endptr, 10);
+        if (errno != 0 || *endptr != '\0' || id_long < INT_MIN || id_long > INT_MAX)
+            return -1;
+        int id = (int)id_long;
+        errno = 0;
+        long x_long = strtol(argv[1], &endptr, 10);
+        if (errno != 0 || *endptr != '\0' || x_long < INT_MIN || x_long > INT_MAX)
+            return -1;
+        int x = (int)x_long;
+        errno = 0;
+        long y_long = strtol(argv[2], &endptr, 10);
+        if (errno != 0 || *endptr != '\0' || y_long < INT_MIN || y_long > INT_MAX)
+            return -1;
+        int y = (int)y_long;
+        errno = 0;
+        long x_radius_long = strtol(argv[3], &endptr, 10);
+        if (errno != 0 || *endptr != '\0' || x_radius_long < INT_MIN || x_radius_long > INT_MAX)
+            return -1;
+        int x_radius = (int)x_radius_long;
+        errno = 0;
+        long y_radius_long = strtol(argv[4], &endptr, 10);
+        if (errno != 0 || *endptr != '\0' || y_radius_long < INT_MIN || y_radius_long > INT_MAX)
+            return -1;
+        int y_radius = (int)y_radius_long;
         return user->touch_handler(
             user,
-            atoi(argv[0]), /* id */
-            atoi(argv[1]), /* x */
-            atoi(argv[2]), /* y */
-            atoi(argv[3]), /* x_radius */
-            atoi(argv[4]), /* y_radius */
+            id,
+            x,
+            y,
+            x_radius,
+            y_radius,
             atof(argv[5]), /* angle */
             atof(argv[6])  /* force */
         );
+    }
     return 0;
 }
 
@@ -189,12 +218,24 @@ int __guac_handle_mouse(guac_user* user, int argc, char** argv) {
 }
 
 int __guac_handle_key(guac_user* user, int argc, char** argv) {
-    if (user->key_handler)
+    if (user->key_handler) {
+        char* endptr;
+        errno = 0;
+        long keysym_long = strtol(argv[0], &endptr, 10);
+        if (errno != 0 || *endptr != '\0' || keysym_long < INT_MIN || keysym_long > INT_MAX)
+            return -1;
+        int keysym = (int)keysym_long;
+        errno = 0;
+        long pressed_long = strtol(argv[1], &endptr, 10);
+        if (errno != 0 || *endptr != '\0' || pressed_long < INT_MIN || pressed_long > INT_MAX)
+            return -1;
+        int pressed = (int)pressed_long;
         return user->key_handler(
             user,
-            atoi(argv[0]), /* keysym */
-            atoi(argv[1])  /* pressed */
+            keysym,
+            pressed
         );
+    }
     return 0;
 }
 
@@ -368,12 +409,24 @@ int __guac_handle_clipboard(guac_user* user, int argc, char** argv) {
 }
 
 int __guac_handle_size(guac_user* user, int argc, char** argv) {
-    if (user->size_handler)
+    if (user->size_handler) {
+        char* endptr;
+        errno = 0;
+        long width_long = strtol(argv[0], &endptr, 10);
+        if (errno != 0 || *endptr != '\0' || width_long < INT_MIN || width_long > INT_MAX)
+            return -1;
+        int width = (int)width_long;
+        errno = 0;
+        long height_long = strtol(argv[1], &endptr, 10);
+        if (errno != 0 || *endptr != '\0' || height_long < INT_MIN || height_long > INT_MAX)
+            return -1;
+        int height = (int)height_long;
         return user->size_handler(
             user,
-            atoi(argv[0]), /* width */
-            atoi(argv[1])  /* height */
+            width,
+            height
         );
+    }
     return 0;
 }
 
@@ -515,7 +568,12 @@ int __guac_handle_blob(guac_user* user, int argc, char** argv) {
 int __guac_handle_end(guac_user* user, int argc, char** argv) {
 
     int result = 0;
-    int stream_index = atoi(argv[0]);
+    char* endptr;
+    errno = 0;
+    long stream_index_long = strtol(argv[0], &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || stream_index_long < INT_MIN || stream_index_long > INT_MAX)
+        return -1;
+    int stream_index = (int)stream_index_long;
     guac_stream* stream = __get_open_input_stream(user, stream_index);
 
     /* Fail if no such stream */
@@ -574,7 +632,12 @@ int __guac_handle_put(guac_user* user, int argc, char** argv) {
     guac_object* object;
 
     /* Validate object index */
-    int object_index = atoi(argv[0]);
+    char* endptr;
+    errno = 0;
+    long object_index_long = strtol(argv[0], &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || object_index_long < INT_MIN || object_index_long > INT_MAX)
+        return 0;
+    int object_index = (int)object_index_long;
     if (object_index < 0 || object_index >= GUAC_USER_MAX_OBJECTS)
         return 0;
 
@@ -585,7 +648,11 @@ int __guac_handle_put(guac_user* user, int argc, char** argv) {
         return 0;
 
     /* Pull corresponding stream */
-    int stream_index = atoi(argv[1]);
+    errno = 0;
+    long stream_index_long = strtol(argv[1], &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || stream_index_long < INT_MIN || stream_index_long > INT_MAX)
+        return 0;
+    int stream_index = (int)stream_index_long;
     guac_stream* stream = __init_input_stream(user, stream_index);
     if (stream == NULL)
         return 0;
