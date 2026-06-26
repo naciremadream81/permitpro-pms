@@ -78,16 +78,16 @@ export async function DELETE(
     const before = await prisma.requirement.findUnique({ where: { id: params.id } })
     if (!before) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-    // Soft-delete: mark inactive rather than destroy if checklist items exist
-    const checklistCount = await prisma.checklistItem.count({
-      where: { requirementId: params.id },
-    })
+    // Always soft-delete requirements so their change log remains available for
+    // history and restore operations.
+    const requirement = before.isActive
+      ? await prisma.requirement.update({
+          where: { id: params.id },
+          data: { isActive: false },
+        })
+      : before
 
-    if (checklistCount > 0) {
-      const requirement = await prisma.requirement.update({
-        where: { id: params.id },
-        data: { isActive: false },
-      })
+    if (before.isActive) {
       await prisma.requirementChangeLog.create({
         data: {
           requirementId: params.id,
@@ -99,19 +99,9 @@ export async function DELETE(
           snapshot: JSON.stringify(requirement),
         },
       })
-      return NextResponse.json({ data: requirement, softDeleted: true })
     }
 
-    await prisma.requirementChangeLog.create({
-      data: {
-        requirementId: params.id,
-        changedBy: session.user?.id as string,
-        action: 'DELETED',
-        snapshot: JSON.stringify(before),
-      },
-    })
-    await prisma.requirement.delete({ where: { id: params.id } })
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ data: requirement, softDeleted: true })
   } catch (error) {
     if (error instanceof ForbiddenError)
       return NextResponse.json({ error: error.message }, { status: 403 })
