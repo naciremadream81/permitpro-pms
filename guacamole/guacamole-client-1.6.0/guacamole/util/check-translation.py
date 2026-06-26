@@ -177,6 +177,8 @@ class Translation:
 
         """
 
+        if '..' in path:
+            raise Exception('Invalid file path')
         json_data = open(path).read()
         filename = os.path.basename(path)
         
