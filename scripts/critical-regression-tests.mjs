@@ -1,24 +1,17 @@
-import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import assert from 'node:assert/strict'
-
-const repoRoot = process.cwd()
-
-function sqlite(dbPath, sql) {
-  return execFileSync('sqlite3', [dbPath], {
-    input: sql,
-    encoding: 'utf8',
-  }).trim()
-}
+import Database from 'better-sqlite3'
 
 function testSeedBatchMigrationPreservesAuditLinks() {
+  const repoRoot = process.cwd()
   const tempDir = mkdtempSync(join(tmpdir(), 'permitpro-critical-'))
   const dbPath = join(tempDir, 'migration.db')
+  const db = new Database(dbPath)
 
   try {
-    sqlite(dbPath, `
+    db.exec(`
       PRAGMA foreign_keys=ON;
 
       CREATE TABLE "Requirement" (
@@ -94,28 +87,35 @@ function testSeedBatchMigrationPreservesAuditLinks() {
       join(repoRoot, 'prisma/migrations/20260326235900_fix_seed_batch_columns/migration.sql'),
       'utf8'
     )
-    sqlite(dbPath, migrationSql)
+    db.exec(migrationSql)
 
-    const batch = sqlite(
-      dbPath,
-      'SELECT id, totalCounties, totalRequirements, skippedCount, errorMessage FROM "SeedBatch";'
-    )
-    assert.equal(batch, 'batch-1|0|0|0|original error')
+    const batch = db
+      .prepare('SELECT id, totalCounties, totalRequirements, skippedCount, errorMessage FROM "SeedBatch";')
+      .get()
+    assert.deepEqual(batch, {
+      id: 'batch-1',
+      totalCounties: 0,
+      totalRequirements: 0,
+      skippedCount: 0,
+      errorMessage: 'original error',
+    })
 
-    const seedBatchId = sqlite(
-      dbPath,
-      'SELECT seedBatchId FROM "RequirementChangeLog" WHERE id = \'log-1\';'
-    )
+    const seedBatchId = db
+      .prepare('SELECT seedBatchId FROM "RequirementChangeLog" WHERE id = ?;')
+      .pluck()
+      .get('log-1')
     assert.equal(seedBatchId, 'batch-1')
 
-    const foreignKeyErrors = sqlite(dbPath, 'PRAGMA foreign_key_check;')
-    assert.equal(foreignKeyErrors, '')
+    const foreignKeyErrors = db.prepare('PRAGMA foreign_key_check;').all()
+    assert.deepEqual(foreignKeyErrors, [])
   } finally {
+    db.close()
     rmSync(tempDir, { recursive: true, force: true })
   }
 }
 
 function testRequirementDeleteRemainsSoftDeleteOnly() {
+  const repoRoot = process.cwd()
   const route = readFileSync(join(repoRoot, 'app/api/requirements/[id]/route.ts'), 'utf8')
 
   assert.doesNotMatch(route, /prisma\.requirement\.delete/)
@@ -124,6 +124,7 @@ function testRequirementDeleteRemainsSoftDeleteOnly() {
 }
 
 function testEntrypointFailsFastOnMigrationErrors() {
+  const repoRoot = process.cwd()
   const entrypoint = readFileSync(join(repoRoot, 'docker-entrypoint.sh'), 'utf8')
 
   assert.match(entrypoint, /set -e/)
