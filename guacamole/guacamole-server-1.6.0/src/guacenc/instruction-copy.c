@@ -23,6 +23,8 @@
 
 #include <guacamole/client.h>
 
+#include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 
 int guacenc_handle_copy(guacenc_display* display, int argc, char** argv) {
@@ -34,15 +36,62 @@ int guacenc_handle_copy(guacenc_display* display, int argc, char** argv) {
     }
 
     /* Parse arguments */
-    int sindex = atoi(argv[0]);
-    int sx = atoi(argv[1]);
-    int sy = atoi(argv[2]);
-    int width = atoi(argv[3]);
-    int height = atoi(argv[4]);
-    int mask = atoi(argv[5]);
-    int dindex = atoi(argv[6]);
-    int dx = atoi(argv[7]);
-    int dy = atoi(argv[8]);
+    char* endptr;
+    long temp;
+
+    errno = 0;
+    temp = strtol(argv[0], &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || temp < INT_MIN || temp > INT_MAX)
+        return 1;
+    int sindex = (int)temp;
+
+    errno = 0;
+    temp = strtol(argv[1], &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || temp < INT_MIN || temp > INT_MAX)
+        return 1;
+    int sx = (int)temp;
+
+    errno = 0;
+    temp = strtol(argv[2], &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || temp < INT_MIN || temp > INT_MAX)
+        return 1;
+    int sy = (int)temp;
+
+    errno = 0;
+    temp = strtol(argv[3], &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || temp < INT_MIN || temp > INT_MAX)
+        return 1;
+    int width = (int)temp;
+
+    errno = 0;
+    temp = strtol(argv[4], &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || temp < INT_MIN || temp > INT_MAX)
+        return 1;
+    int height = (int)temp;
+
+    errno = 0;
+    temp = strtol(argv[5], &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || temp < INT_MIN || temp > INT_MAX)
+        return 1;
+    int mask = (int)temp;
+
+    errno = 0;
+    temp = strtol(argv[6], &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || temp < INT_MIN || temp > INT_MAX)
+        return 1;
+    int dindex = (int)temp;
+
+    errno = 0;
+    temp = strtol(argv[7], &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || temp < INT_MIN || temp > INT_MAX)
+        return 1;
+    int dx = (int)temp;
+
+    errno = 0;
+    temp = strtol(argv[8], &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || temp < INT_MIN || temp > INT_MAX)
+        return 1;
+    int dy = (int)temp;
 
     /* Pull buffer of source layer/buffer */
     guacenc_buffer* src = guacenc_display_get_related_buffer(display, sindex);
