@@ -89,8 +89,8 @@ export async function POST(
     // Mark previous documents of the same type as superseded
     await prisma.contractorDocument.updateMany({
       where: {
-        contractorId: params.id,
-        type: validated.type,
+        contractorId: { equals: params.id },
+        type: { equals: validated.type },
         isSuperseded: false,
       },
       data: { isSuperseded: true },
