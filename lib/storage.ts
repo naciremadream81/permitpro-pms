@@ -43,6 +43,7 @@ class LocalStorageAdapter implements StorageAdapter {
    */
   private async ensureDirectory(dirPath: string): Promise<void> {
     try {
+      if (dirPath.includes('..') || path.isAbsolute(dirPath)) throw new Error('Invalid path');
       await fs.access(dirPath)
     } catch {
       await fs.mkdir(dirPath, { recursive: true })
@@ -74,12 +75,21 @@ class LocalStorageAdapter implements StorageAdapter {
     }
 
     // Create permit-specific directory
-    const permitDir = path.join(this.rootPath, 'permits', permitId)
+    const baseDir = path.resolve(this.rootPath, 'permits')
+    const permitDir = path.resolve(baseDir, permitId)
+    const relativePermitDir = path.relative(baseDir, permitDir)
+    if (relativePermitDir.startsWith('..') || path.isAbsolute(relativePermitDir)) {
+      throw new Error('Invalid permit identifier')
+    }
     await this.ensureDirectory(permitDir)
 
     // Generate unique file name
     const uniqueFileName = this.generateUniqueFileName(fileName)
-    const filePath = path.join(permitDir, uniqueFileName)
+    const filePath = path.resolve(permitDir, uniqueFileName)
+    const relativeFilePath = path.relative(baseDir, filePath)
+    if (relativeFilePath.startsWith('..') || path.isAbsolute(relativeFilePath)) {
+      throw new Error('Invalid file name')
+    }
 
     // Write file
     await fs.writeFile(filePath, file)
@@ -135,9 +145,14 @@ class LocalStorageAdapter implements StorageAdapter {
    * @param filePath - Relative path from storage root
    */
   async exists(filePath: string): Promise<boolean> {
-    const fullPath = path.join(this.rootPath, filePath)
+    const base = path.resolve(this.rootPath)
+    const target = path.resolve(base, filePath)
+    const relative = path.relative(base, target)
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      return false
+    }
     try {
-      await fs.access(fullPath)
+      await fs.access(target)
       return true
     } catch {
       return false
