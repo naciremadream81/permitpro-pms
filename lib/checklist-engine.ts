@@ -145,7 +145,7 @@ export async function syncChecklist(
   // Remove PENDING items whose requirement no longer applies
   await prisma.checklistItem.deleteMany({
     where: {
-      packageId,
+      packageId: { equals: packageId },
       status: 'PENDING',
       requirementId: { notIn: Array.from(applicableIds) },
     },
