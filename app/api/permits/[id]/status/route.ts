@@ -25,6 +25,9 @@ export async function POST(
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const role = normalizeRole(session.user?.role)
+    // Status/stage changes are package updates — reviewers must use the review API
+    enforce(role, 'update', 'package')
+
     const body = await request.json()
     const validatedData = permitStatusUpdateSchema.parse(body)
 
