@@ -179,9 +179,13 @@ export class UnauthorizedError extends Error {
   }
 }
 
-/** Normalize legacy role strings to the canonical UserRole union */
+/**
+ * Normalize legacy role strings to the canonical UserRole union.
+ * Unknown roles fail closed — they must not inherit coordinator privileges.
+ */
 export function normalizeRole(role: string | null | undefined): UserRole {
   if (role === 'admin') return 'admin'
   if (role === 'reviewer') return 'reviewer'
-  return 'coordinator' // 'user' and anything unknown defaults to coordinator
+  if (role === 'coordinator' || role === 'user') return 'coordinator'
+  throw new ForbiddenError(`Unrecognized role '${role ?? 'none'}'`)
 }

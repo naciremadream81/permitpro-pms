@@ -74,7 +74,12 @@ export async function requirePermission(action: Action, resource: Resource) {
  */
 export async function isAdmin(): Promise<boolean> {
   const session = await getSession()
-  return normalizeRole(session?.user?.role) === 'admin'
+  if (!session?.user?.role) return false
+  try {
+    return normalizeRole(session.user.role) === 'admin'
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -83,7 +88,11 @@ export async function isAdmin(): Promise<boolean> {
 export async function userCan(action: Action, resource: Resource): Promise<boolean> {
   const session = await getSession()
   if (!session?.user?.role) return false
-  return can(normalizeRole(session.user.role), action, resource)
+  try {
+    return can(normalizeRole(session.user.role), action, resource)
+  } catch {
+    return false
+  }
 }
 
 export { ForbiddenError, UnauthorizedError }
