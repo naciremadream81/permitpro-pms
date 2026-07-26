@@ -268,6 +268,51 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
   }
 }
 
+/**
+ * Gate for any transition that sets internalStage to ReadyToSubmit.
+ * Callers must still enforce override_readiness permission before passing override=true.
+ */
+export async function gateReadyToSubmit(
+  packageId: string,
+  options: {
+    overrideReadiness?: boolean
+    overrideReason?: string
+  } = {}
+): Promise<
+  | { ok: true; readiness: ReadinessResult }
+  | { ok: false; status: 400 | 422; body: Record<string, unknown> }
+> {
+  const readiness = await evaluateReadiness(packageId)
+
+  if (readiness.isReady) {
+    return { ok: true, readiness }
+  }
+
+  if (options.overrideReadiness) {
+    if (!options.overrideReason?.trim()) {
+      return {
+        ok: false,
+        status: 400,
+        body: {
+          error: 'An override reason is required when bypassing the readiness gate',
+        },
+      }
+    }
+    return { ok: true, readiness }
+  }
+
+  return {
+    ok: false,
+    status: 422,
+    body: {
+      error: 'Package is not ready for submission',
+      blockers: readiness.blockers,
+      warnings: readiness.warnings,
+      checklistPct: readiness.checklistPct,
+    },
+  }
+}
+
 // ============================================================================
 // Helpers
 // ============================================================================

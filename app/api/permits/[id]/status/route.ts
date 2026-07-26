@@ -13,7 +13,7 @@ import { getSession, ForbiddenError } from '@/lib/auth-helpers'
 import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { permitStatusUpdateSchema } from '@/lib/validations'
-import { evaluateReadiness } from '@/lib/readiness-engine'
+import { gateReadyToSubmit } from '@/lib/readiness-engine'
 import { Prisma } from '@prisma/client'
 
 export async function POST(
@@ -25,6 +25,8 @@ export async function POST(
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const role = normalizeRole(session.user?.role)
+    enforce(role, 'update', 'package')
+
     const body = await request.json()
     const validatedData = permitStatusUpdateSchema.parse(body)
 
@@ -39,43 +41,29 @@ export async function POST(
     const transitioningToReady = validatedData.internalStage === 'ReadyToSubmit'
 
     if (transitioningToReady) {
-      const readiness = await evaluateReadiness(params.id)
+      const gate = await gateReadyToSubmit(params.id, {
+        overrideReadiness: validatedData.overrideReadiness,
+        overrideReason: validatedData.overrideReason,
+      })
 
-      if (!readiness.isReady) {
-        if (validatedData.overrideReadiness) {
-          // Only admins may override
-          enforce(role, 'override_readiness', 'checklist')
+      if (!gate.ok) {
+        return NextResponse.json(gate.body, { status: gate.status })
+      }
 
-          if (!validatedData.overrideReason) {
-            return NextResponse.json(
-              { error: 'An override reason is required when bypassing the readiness gate' },
-              { status: 400 }
-            )
-          }
-
-          await prisma.activityLog.create({
-            data: {
-              permitPackageId: params.id,
-              userId: session.user.id,
-              activityType: 'ReadinessOverridden',
-              description: `Readiness gate overridden: ${validatedData.overrideReason}`,
-              metadata: JSON.stringify({
-                blockers: readiness.blockers,
-                overrideReason: validatedData.overrideReason,
-              }),
-            },
-          })
-        } else {
-          return NextResponse.json(
-            {
-              error: 'Package is not ready for submission',
-              blockers: readiness.blockers,
-              warnings: readiness.warnings,
-              checklistPct: readiness.checklistPct,
-            },
-            { status: 422 }
-          )
-        }
+      if (!gate.readiness.isReady && validatedData.overrideReadiness) {
+        enforce(role, 'override_readiness', 'checklist')
+        await prisma.activityLog.create({
+          data: {
+            permitPackageId: params.id,
+            userId: session.user.id,
+            activityType: 'ReadinessOverridden',
+            description: `Readiness gate overridden: ${validatedData.overrideReason}`,
+            metadata: JSON.stringify({
+              blockers: gate.readiness.blockers,
+              overrideReason: validatedData.overrideReason,
+            }),
+          },
+        })
       }
     }
 

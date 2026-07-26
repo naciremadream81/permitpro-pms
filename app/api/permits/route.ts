@@ -6,7 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth-helpers'
+import { getSession, ForbiddenError } from '@/lib/auth-helpers'
+import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { permitPackageSchema } from '@/lib/validations'
 import { generateChecklist } from '@/lib/checklist-engine'
@@ -102,16 +103,25 @@ export async function GET(request: NextRequest) {
 // POST /api/permits - Create a new permit package
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
     const session = await getSession()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    enforce(normalizeRole(session.user?.role), 'create', 'package')
 
     const body = await request.json()
-    
-    // Validate request data
     const validatedData = permitPackageSchema.parse(body)
+
+    // New packages cannot skip the readiness gate via create payload
+    if (validatedData.internalStage === 'ReadyToSubmit') {
+      return NextResponse.json(
+        {
+          error:
+            'Cannot create a package already in ReadyToSubmit. Create the package, complete checklist requirements, then transition via the status API.',
+        },
+        { status: 400 }
+      )
+    }
 
     // Convert date strings to Date objects and structure for Prisma
     // Note: We use customerId/contractorId directly as Prisma accepts both formats at runtime
@@ -160,6 +170,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: permitPackage }, { status: 201 })
   } catch (error) {
+    if (error instanceof ForbiddenError)
+      return NextResponse.json({ error: error.message }, { status: 403 })
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
         { error: 'Validation error', details: error },

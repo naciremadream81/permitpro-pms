@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession, ForbiddenError } from '@/lib/auth-helpers'
 import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
+import { evaluateReadiness } from '@/lib/readiness-engine'
 import { z } from 'zod'
 import { internalStageEnum } from '@/lib/validations'
 
@@ -83,6 +84,26 @@ export async function POST(request: NextRequest) {
         where: { id: { in: data.packageIds } },
         select: { id: true, internalStage: true },
       })
+
+      // Bulk ReadyToSubmit must not bypass the readiness gate
+      if (data.internalStage === 'ReadyToSubmit') {
+        const blocked: Array<{ id: string; blockers: unknown[] }> = []
+        for (const pkg of packages) {
+          const readiness = await evaluateReadiness(pkg.id)
+          if (!readiness.isReady) {
+            blocked.push({ id: pkg.id, blockers: readiness.blockers })
+          }
+        }
+        if (blocked.length > 0) {
+          return NextResponse.json(
+            {
+              error: 'One or more packages are not ready for submission',
+              blocked,
+            },
+            { status: 422 }
+          )
+        }
+      }
 
       await prisma.permitPackage.updateMany({
         where: { id: { in: data.packageIds } },

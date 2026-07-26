@@ -10,7 +10,7 @@ import { getSession, ForbiddenError } from '@/lib/auth-helpers'
 import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { reviewAssignSchema, reviewActionSchema } from '@/lib/validations'
-import { evaluateReadiness } from '@/lib/readiness-engine'
+import { gateReadyToSubmit } from '@/lib/readiness-engine'
 
 export async function GET(
   _request: NextRequest,
@@ -62,28 +62,36 @@ export async function POST(
 
       const data = reviewAssignSchema.parse(body)
 
-      // Validate readiness before assigning (unless admin overrides)
-      const readiness = await evaluateReadiness(params.id)
-      if (!readiness.isReady && !body.overrideReadiness) {
+      // Validate readiness before assigning (unless admin overrides with reason)
+      const gate = await gateReadyToSubmit(params.id, {
+        overrideReadiness: body.overrideReadiness === true,
+        overrideReason: typeof body.overrideReason === 'string' ? body.overrideReason : undefined,
+      })
+      if (!gate.ok) {
         return NextResponse.json(
           {
-            error: 'Package is not ready for review',
-            blockers: readiness.blockers,
-            warnings: readiness.warnings,
+            ...gate.body,
+            error:
+              gate.status === 422
+                ? 'Package is not ready for review'
+                : gate.body.error,
           },
-          { status: 422 }
+          { status: gate.status }
         )
       }
 
-      if (body.overrideReadiness) {
+      if (!gate.readiness.isReady && body.overrideReadiness === true) {
         enforce(role, 'override_readiness', 'checklist')
         await prisma.activityLog.create({
           data: {
             permitPackageId: params.id,
             userId: session.user.id,
             activityType: 'ReadinessOverridden',
-            description: `Readiness gate overridden by admin`,
-            metadata: JSON.stringify({ reason: body.overrideReason, blockers: readiness.blockers }),
+            description: `Readiness gate overridden by admin: ${body.overrideReason}`,
+            metadata: JSON.stringify({
+              reason: body.overrideReason,
+              blockers: gate.readiness.blockers,
+            }),
           },
         })
       }
@@ -169,6 +177,18 @@ export async function POST(
     }
 
     if (action === 'approve') {
+      // Re-evaluate readiness — package may have regressed since assignment
+      const gate = await gateReadyToSubmit(params.id)
+      if (!gate.ok) {
+        return NextResponse.json(
+          {
+            ...gate.body,
+            error: 'Package is no longer ready for submission',
+          },
+          { status: gate.status }
+        )
+      }
+
       const updated = await prisma.reviewAssignment.update({
         where: { id: activeAssignment.id },
         data: { status: 'APPROVED', completedAt: new Date() },

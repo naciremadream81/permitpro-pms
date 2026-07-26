@@ -1,13 +1,15 @@
 /**
  * Permit Detail API Route Handler
- * 
+ *
  * Handles GET (get permit by ID), PATCH (update permit), and DELETE (delete permit) requests.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth-helpers'
+import { getSession, ForbiddenError } from '@/lib/auth-helpers'
+import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { permitPackageUpdateSchema } from '@/lib/validations'
+import { gateReadyToSubmit } from '@/lib/readiness-engine'
 import { Prisma } from '@prisma/client'
 
 // GET /api/permits/[id] - Get permit by ID with all related data
@@ -16,11 +18,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check authentication
     const session = await getSession()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    enforce(normalizeRole(session.user?.role), 'read', 'package')
 
     const permitPackage = await prisma.permitPackage.findUnique({
       where: { id: params.id },
@@ -57,6 +59,8 @@ export async function GET(
 
     return NextResponse.json({ data: permitPackage })
   } catch (error) {
+    if (error instanceof ForbiddenError)
+      return NextResponse.json({ error: error.message }, { status: 403 })
     console.error('Error fetching permit:', error)
     return NextResponse.json(
       { error: 'Failed to fetch permit' },
@@ -71,18 +75,17 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check authentication
     const session = await getSession()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const role = normalizeRole(session.user?.role)
+    enforce(role, 'update', 'package')
+
     const body = await request.json()
-    
-    // Validate request data
     const validatedData = permitPackageUpdateSchema.parse(body)
 
-    // Get current permit to track changes
     const currentPermit = await prisma.permitPackage.findUnique({
       where: { id: params.id },
     })
@@ -91,13 +94,40 @@ export async function PATCH(
       return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
     }
 
-    // Convert date strings to Date objects
+    // ReadyToSubmit must go through the readiness gate (same as /status)
+    if (validatedData.internalStage === 'ReadyToSubmit') {
+      const gate = await gateReadyToSubmit(params.id, {
+        overrideReadiness: body.overrideReadiness === true,
+        overrideReason: typeof body.overrideReason === 'string' ? body.overrideReason : undefined,
+      })
+
+      if (!gate.ok) {
+        return NextResponse.json(gate.body, { status: gate.status })
+      }
+
+      if (!gate.readiness.isReady && body.overrideReadiness === true) {
+        enforce(role, 'override_readiness', 'checklist')
+        await prisma.activityLog.create({
+          data: {
+            permitPackageId: params.id,
+            userId: session.user.id,
+            activityType: 'ReadinessOverridden',
+            description: `Readiness gate overridden: ${body.overrideReason}`,
+            metadata: JSON.stringify({
+              blockers: gate.readiness.blockers,
+              overrideReason: body.overrideReason,
+              via: 'PATCH /api/permits/[id]',
+            }),
+          },
+        })
+      }
+    }
+
     const data: Prisma.PermitPackageUpdateInput = { ...validatedData }
     if (validatedData.targetIssueDate) {
       data.targetIssueDate = new Date(validatedData.targetIssueDate)
     }
 
-    // Update permit package
     const permitPackage = await prisma.permitPackage.update({
       where: { id: params.id },
       data,
@@ -111,7 +141,6 @@ export async function PATCH(
       },
     })
 
-    // Log status changes
     if (validatedData.status && validatedData.status !== currentPermit.status) {
       await prisma.activityLog.create({
         data: {
@@ -138,8 +167,26 @@ export async function PATCH(
       })
     }
 
+    if (
+      validatedData.internalStage &&
+      validatedData.internalStage !== currentPermit.internalStage
+    ) {
+      await prisma.activityLog.create({
+        data: {
+          permitPackageId: permitPackage.id,
+          userId: session.user.id,
+          activityType: 'StageChange',
+          description: `Stage changed from ${currentPermit.internalStage ?? 'none'} to ${validatedData.internalStage}`,
+          oldValue: currentPermit.internalStage ?? undefined,
+          newValue: validatedData.internalStage,
+        },
+      })
+    }
+
     return NextResponse.json({ data: permitPackage })
   } catch (error) {
+    if (error instanceof ForbiddenError)
+      return NextResponse.json({ error: error.message }, { status: 403 })
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
         { error: 'Validation error', details: error },
@@ -163,11 +210,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check authentication
     const session = await getSession()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    enforce(normalizeRole(session.user?.role), 'delete', 'package')
 
     await prisma.permitPackage.delete({
       where: { id: params.id },
@@ -175,6 +222,8 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Permit deleted successfully' })
   } catch (error) {
+    if (error instanceof ForbiddenError)
+      return NextResponse.json({ error: error.message }, { status: 403 })
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
     }
@@ -185,4 +234,3 @@ export async function DELETE(
     )
   }
 }
-
