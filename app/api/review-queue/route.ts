@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth-helpers'
+import { getSession, ForbiddenError } from '@/lib/auth-helpers'
 import { normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 
@@ -56,6 +56,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data: assignments })
   } catch (error) {
+    if (error instanceof ForbiddenError)
+      return NextResponse.json({ error: error.message }, { status: 403 })
     console.error('GET /api/review-queue:', error)
     return NextResponse.json({ error: 'Failed to fetch review queue' }, { status: 500 })
   }

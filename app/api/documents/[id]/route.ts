@@ -1,11 +1,12 @@
 /**
  * Document Detail API Route Handler
- * 
+ *
  * Handles GET (get document), PATCH (update document metadata), and DELETE (delete document) requests.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth-helpers'
+import { getSession, ForbiddenError } from '@/lib/auth-helpers'
+import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { storage } from '@/lib/storage'
 import { documentUpdateSchema } from '@/lib/validations'
@@ -17,11 +18,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check authentication
     const session = await getSession()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    enforce(normalizeRole(session.user?.role), 'read', 'document')
 
     const document = await prisma.permitDocument.findUnique({
       where: { id: params.id },
@@ -48,6 +49,8 @@ export async function GET(
 
     return NextResponse.json({ data: document })
   } catch (error) {
+    if (error instanceof ForbiddenError)
+      return NextResponse.json({ error: error.message }, { status: 403 })
     console.error('Error fetching document:', error)
     return NextResponse.json(
       { error: 'Failed to fetch document' },
@@ -62,18 +65,22 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check authentication
     const session = await getSession()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const role = normalizeRole(session.user?.role)
     const body = await request.json()
-    
-    // Validate request data
     const validatedData = documentUpdateSchema.parse(body)
 
-    // Get current document
+    // Verification toggles require verify permission; other metadata edits require update
+    if (validatedData.isVerified !== undefined) {
+      enforce(role, 'verify', 'document')
+    } else {
+      enforce(role, 'update', 'document')
+    }
+
     const currentDocument = await prisma.permitDocument.findUnique({
       where: { id: params.id },
     })
@@ -82,13 +89,11 @@ export async function PATCH(
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // Update document
     const document = await prisma.permitDocument.update({
       where: { id: params.id },
       data: validatedData,
     })
 
-    // Create activity log entry if verification status changed
     if (validatedData.isVerified !== undefined && validatedData.isVerified !== currentDocument.isVerified) {
       await prisma.activityLog.create({
         data: {
@@ -102,6 +107,8 @@ export async function PATCH(
 
     return NextResponse.json({ data: document })
   } catch (error) {
+    if (error instanceof ForbiddenError)
+      return NextResponse.json({ error: error.message }, { status: 403 })
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
         { error: 'Validation error', details: error },
@@ -125,11 +132,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check authentication
     const session = await getSession()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    enforce(normalizeRole(session.user?.role), 'delete', 'document')
 
     const document = await prisma.permitDocument.findUnique({
       where: { id: params.id },
@@ -139,7 +146,6 @@ export async function DELETE(
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // Delete file from storage
     try {
       await storage.delete(document.storagePath)
     } catch (error) {
@@ -147,12 +153,10 @@ export async function DELETE(
       // Continue with database deletion even if file deletion fails
     }
 
-    // Delete document record
     await prisma.permitDocument.delete({
       where: { id: params.id },
     })
 
-    // Create activity log entry
     await prisma.activityLog.create({
       data: {
         permitPackageId: document.permitPackageId,
@@ -164,6 +168,8 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Document deleted successfully' })
   } catch (error) {
+    if (error instanceof ForbiddenError)
+      return NextResponse.json({ error: error.message }, { status: 403 })
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
@@ -174,4 +180,3 @@ export async function DELETE(
     )
   }
 }
-

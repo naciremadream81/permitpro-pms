@@ -9,7 +9,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth-helpers'
+import { getSession, ForbiddenError } from '@/lib/auth-helpers'
+import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { buildExportZip } from '@/lib/export-engine'
 
@@ -22,6 +23,7 @@ export async function GET(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    enforce(normalizeRole(session.user?.role), 'export', 'package')
 
     const profileId = request.nextUrl.searchParams.get('profileId')
 
@@ -47,11 +49,16 @@ export async function GET(
       },
     })
   } catch (error) {
+    if (error instanceof ForbiddenError)
+      return NextResponse.json({ error: error.message }, { status: 403 })
     if (error instanceof Error && error.message === 'No documents to export') {
       return NextResponse.json(
         { error: 'No documents found for this permit package' },
         { status: 404 }
       )
+    }
+    if (error instanceof Error && error.message.startsWith('Export aborted:')) {
+      return NextResponse.json({ error: error.message }, { status: 409 })
     }
     console.error('Error creating document ZIP:', error)
     return NextResponse.json(

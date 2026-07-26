@@ -104,6 +104,8 @@ export async function buildExportZip(
   ]
 
   let docCount = 0
+  const missingDocuments: Array<{ id: string; fileName: string }> = []
+
   for (const doc of pkg.documents) {
     try {
       const fileBuffer = await storage.get(doc.storagePath)
@@ -121,8 +123,16 @@ export async function buildExportZip(
       docCount++
     } catch (err) {
       console.error(`Export: could not add document ${doc.id}:`, err)
-      manifestLines.push(`  [!] ${doc.fileName} — MISSING FROM STORAGE`)
+      missingDocuments.push({ id: doc.id, fileName: doc.fileName })
     }
+  }
+
+  // Fail closed: never return a "successful" ZIP / ExportLog with omitted files
+  if (missingDocuments.length > 0) {
+    const names = missingDocuments.map((d) => d.fileName).join(', ')
+    throw new Error(
+      `Export aborted: ${missingDocuments.length} document(s) missing from storage (${names})`
+    )
   }
 
   manifestLines.push(``, `Total: ${docCount} document(s)`)
