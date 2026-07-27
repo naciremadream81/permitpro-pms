@@ -76,6 +76,44 @@ export async function buildExportZip(
   const namingPattern = profile?.fileNamingPattern ?? '{category}_{fileName}'
   const includeManifest = profile?.includeManifest ?? true
 
+  // Load every storage blob before opening the archive so a missing file never
+  // produces a partial ZIP + ExportLog GENERATED for county submission.
+  const resolvedDocs: {
+    buffer: Buffer
+    archivePath: string
+    category: string
+    fileSize: number
+    isVerified: boolean
+  }[] = []
+  const missingDocuments: { id: string; fileName: string }[] = []
+
+  for (const doc of pkg.documents) {
+    try {
+      const fileBuffer = await storage.get(doc.storagePath)
+      const archiveName = buildFileName(namingPattern, doc.category, doc.fileName, doc.versionTag)
+      const folder = resolveFolder(folderRules, doc.category)
+      const archivePath = folder ? `${folder}/${archiveName}` : archiveName
+      resolvedDocs.push({
+        buffer: fileBuffer,
+        archivePath,
+        category: doc.category,
+        fileSize: doc.fileSize,
+        isVerified: doc.isVerified,
+      })
+    } catch (err) {
+      console.error(`Export: could not add document ${doc.id}:`, err)
+      missingDocuments.push({ id: doc.id, fileName: doc.fileName })
+    }
+  }
+
+  if (missingDocuments.length > 0) {
+    const names = missingDocuments.map((d) => d.fileName).join(', ')
+    throw new ExportIncompleteError(
+      `Export aborted: ${missingDocuments.length} document(s) missing from storage: ${names}`,
+      missingDocuments
+    )
+  }
+
   // Build archive
   const archive = archiver('zip', { zlib: { level: 6 } })
   const chunks: Buffer[] = []
@@ -103,28 +141,16 @@ export async function buildExportZip(
     `---------`,
   ]
 
-  let docCount = 0
-  for (const doc of pkg.documents) {
-    try {
-      const fileBuffer = await storage.get(doc.storagePath)
-      const archiveName = buildFileName(namingPattern, doc.category, doc.fileName, doc.versionTag)
-      const folder = resolveFolder(folderRules, doc.category)
-      const archivePath = folder ? `${folder}/${archiveName}` : archiveName
-
-      archive.append(fileBuffer, { name: archivePath })
-
-      manifestLines.push(
-        `  [${doc.isVerified ? '✓' : ' '}] ${archivePath}` +
-          `  (${doc.category}, ${formatBytes(doc.fileSize)}, ` +
-          `${doc.isVerified ? 'Verified' : 'Unverified'})`
-      )
-      docCount++
-    } catch (err) {
-      console.error(`Export: could not add document ${doc.id}:`, err)
-      manifestLines.push(`  [!] ${doc.fileName} — MISSING FROM STORAGE`)
-    }
+  for (const doc of resolvedDocs) {
+    archive.append(doc.buffer, { name: doc.archivePath })
+    manifestLines.push(
+      `  [${doc.isVerified ? '✓' : ' '}] ${doc.archivePath}` +
+        `  (${doc.category}, ${formatBytes(doc.fileSize)}, ` +
+        `${doc.isVerified ? 'Verified' : 'Unverified'})`
+    )
   }
 
+  const docCount = resolvedDocs.length
   manifestLines.push(``, `Total: ${docCount} document(s)`)
 
   const manifestText = manifestLines.join('\n')
@@ -179,6 +205,19 @@ export async function buildExportZip(
     checksum,
     documentCount: docCount,
     manifest: manifestText,
+  }
+}
+
+export class ExportIncompleteError extends Error {
+  readonly missingDocuments: { id: string; fileName: string }[]
+
+  constructor(
+    message: string,
+    missingDocuments: { id: string; fileName: string }[]
+  ) {
+    super(message)
+    this.name = 'ExportIncompleteError'
+    this.missingDocuments = missingDocuments
   }
 }
 

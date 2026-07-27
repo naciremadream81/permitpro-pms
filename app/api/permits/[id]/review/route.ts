@@ -77,12 +77,18 @@ export async function POST(
 
       if (body.overrideReadiness) {
         enforce(role, 'override_readiness', 'checklist')
+        if (!body.overrideReason || String(body.overrideReason).trim().length < 3) {
+          return NextResponse.json(
+            { error: 'An override reason is required when bypassing the readiness gate' },
+            { status: 400 }
+          )
+        }
         await prisma.activityLog.create({
           data: {
             permitPackageId: params.id,
             userId: session.user.id,
             activityType: 'ReadinessOverridden',
-            description: `Readiness gate overridden by admin`,
+            description: `Readiness gate overridden by admin: ${body.overrideReason}`,
             metadata: JSON.stringify({ reason: body.overrideReason, blockers: readiness.blockers }),
           },
         })
@@ -100,7 +106,7 @@ export async function POST(
         },
       })
 
-      // Update package stage
+      // Update package stage only when still ready (or admin overrode with reason)
       await prisma.permitPackage.update({
         where: { id: params.id },
         data: { internalStage: 'ReadyToSubmit', lastActivityAt: new Date() },
@@ -169,6 +175,43 @@ export async function POST(
     }
 
     if (action === 'approve') {
+      // Re-check readiness so approval cannot mark incomplete packages ReadyToSubmit
+      // after docs/checklist changed during review.
+      const readiness = await evaluateReadiness(params.id)
+      if (!readiness.isReady) {
+        if (body.overrideReadiness) {
+          enforce(role, 'override_readiness', 'checklist')
+          if (!body.overrideReason || String(body.overrideReason).trim().length < 3) {
+            return NextResponse.json(
+              { error: 'An override reason is required when bypassing the readiness gate' },
+              { status: 400 }
+            )
+          }
+          await prisma.activityLog.create({
+            data: {
+              permitPackageId: params.id,
+              userId: session.user.id,
+              activityType: 'ReadinessOverridden',
+              description: `Readiness gate overridden on approve: ${body.overrideReason}`,
+              metadata: JSON.stringify({
+                reason: body.overrideReason,
+                blockers: readiness.blockers,
+              }),
+            },
+          })
+        } else {
+          return NextResponse.json(
+            {
+              error: 'Package is not ready for submission',
+              blockers: readiness.blockers,
+              warnings: readiness.warnings,
+              checklistPct: readiness.checklistPct,
+            },
+            { status: 422 }
+          )
+        }
+      }
+
       const updated = await prisma.reviewAssignment.update({
         where: { id: activeAssignment.id },
         data: { status: 'APPROVED', completedAt: new Date() },
