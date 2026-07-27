@@ -6,7 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth-helpers'
+import { getSession, ForbiddenError } from '@/lib/auth-helpers'
+import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { permitPackageSchema } from '@/lib/validations'
 import { generateChecklist } from '@/lib/checklist-engine'
@@ -108,8 +109,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    enforce(normalizeRole(session.user?.role), 'create', 'package')
+
     const body = await request.json()
-    
+
+    // ReadyToSubmit requires the readiness-gated status route — never on create
+    if (body?.internalStage === 'ReadyToSubmit') {
+      return NextResponse.json(
+        {
+          error:
+            'Cannot create a package as ReadyToSubmit; use POST /api/permits/[id]/status after checklist completion',
+        },
+        { status: 400 }
+      )
+    }
+
     // Validate request data
     const validatedData = permitPackageSchema.parse(body)
 
@@ -160,6 +174,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: permitPackage }, { status: 201 })
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
         { error: 'Validation error', details: error },
