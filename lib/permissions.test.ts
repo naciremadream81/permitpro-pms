@@ -37,6 +37,20 @@ describe('can / enforce matrix', () => {
     assert.equal(can('reviewer', 'delete', 'package'), false)
   })
 
+  it('allows only admins to waive checklist items (incl. N/A)', () => {
+    assert.equal(can('admin', 'waive_item', 'checklist'), true)
+    assert.equal(can('coordinator', 'waive_item', 'checklist'), false)
+    assert.equal(can('reviewer', 'waive_item', 'checklist'), false)
+  })
+
+  it('allows only admins to delete customers and contractors', () => {
+    assert.equal(can('admin', 'delete', 'customer'), true)
+    assert.equal(can('coordinator', 'delete', 'customer'), false)
+    assert.equal(can('reviewer', 'delete', 'customer'), false)
+    assert.equal(can('admin', 'delete', 'contractor'), true)
+    assert.equal(can('coordinator', 'delete', 'contractor'), false)
+  })
+
   it('prevents reviewers from updating packages or deleting documents', () => {
     assert.equal(can('reviewer', 'update', 'package'), false)
     assert.equal(can('reviewer', 'delete', 'document'), false)

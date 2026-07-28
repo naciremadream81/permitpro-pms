@@ -1,5 +1,8 @@
 /**
  * Checklist Item API — PATCH update / waive
+ *
+ * WAIVED and NOT_APPLICABLE both cause evaluateReadiness() to skip the item.
+ * Only admins may set those statuses, and a written reason is required.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -20,16 +23,22 @@ export async function PATCH(
     const role = normalizeRole(session.user?.role)
     const body = await request.json()
 
-    // Waiver is admin-only
-    if (body.status === 'WAIVED' || body.waiverReason) {
+    // Readiness-skipping statuses are admin-only (same privilege as waive)
+    const isReadinessSkip =
+      body.status === 'WAIVED' ||
+      body.status === 'NOT_APPLICABLE' ||
+      Boolean(body.waiverReason)
+
+    if (isReadinessSkip) {
       enforce(role, 'waive_item', 'checklist')
 
-      const { waiverReason } = checklistItemWaiveSchema.parse(body)
+      const { status, waiverReason } = checklistItemWaiveSchema.parse(body)
+      const skipStatus = status ?? 'WAIVED'
 
       const item = await prisma.checklistItem.update({
         where: { id: params.itemId, packageId: params.id },
         data: {
-          status: 'WAIVED',
+          status: skipStatus,
           waiverReason,
           waivedBy: session.user.id,
           waivedAt: new Date(),
@@ -42,9 +51,21 @@ export async function PATCH(
           permitPackageId: params.id,
           userId: session.user.id,
           activityType: 'ChecklistItemWaived',
-          description: `Checklist item "${item.requirement.documentName}" waived`,
-          metadata: JSON.stringify({ checklistItemId: item.id, waiverReason }),
+          description:
+            skipStatus === 'NOT_APPLICABLE'
+              ? `Checklist item "${item.requirement.documentName}" marked not applicable`
+              : `Checklist item "${item.requirement.documentName}" waived`,
+          metadata: JSON.stringify({
+            checklistItemId: item.id,
+            status: skipStatus,
+            waiverReason,
+          }),
         },
+      })
+
+      await prisma.permitPackage.update({
+        where: { id: params.id },
+        data: { lastActivityAt: new Date() },
       })
 
       return NextResponse.json({ data: item })
@@ -78,7 +99,6 @@ export async function PATCH(
       },
     })
 
-    // Update package lastActivityAt
     await prisma.permitPackage.update({
       where: { id: params.id },
       data: { lastActivityAt: new Date() },

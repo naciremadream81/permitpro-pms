@@ -5,7 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth-helpers'
+import { getSession, ForbiddenError } from '@/lib/auth-helpers'
+import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { contractorUpdateSchema } from '@/lib/validations'
 import { Prisma } from '@prisma/client'
@@ -107,6 +108,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    enforce(normalizeRole(session.user?.role), 'delete', 'contractor')
+
     // Check if contractor has permit packages
     const permitCount = await prisma.permitPackage.count({
       where: { contractorId: params.id },
@@ -125,6 +128,9 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Contractor deleted successfully' })
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json({ error: 'Contractor not found' }, { status: 404 })
     }
