@@ -31,7 +31,7 @@ export interface StorageAdapter {
  * 
  * Stores files in a directory structure: storage/permits/{permitId}/{fileName}
  */
-class LocalStorageAdapter implements StorageAdapter {
+export class LocalStorageAdapter implements StorageAdapter {
   private rootPath: string
 
   constructor(rootPath: string) {
@@ -42,12 +42,10 @@ class LocalStorageAdapter implements StorageAdapter {
    * Ensure the storage directory exists
    */
   private async ensureDirectory(dirPath: string): Promise<void> {
-    try {
-      if (dirPath.includes('..') || path.isAbsolute(dirPath)) throw new Error('Invalid path');
-      await fs.access(dirPath)
-    } catch {
-      await fs.mkdir(dirPath, { recursive: true })
-    }
+    // Callers pass path.resolve()'d absolute dirs already validated to stay
+    // under STORAGE_ROOT. Do not treat absolute paths as invalid (Aikido
+    // autofix did that, then caught the throw and mkdir'd anyway — a noop).
+    await fs.mkdir(dirPath, { recursive: true })
   }
 
   /**
@@ -104,16 +102,8 @@ class LocalStorageAdapter implements StorageAdapter {
    * @returns File buffer
    */
   async get(filePath: string): Promise<Buffer> {
-    const fullPath = path.join(this.rootPath, filePath)
-    
-    // Security: Ensure path is within storage root
-    const resolvedPath = path.resolve(fullPath)
-    const resolvedRoot = path.resolve(this.rootPath)
-    if (!resolvedPath.startsWith(resolvedRoot)) {
-      throw new Error('Invalid file path: outside storage root')
-    }
-
-    return await fs.readFile(fullPath)
+    const target = this.resolveWithinRoot(filePath)
+    return await fs.readFile(target)
   }
 
   /**
@@ -121,17 +111,10 @@ class LocalStorageAdapter implements StorageAdapter {
    * @param filePath - Relative path from storage root
    */
   async delete(filePath: string): Promise<void> {
-    const fullPath = path.join(this.rootPath, filePath)
-    
-    // Security: Ensure path is within storage root
-    const resolvedPath = path.resolve(fullPath)
-    const resolvedRoot = path.resolve(this.rootPath)
-    if (!resolvedPath.startsWith(resolvedRoot)) {
-      throw new Error('Invalid file path: outside storage root')
-    }
+    const target = this.resolveWithinRoot(filePath)
 
     try {
-      await fs.unlink(fullPath)
+      await fs.unlink(target)
     } catch (error) {
       // Ignore if file doesn't exist
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
@@ -145,18 +128,29 @@ class LocalStorageAdapter implements StorageAdapter {
    * @param filePath - Relative path from storage root
    */
   async exists(filePath: string): Promise<boolean> {
+    try {
+      await fs.access(this.resolveWithinRoot(filePath))
+      return true
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('Invalid file path')) {
+        return false
+      }
+      return false
+    }
+  }
+
+  /**
+   * Resolve a storage-relative path and reject anything outside the root.
+   * Uses path.relative (not string prefix) so `/storage` cannot match `/storage-evil`.
+   */
+  private resolveWithinRoot(filePath: string): string {
     const base = path.resolve(this.rootPath)
     const target = path.resolve(base, filePath)
     const relative = path.relative(base, target)
     if (relative.startsWith('..') || path.isAbsolute(relative)) {
-      return false
+      throw new Error('Invalid file path: outside storage root')
     }
-    try {
-      await fs.access(target)
-      return true
-    } catch {
-      return false
-    }
+    return target
   }
 }
 

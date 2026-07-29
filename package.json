@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "tsx --test lib/export-engine.test.ts lib/data-integrity.test.ts lib/storage-path.test.ts",
     "db:setup": "./setup-db.sh",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force && npm run db:seed",
