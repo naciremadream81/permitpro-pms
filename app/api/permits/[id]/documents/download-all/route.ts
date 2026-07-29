@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
-import { buildExportZip } from '@/lib/export-engine'
+import { buildExportZip, ExportIncompleteError } from '@/lib/export-engine'
 
 export async function GET(
   request: NextRequest,
@@ -47,6 +47,15 @@ export async function GET(
       },
     })
   } catch (error) {
+    if (error instanceof ExportIncompleteError) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          missingDocuments: error.missingDocuments,
+        },
+        { status: 422 }
+      )
+    }
     if (error instanceof Error && error.message === 'No documents to export') {
       return NextResponse.json(
         { error: 'No documents found for this permit package' },
