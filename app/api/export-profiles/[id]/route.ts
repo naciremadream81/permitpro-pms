@@ -53,7 +53,7 @@ export async function PATCH(
     if (data.isDefault) {
       const current = await prisma.exportProfile.findUnique({ where: { id: params.id } })
       await prisma.exportProfile.updateMany({
-        where: { jurisdictionId: current?.jurisdictionId ?? null, isDefault: true, id: { not: params.id } },
+        where: { jurisdictionId: { equals: current?.jurisdictionId ?? null }, isDefault: true, id: { not: params.id } },
         data: { isDefault: false },
       })
     }
