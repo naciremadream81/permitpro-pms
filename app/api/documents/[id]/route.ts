@@ -9,7 +9,7 @@ import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { storage } from '@/lib/storage'
 import { documentUpdateSchema } from '@/lib/validations'
-import { Prisma } from '@prisma/client'
+import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // GET /api/documents/[id] - Get document by ID
 export async function GET(
@@ -22,6 +22,7 @@ export async function GET(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'read', 'document')
 
     const document = await prisma.permitDocument.findUnique({
       where: { id: params.id },
@@ -48,11 +49,7 @@ export async function GET(
 
     return NextResponse.json({ data: document })
   } catch (error) {
-    console.error('Error fetching document:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch document' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to fetch document', { notFoundMessage: 'Document not found' })
   }
 }
 
@@ -67,6 +64,7 @@ export async function PATCH(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'update', 'document')
 
     const body = await request.json()
     
@@ -102,20 +100,7 @@ export async function PATCH(
 
     return NextResponse.json({ data: document })
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error },
-        { status: 400 }
-      )
-    }
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      return NextResponse.json({ error: 'Document not found' }, { status: 404 })
-    }
-    console.error('Error updating document:', error)
-    return NextResponse.json(
-      { error: 'Failed to update document' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to update document', { notFoundMessage: 'Document not found' })
   }
 }
 
@@ -130,6 +115,7 @@ export async function DELETE(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'delete', 'document')
 
     const document = await prisma.permitDocument.findUnique({
       where: { id: params.id },
@@ -164,14 +150,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Document deleted successfully' })
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      return NextResponse.json({ error: 'Document not found' }, { status: 404 })
-    }
-    console.error('Error deleting document:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete document' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to delete document', { notFoundMessage: 'Document not found' })
   }
 }
 

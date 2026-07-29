@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { storage, isPreviewable } from '@/lib/storage'
+import { handleApiError, requirePermission, sanitizeContentDispositionFilename } from '@/lib/api-security'
 
 // GET /api/documents/[id]/preview - Preview document (for PDFs and images)
 export async function GET(
@@ -20,6 +21,7 @@ export async function GET(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'read', 'document')
 
     const document = await prisma.permitDocument.findUnique({
       where: { id: params.id },
@@ -40,20 +42,16 @@ export async function GET(
     // Get file from storage
     const fileBuffer = await storage.get(document.storagePath)
 
-    // Return file with appropriate headers for inline viewing
+    const safeName = sanitizeContentDispositionFilename(document.fileName)
     return new NextResponse(fileBuffer as unknown as BodyInit, {
       headers: {
         'Content-Type': document.fileType,
-        'Content-Disposition': `inline; filename="${document.fileName}"`,
+        'Content-Disposition': `inline; filename="${safeName}"`,
         'Content-Length': document.fileSize.toString(),
       },
     })
   } catch (error) {
-    console.error('Error previewing document:', error)
-    return NextResponse.json(
-      { error: 'Failed to preview document' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to preview document', { notFoundMessage: 'Document not found' })
   }
 }
 

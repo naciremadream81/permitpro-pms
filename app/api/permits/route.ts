@@ -11,6 +11,7 @@ import { prisma } from '@/lib/prisma'
 import { permitPackageSchema } from '@/lib/validations'
 import { generateChecklist } from '@/lib/checklist-engine'
 import { Prisma } from '@prisma/client'
+import { handleApiError, parsePagination, requirePermission } from '@/lib/api-security'
 
 // GET /api/permits - List all permits with filters, search, and pagination
 export async function GET(request: NextRequest) {
@@ -20,6 +21,7 @@ export async function GET(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'read', 'package')
 
     const searchParams = request.nextUrl.searchParams
     const search = searchParams.get('search') || ''
@@ -29,9 +31,7 @@ export async function GET(request: NextRequest) {
     const billingStatus = searchParams.get('billingStatus')
     const customerId = searchParams.get('customerId')
     const contractorId = searchParams.get('contractorId')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const skip = (page - 1) * limit
+    const { page, limit, skip } = parsePagination(searchParams)
 
     // Build where clause
     const where: Prisma.PermitPackageWhereInput = {}
@@ -91,11 +91,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Error fetching permits:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch permits' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to fetch permits')
   }
 }
 
@@ -107,6 +103,7 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'create', 'package')
 
     const body = await request.json()
     
@@ -160,17 +157,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: permitPackage }, { status: 201 })
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error },
-        { status: 400 }
-      )
-    }
-    console.error('Error creating permit:', error)
-    return NextResponse.json(
-      { error: 'Failed to create permit' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to create permit')
   }
 }
 

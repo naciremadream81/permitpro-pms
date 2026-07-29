@@ -11,6 +11,7 @@ import { prisma } from '@/lib/prisma'
 import { userUpdateSchema } from '@/lib/validations'
 import { hashPassword } from '@/lib/auth'
 import { Prisma } from '@prisma/client'
+import { handleApiError } from '@/lib/api-security'
 
 // GET /api/users/[id] - Get user by ID (admin only)
 export async function GET(
@@ -45,17 +46,7 @@ export async function GET(
 
     return NextResponse.json({ data: user })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    if (error instanceof Error && error.message === 'Forbidden') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-    console.error('Error fetching user:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch user' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to fetch user', { notFoundMessage: 'User not found' })
   }
 }
 
@@ -121,26 +112,7 @@ export async function PATCH(
 
     return NextResponse.json({ data: user })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    if (error instanceof Error && error.message === 'Forbidden') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-    if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error },
-        { status: 400 }
-      )
-    }
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-    console.error('Error updating user:', error)
-    return NextResponse.json(
-      { error: 'Failed to update user' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to update user', { notFoundMessage: 'User not found' })
   }
 }
 
@@ -177,20 +149,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'User deleted successfully' })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    if (error instanceof Error && error.message === 'Forbidden') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-    console.error('Error deleting user:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete user' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to delete user', { notFoundMessage: 'User not found' })
   }
 }
 

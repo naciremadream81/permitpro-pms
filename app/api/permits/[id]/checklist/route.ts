@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { generateChecklist, checklistCompletionPct } from '@/lib/checklist-engine'
+import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // GET /api/permits/[id]/checklist — fetch all checklist items with requirement detail
 export async function GET(
@@ -15,6 +16,7 @@ export async function GET(
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    requirePermission(session, 'read', 'checklist')
 
     const permit = await prisma.permitPackage.findUnique({ where: { id: params.id } })
     if (!permit) return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
@@ -52,8 +54,7 @@ export async function GET(
 
     return NextResponse.json({ data: items, completionPct })
   } catch (error) {
-    console.error('GET /api/permits/[id]/checklist:', error)
-    return NextResponse.json({ error: 'Failed to fetch checklist' }, { status: 500 })
+    return handleApiError(error, 'Failed to fetch checklist')
   }
 }
 
@@ -65,6 +66,7 @@ export async function POST(
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    requirePermission(session, 'update', 'checklist')
 
     const permit = await prisma.permitPackage.findUnique({ where: { id: params.id } })
     if (!permit) return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
@@ -73,7 +75,6 @@ export async function POST(
 
     return NextResponse.json({ data: result }, { status: 201 })
   } catch (error) {
-    console.error('POST /api/permits/[id]/checklist:', error)
-    return NextResponse.json({ error: 'Failed to generate checklist' }, { status: 500 })
+    return handleApiError(error, 'Failed to generate checklist')
   }
 }
