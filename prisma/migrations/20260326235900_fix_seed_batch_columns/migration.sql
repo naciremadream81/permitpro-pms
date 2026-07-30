@@ -1,9 +1,10 @@
--- Fix SeedBatch table: rename errorLog → errorMessage, add NOT NULL defaults for counters
--- SQLite workaround: drop + recreate (table is empty from prior migration)
+-- Fix SeedBatch table: rename errorLog -> errorMessage, add NOT NULL defaults for counters.
+-- Preserve existing batches because admins may have run the county seed before this
+-- migration deploys, and RequirementChangeLog rows retain audit links to SeedBatch.
 
-DROP TABLE IF EXISTS "SeedBatch";
+PRAGMA foreign_keys=OFF;
 
-CREATE TABLE "SeedBatch" (
+CREATE TABLE "new_SeedBatch" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "triggeredBy" TEXT NOT NULL,
     "description" TEXT,
@@ -15,6 +16,37 @@ CREATE TABLE "SeedBatch" (
     "startedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "completedAt" DATETIME
 );
+
+INSERT INTO "new_SeedBatch" (
+    "id",
+    "triggeredBy",
+    "description",
+    "status",
+    "totalCounties",
+    "totalRequirements",
+    "skippedCount",
+    "errorMessage",
+    "startedAt",
+    "completedAt"
+)
+SELECT
+    "id",
+    "triggeredBy",
+    "description",
+    "status",
+    COALESCE("totalCounties", 0),
+    COALESCE("totalRequirements", 0),
+    COALESCE("skippedCount", 0),
+    "errorLog",
+    "startedAt",
+    "completedAt"
+FROM "SeedBatch";
+
+DROP TABLE "SeedBatch";
+
+ALTER TABLE "new_SeedBatch" RENAME TO "SeedBatch";
+
+PRAGMA foreign_keys=ON;
 
 CREATE INDEX IF NOT EXISTS "SeedBatch_triggeredBy_idx" ON "SeedBatch"("triggeredBy");
 CREATE INDEX IF NOT EXISTS "SeedBatch_status_idx" ON "SeedBatch"("status");

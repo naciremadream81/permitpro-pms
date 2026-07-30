@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
+import { syncChecklist } from '@/lib/checklist-engine'
 import { prisma } from '@/lib/prisma'
 import { permitPackageUpdateSchema } from '@/lib/validations'
 import { Prisma } from '@prisma/client'
@@ -109,6 +110,18 @@ export async function PATCH(
         },
       },
     })
+
+    // Jurisdiction / permit type changes must resync checklist items. Without this,
+    // ReadyToSubmit can pass with an empty or stale checklist after a type switch.
+    const jurisdictionChanged =
+      validatedData.jurisdictionId !== undefined &&
+      validatedData.jurisdictionId !== currentPermit.jurisdictionId
+    const permitTypeChanged =
+      validatedData.permitType !== undefined &&
+      validatedData.permitType !== currentPermit.permitType
+    if (jurisdictionChanged || permitTypeChanged) {
+      await syncChecklist(params.id)
+    }
 
     // Log status changes
     if (validatedData.status && validatedData.status !== currentPermit.status) {

@@ -3,9 +3,10 @@ set -e
 
 echo "Starting PermitPro PMS..."
 
-# Run database migrations
+# Run database migrations — fail closed so the app never serves against a
+# drifted schema (swallowed migrate failures cause write errors / data loss).
 echo "Running database migrations..."
-prisma migrate deploy || echo "Migration failed or already up to date"
+prisma migrate deploy
 
 # Start the application
 echo "Starting Next.js application..."
