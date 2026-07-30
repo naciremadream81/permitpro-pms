@@ -10,6 +10,7 @@ import { requireAdmin } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { userSchema } from '@/lib/validations'
 import { hashPassword } from '@/lib/auth'
+import { handleApiError } from '@/lib/api-security'
 
 // GET /api/users - List all users (admin only)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -38,17 +39,7 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json({ data: users })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    if (error instanceof Error && error.message === 'Forbidden') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-    console.error('Error fetching users:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch users' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to fetch users')
   }
 }
 
@@ -98,23 +89,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: user }, { status: 201 })
   } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    if (error instanceof Error && error.message === 'Forbidden') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-    if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error },
-        { status: 400 }
-      )
-    }
-    console.error('Error creating user:', error)
-    return NextResponse.json(
-      { error: 'Failed to create user' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to create user')
   }
 }
 

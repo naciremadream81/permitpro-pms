@@ -10,13 +10,22 @@
  * Safe to call multiple times per day (upserts on packageId + snapshotDate).
  */
 
+import { timingSafeEqual } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { runDailySnapshot } from '@/lib/snapshot-job'
 
+function secretsMatch(provided: string, expected: string): boolean {
+  const providedBuf = Buffer.from(provided)
+  const expectedBuf = Buffer.from(expected)
+  if (providedBuf.length !== expectedBuf.length) {
+    return false
+  }
+  return timingSafeEqual(providedBuf, expectedBuf)
+}
+
 export async function POST(request: NextRequest) {
-  // Verify shared secret
   const authHeader = request.headers.get('authorization') ?? ''
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
   const secret = process.env.CRON_SECRET
 
   if (!secret) {
@@ -24,7 +33,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Cron endpoint not configured' }, { status: 503 })
   }
 
-  if (token !== secret) {
+  if (!token || !secretsMatch(token, secret)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

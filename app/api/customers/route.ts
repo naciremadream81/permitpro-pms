@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { customerSchema } from '@/lib/validations'
+import { handleApiError, parsePagination, requirePermission } from '@/lib/api-security'
 
 // GET /api/customers - List all customers with optional search and pagination
 export async function GET(request: NextRequest) {
@@ -18,12 +19,11 @@ export async function GET(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'read', 'customer')
 
     const searchParams = request.nextUrl.searchParams
     const search = searchParams.get('search') || ''
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const skip = (page - 1) * limit
+    const { page, limit, skip } = parsePagination(searchParams)
 
     // Build where clause for search
     // Note: SQLite doesn't support case-insensitive mode, but it's case-insensitive for ASCII by default
@@ -59,11 +59,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Error fetching customers:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch customers' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to fetch customers')
   }
 }
 
@@ -75,6 +71,7 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'create', 'customer')
 
     const body = await request.json()
     
@@ -88,17 +85,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: customer }, { status: 201 })
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error },
-        { status: 400 }
-      )
-    }
-    console.error('Error creating customer:', error)
-    return NextResponse.json(
-      { error: 'Failed to create customer' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to create customer')
   }
 }
 

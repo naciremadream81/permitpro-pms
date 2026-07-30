@@ -9,6 +9,7 @@ import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { taskUpdateSchema } from '@/lib/validations'
 import { Prisma } from '@prisma/client'
+import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // PATCH /api/tasks/[id] - Update task
 export async function PATCH(
@@ -21,6 +22,7 @@ export async function PATCH(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'update', 'task')
 
     const body = await request.json()
     
@@ -72,20 +74,7 @@ export async function PATCH(
 
     return NextResponse.json({ data: task })
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error },
-        { status: 400 }
-      )
-    }
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 })
-    }
-    console.error('Error updating task:', error)
-    return NextResponse.json(
-      { error: 'Failed to update task' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to update task', { notFoundMessage: 'Task not found' })
   }
 }
 
@@ -100,6 +89,7 @@ export async function DELETE(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'delete', 'task')
 
     const task = await prisma.task.findUnique({
       where: { id: params.id },
@@ -115,14 +105,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Task deleted successfully' })
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 })
-    }
-    console.error('Error deleting task:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete task' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to delete task', { notFoundMessage: 'Task not found' })
   }
 }
 

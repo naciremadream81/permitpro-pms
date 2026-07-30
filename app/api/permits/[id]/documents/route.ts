@@ -11,6 +11,7 @@ import { prisma } from '@/lib/prisma'
 import { storage, getMimeType } from '@/lib/storage'
 import { documentCategoryEnum } from '@/lib/validations'
 import { randomBytes } from 'crypto'
+import { handleApiError, requirePermission, validateUploadedFile } from '@/lib/api-security'
 
 // GET /api/permits/[id]/documents - List all documents for a permit
 export async function GET(
@@ -23,6 +24,7 @@ export async function GET(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'read', 'document')
 
     // Verify permit exists
     const permit = await prisma.permitPackage.findUnique({
@@ -64,11 +66,7 @@ export async function GET(
       grouped: groupedDocuments,
     })
   } catch (error) {
-    console.error('Error fetching documents:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch documents' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to fetch documents')
   }
 }
 
@@ -83,6 +81,7 @@ export async function POST(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'upload', 'document')
 
     // Verify permit exists
     const permit = await prisma.permitPackage.findUnique({
@@ -104,6 +103,11 @@ export async function POST(
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+    }
+
+    const fileValidation = validateUploadedFile(file)
+    if (!fileValidation.ok) {
+      return NextResponse.json({ error: fileValidation.error }, { status: 400 })
     }
 
     // Validate category
@@ -172,26 +176,7 @@ export async function POST(
 
     return NextResponse.json({ data: document }, { status: 201 })
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error },
-        { status: 400 }
-      )
-    }
-    // Enhanced error logging for debugging
-    console.error('Error uploading document:', error)
-    if (error instanceof Error) {
-      console.error('Error name:', error.name)
-      console.error('Error message:', error.message)
-      console.error('Error stack:', error.stack)
-    }
-    return NextResponse.json(
-      { 
-        error: 'Failed to upload document',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to upload document')
   }
 }
 

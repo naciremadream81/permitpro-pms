@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { contractorSchema } from '@/lib/validations'
+import { handleApiError, parsePagination, requirePermission } from '@/lib/api-security'
 
 // GET /api/contractors - List all contractors with optional search and pagination
 export async function GET(request: NextRequest) {
@@ -18,12 +19,11 @@ export async function GET(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'read', 'contractor')
 
     const searchParams = request.nextUrl.searchParams
     const search = searchParams.get('search') || ''
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const skip = (page - 1) * limit
+    const { page, limit, skip } = parsePagination(searchParams)
 
     // Build where clause for search
     // Note: SQLite doesn't support case-insensitive mode, but it's case-insensitive for ASCII by default
@@ -59,11 +59,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Error fetching contractors:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch contractors' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to fetch contractors')
   }
 }
 
@@ -75,6 +71,7 @@ export async function POST(request: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'create', 'contractor')
 
     const body = await request.json()
     
@@ -88,19 +85,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: contractor }, { status: 201 })
   } catch (error) {
-    // Handle Zod validation errors
-    if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
-      console.error('Validation error:', error)
-      return NextResponse.json(
-        { error: 'Validation error', details: error },
-        { status: 400 }
-      )
-    }
-    console.error('Error creating contractor:', error)
-    return NextResponse.json(
-      { error: 'Failed to create contractor', details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to create contractor')
   }
 }
 

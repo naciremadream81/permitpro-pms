@@ -3,15 +3,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession, ForbiddenError } from '@/lib/auth-helpers'
-import { enforce, normalizeRole } from '@/lib/permissions'
+import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { exportProfileSchema } from '@/lib/validations'
+import { handleApiError, requirePermission } from '@/lib/api-security'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    requirePermission(session, 'read', 'export_profile')
 
     const jurisdictionId = request.nextUrl.searchParams.get('jurisdictionId')
 
@@ -26,8 +27,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data: profiles })
   } catch (error) {
-    console.error('GET /api/export-profiles:', error)
-    return NextResponse.json({ error: 'Failed to fetch export profiles' }, { status: 500 })
+    return handleApiError(error, 'Failed to fetch export profiles')
   }
 }
 
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    enforce(normalizeRole(session.user?.role), 'create', 'export_profile')
+    requirePermission(session, 'create', 'export_profile')
 
     const body = await request.json()
     const data = exportProfileSchema.parse(body)
@@ -54,11 +54,6 @@ export async function POST(request: NextRequest) {
     const profile = await prisma.exportProfile.create({ data })
     return NextResponse.json({ data: profile }, { status: 201 })
   } catch (error) {
-    if (error instanceof ForbiddenError)
-      return NextResponse.json({ error: error.message }, { status: 403 })
-    if (error instanceof Error && error.name === 'ZodError')
-      return NextResponse.json({ error: 'Validation error', details: error }, { status: 400 })
-    console.error('POST /api/export-profiles:', error)
-    return NextResponse.json({ error: 'Failed to create export profile' }, { status: 500 })
+    return handleApiError(error, 'Failed to create export profile')
   }
 }

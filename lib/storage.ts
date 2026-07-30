@@ -14,7 +14,9 @@ import { randomBytes } from 'crypto'
 
 // Storage configuration
 const STORAGE_ROOT = process.env.STORAGE_ROOT || path.join(process.cwd(), 'storage')
-const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+import { MAX_UPLOAD_BYTES } from './api-security'
+
+const MAX_FILE_SIZE = MAX_UPLOAD_BYTES
 
 /**
  * Storage interface that can be implemented by different storage backends

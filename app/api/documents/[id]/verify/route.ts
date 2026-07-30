@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { documentVerifySchema } from '@/lib/validations'
+import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // POST /api/documents/[id]/verify - Verify or unverify a document
 export async function POST(
@@ -20,6 +21,7 @@ export async function POST(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'verify', 'document')
 
     const body = await request.json()
     
@@ -57,17 +59,7 @@ export async function POST(
 
     return NextResponse.json({ data: document })
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error },
-        { status: 400 }
-      )
-    }
-    console.error('Error verifying document:', error)
-    return NextResponse.json(
-      { error: 'Failed to verify document' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to verify document', { notFoundMessage: 'Document not found' })
   }
 }
 

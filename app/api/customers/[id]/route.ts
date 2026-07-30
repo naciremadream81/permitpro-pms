@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { customerUpdateSchema } from '@/lib/validations'
-import { Prisma } from '@prisma/client'
+import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // GET /api/customers/[id] - Get customer by ID
 export async function GET(
@@ -21,6 +21,7 @@ export async function GET(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'read', 'customer')
 
     const customer = await prisma.customer.findUnique({
       where: { id: params.id },
@@ -45,11 +46,7 @@ export async function GET(
 
     return NextResponse.json({ data: customer })
   } catch (error) {
-    console.error('Error fetching customer:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch customer' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to fetch customer', { notFoundMessage: 'Customer not found' })
   }
 }
 
@@ -64,6 +61,7 @@ export async function PATCH(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'update', 'customer')
 
     const body = await request.json()
     
@@ -78,20 +76,7 @@ export async function PATCH(
 
     return NextResponse.json({ data: customer })
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error },
-        { status: 400 }
-      )
-    }
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
-    }
-    console.error('Error updating customer:', error)
-    return NextResponse.json(
-      { error: 'Failed to update customer' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to update customer', { notFoundMessage: 'Customer not found' })
   }
 }
 
@@ -106,6 +91,7 @@ export async function DELETE(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'delete', 'customer')
 
     // Check if customer has permit packages
     const permitCount = await prisma.permitPackage.count({
@@ -125,14 +111,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Customer deleted successfully' })
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
-    }
-    console.error('Error deleting customer:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete customer' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to delete customer', { notFoundMessage: 'Customer not found' })
   }
 }
 

@@ -9,6 +9,7 @@ import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { permitPackageUpdateSchema } from '@/lib/validations'
 import { Prisma } from '@prisma/client'
+import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // GET /api/permits/[id] - Get permit by ID with all related data
 export async function GET(
@@ -21,6 +22,7 @@ export async function GET(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'read', 'package')
 
     const permitPackage = await prisma.permitPackage.findUnique({
       where: { id: params.id },
@@ -57,11 +59,7 @@ export async function GET(
 
     return NextResponse.json({ data: permitPackage })
   } catch (error) {
-    console.error('Error fetching permit:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch permit' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to fetch permit', { notFoundMessage: 'Permit not found' })
   }
 }
 
@@ -76,6 +74,7 @@ export async function PATCH(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'update', 'package')
 
     const body = await request.json()
     
@@ -140,20 +139,7 @@ export async function PATCH(
 
     return NextResponse.json({ data: permitPackage })
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error },
-        { status: 400 }
-      )
-    }
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
-    }
-    console.error('Error updating permit:', error)
-    return NextResponse.json(
-      { error: 'Failed to update permit' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to update permit', { notFoundMessage: 'Permit not found' })
   }
 }
 
@@ -168,6 +154,7 @@ export async function DELETE(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'delete', 'package')
 
     await prisma.permitPackage.delete({
       where: { id: params.id },
@@ -175,14 +162,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Permit deleted successfully' })
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-      return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
-    }
-    console.error('Error deleting permit:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete permit' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to delete permit', { notFoundMessage: 'Permit not found' })
   }
 }
 

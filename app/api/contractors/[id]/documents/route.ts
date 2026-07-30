@@ -3,11 +3,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession, ForbiddenError } from '@/lib/auth-helpers'
+import { getSession } from '@/lib/auth-helpers'
 import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { storage } from '@/lib/storage'
 import { contractorDocumentSchema } from '@/lib/validations'
+import { handleApiError, requirePermission, validateUploadedFile } from '@/lib/api-security'
 
 // GET /api/contractors/[id]/documents
 export async function GET(
@@ -17,6 +18,7 @@ export async function GET(
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    requirePermission(session, 'read', 'contractor_document')
 
     const contractor = await prisma.contractor.findUnique({ where: { id: params.id } })
     if (!contractor)
@@ -44,8 +46,7 @@ export async function GET(
 
     return NextResponse.json({ data: annotated })
   } catch (error) {
-    console.error('GET /api/contractors/[id]/documents:', error)
-    return NextResponse.json({ error: 'Failed to fetch contractor documents' }, { status: 500 })
+    return handleApiError(error, 'Failed to fetch contractor documents')
   }
 }
 
@@ -67,6 +68,11 @@ export async function POST(
     const file = formData.get('file') as File | null
     if (!file)
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+
+    const fileValidation = validateUploadedFile(file)
+    if (!fileValidation.ok) {
+      return NextResponse.json({ error: fileValidation.error }, { status: 400 })
+    }
 
     const type = formData.get('type') as string
     const documentName = formData.get('documentName') as string
@@ -129,11 +135,6 @@ export async function POST(
 
     return NextResponse.json({ data: document }, { status: 201 })
   } catch (error) {
-    if (error instanceof ForbiddenError)
-      return NextResponse.json({ error: error.message }, { status: 403 })
-    if (error instanceof Error && error.name === 'ZodError')
-      return NextResponse.json({ error: 'Validation error', details: error }, { status: 400 })
-    console.error('POST /api/contractors/[id]/documents:', error)
-    return NextResponse.json({ error: 'Failed to upload contractor document' }, { status: 500 })
+    return handleApiError(error, 'Failed to upload contractor document')
   }
 }

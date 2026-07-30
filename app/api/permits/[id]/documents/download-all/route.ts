@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { buildExportZip } from '@/lib/export-engine'
+import { handleApiError, requirePermission, sanitizeContentDispositionFilename } from '@/lib/api-security'
 
 export async function GET(
   request: NextRequest,
@@ -22,6 +23,7 @@ export async function GET(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'export', 'package')
 
     const profileId = request.nextUrl.searchParams.get('profileId')
 
@@ -36,10 +38,11 @@ export async function GET(
 
     const result = await buildExportZip(params.id, profileId, session.user.id)
 
+    const safeName = sanitizeContentDispositionFilename(result.fileName)
     return new NextResponse(result.buffer as unknown as BodyInit, {
       headers: {
         'Content-Type': 'application/zip',
-        'Content-Disposition': `attachment; filename="${result.fileName}"`,
+        'Content-Disposition': `attachment; filename="${safeName}"`,
         'Content-Length': result.fileSize.toString(),
         'X-Checksum-SHA256': result.checksum,
         'X-Document-Count': result.documentCount.toString(),
@@ -53,10 +56,6 @@ export async function GET(
         { status: 404 }
       )
     }
-    console.error('Error creating document ZIP:', error)
-    return NextResponse.json(
-      { error: 'Failed to create document package' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to create document package', { notFoundMessage: 'Permit not found' })
   }
 }

@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { taskSchema } from '@/lib/validations'
+import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // GET /api/permits/[id]/tasks - List all tasks for a permit
 export async function GET(
@@ -20,6 +21,7 @@ export async function GET(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'read', 'task')
 
     // Verify permit exists
     const permit = await prisma.permitPackage.findUnique({
@@ -40,11 +42,7 @@ export async function GET(
 
     return NextResponse.json({ data: tasks })
   } catch (error) {
-    console.error('Error fetching tasks:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch tasks' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to fetch tasks')
   }
 }
 
@@ -59,6 +57,7 @@ export async function POST(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    requirePermission(session, 'create', 'task')
 
     const body = await request.json()
     
@@ -103,17 +102,7 @@ export async function POST(
 
     return NextResponse.json({ data: task }, { status: 201 })
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error },
-        { status: 400 }
-      )
-    }
-    console.error('Error creating task:', error)
-    return NextResponse.json(
-      { error: 'Failed to create task' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Failed to create task')
   }
 }
 
