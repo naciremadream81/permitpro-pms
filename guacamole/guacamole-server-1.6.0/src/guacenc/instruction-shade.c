@@ -23,6 +23,8 @@
 
 #include <guacamole/client.h>
 
+#include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 
 int guacenc_handle_shade(guacenc_display* display, int argc, char** argv) {
@@ -34,8 +36,21 @@ int guacenc_handle_shade(guacenc_display* display, int argc, char** argv) {
     }
 
     /* Parse arguments */
-    int index = atoi(argv[0]);
-    int opacity = atoi(argv[1]);
+    char* endptr;
+    errno = 0;
+    long index_long = strtol(argv[0], &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || index_long > INT_MAX || index_long < INT_MIN) {
+        guacenc_log(GUAC_LOG_WARNING, "Invalid layer index");
+        return 1;
+    }
+    int index = (int)index_long;
+    errno = 0;
+    long opacity_long = strtol(argv[1], &endptr, 10);
+    if (errno != 0 || *endptr != '\0' || opacity_long > INT_MAX || opacity_long < INT_MIN) {
+        guacenc_log(GUAC_LOG_WARNING, "Invalid opacity value");
+        return 1;
+    }
+    int opacity = (int)opacity_long;
 
     /* Retrieve requested layer */
     guacenc_layer* layer = guacenc_display_get_layer(display, index);
