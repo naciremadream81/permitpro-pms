@@ -12,7 +12,8 @@
     "db:reset": "prisma migrate reset --force && npm run db:seed",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "test": "tsx --test lib/readiness-checklist-invariants.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

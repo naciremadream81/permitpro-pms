@@ -118,7 +118,15 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
     (item) => item.requirement.isMandatoryForSubmission
   )
 
-  if (pkg.jurisdictionId && mandatoryItems.length === 0) {
+  // Jurisdiction linked but checklist never generated (or fully empty) must block
+  // submission — otherwise isReady is vacuously true with 100% checklistPct.
+  if (pkg.jurisdictionId && pkg.checklistItems.length === 0) {
+    blockers.push({
+      type: 'MISSING_REQUIRED_DOCUMENT',
+      message:
+        'Checklist has not been generated for this jurisdiction. Generate the checklist before submission.',
+    })
+  } else if (pkg.jurisdictionId && mandatoryItems.length === 0) {
     warnings.push({
       type: 'NO_CHECKLIST_ITEMS',
       message:
@@ -188,15 +196,7 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
     }
   }
 
-  // Fall back to legacy fields if no vault document
-  if (!licenseDoc) {
-    const legacyWC = pkg.contractor.workersCompExpirationDate
-    if (legacyWC) checkLegacyExpiry(legacyWC, 'Workers Comp', now, blockers, warnings, INSURANCE_EXPIRY_BLOCK_DAYS)
-    const legacyLiab = pkg.contractor.liabilityExpirationDate
-    if (legacyLiab) checkLegacyExpiry(legacyLiab, 'Liability Insurance', now, blockers, warnings, INSURANCE_EXPIRY_BLOCK_DAYS)
-  }
-
-  // Workers Comp (vault)
+  // Workers Comp — vault doc preferred; legacy contractor field if no vault row
   if (workersCompDoc?.expirationDate) {
     const daysUntilExpiry = daysBetween(now, workersCompDoc.expirationDate)
     if (daysUntilExpiry < 0) {
@@ -212,9 +212,18 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
         contractorDocumentId: workersCompDoc.id,
       })
     }
+  } else if (pkg.contractor.workersCompExpirationDate) {
+    checkLegacyExpiry(
+      pkg.contractor.workersCompExpirationDate,
+      'Workers Comp',
+      now,
+      blockers,
+      warnings,
+      INSURANCE_EXPIRY_BLOCK_DAYS
+    )
   }
 
-  // Liability (vault)
+  // Liability — vault doc preferred; legacy contractor field if no vault row
   if (liabilityDoc?.expirationDate) {
     const daysUntilExpiry = daysBetween(now, liabilityDoc.expirationDate)
     if (daysUntilExpiry < 0) {
@@ -230,6 +239,15 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
         contractorDocumentId: liabilityDoc.id,
       })
     }
+  } else if (pkg.contractor.liabilityExpirationDate) {
+    checkLegacyExpiry(
+      pkg.contractor.liabilityExpirationDate,
+      'Liability Insurance',
+      now,
+      blockers,
+      warnings,
+      INSURANCE_EXPIRY_BLOCK_DAYS
+    )
   }
 
   // ── Open correction comments ─────────────────────────────────────────────
