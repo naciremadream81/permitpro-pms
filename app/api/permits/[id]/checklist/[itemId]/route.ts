@@ -55,6 +55,21 @@ export async function PATCH(
 
     const data = checklistItemUpdateSchema.parse(body)
 
+    // Documents must belong to this package — otherwise readiness can be satisfied
+    // by linking a verified document from another permit package.
+    if (data.documentId) {
+      const linkedDoc = await prisma.permitDocument.findFirst({
+        where: { id: data.documentId, permitPackageId: params.id },
+        select: { id: true },
+      })
+      if (!linkedDoc) {
+        return NextResponse.json(
+          { error: 'Document must belong to this permit package' },
+          { status: 400 }
+        )
+      }
+    }
+
     const item = await prisma.checklistItem.update({
       where: { id: params.itemId, packageId: params.id },
       data: {

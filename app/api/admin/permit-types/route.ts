@@ -6,21 +6,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
+import { ensureDefaultPermitTypes } from '@/lib/permit-types'
 
 export async function GET() {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const types = await prisma.permitTypeDefinition.findMany({
-      orderBy: [{ order: 'asc' }, { label: 'asc' }],
-    })
-
-    // Seed built-in types if table is empty
-    if (types.length === 0) {
-      return NextResponse.json({ data: [] })
-    }
-
+    const createdBy = session.user?.id ? String(session.user.id) : 'system'
+    const types = await ensureDefaultPermitTypes(prisma, createdBy)
     return NextResponse.json({ data: types })
   } catch (error) {
     console.error('GET /api/admin/permit-types:', error)

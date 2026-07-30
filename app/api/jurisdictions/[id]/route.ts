@@ -75,19 +75,13 @@ export async function DELETE(
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     enforce(normalizeRole(session.user?.role), 'delete', 'jurisdiction')
 
-    // Prevent deletion if packages are linked
-    const packageCount = await prisma.permitPackage.count({
-      where: { jurisdictionId: params.id },
+    // Soft-delete only. Hard delete CASCADE-wipes Requirements and their
+    // RequirementChangeLog audit trail (seed history / restore snapshots).
+    const jurisdiction = await prisma.jurisdiction.update({
+      where: { id: params.id },
+      data: { isActive: false },
     })
-    if (packageCount > 0) {
-      return NextResponse.json(
-        { error: `Cannot delete: ${packageCount} package(s) reference this jurisdiction. Deactivate it instead.` },
-        { status: 409 }
-      )
-    }
-
-    await prisma.jurisdiction.delete({ where: { id: params.id } })
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ data: jurisdiction, softDeleted: true })
   } catch (error) {
     if (error instanceof ForbiddenError)
       return NextResponse.json({ error: error.message }, { status: 403 })
