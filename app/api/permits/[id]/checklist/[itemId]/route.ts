@@ -20,16 +20,20 @@ export async function PATCH(
     const role = normalizeRole(session.user?.role)
     const body = await request.json()
 
-    // Waiver is admin-only
-    if (body.status === 'WAIVED' || body.waiverReason) {
+    // WAIVED / NOT_APPLICABLE both skip readiness — admin-only with reason
+    if (
+      body.status === 'WAIVED' ||
+      body.status === 'NOT_APPLICABLE' ||
+      body.waiverReason
+    ) {
       enforce(role, 'waive_item', 'checklist')
 
-      const { waiverReason } = checklistItemWaiveSchema.parse(body)
+      const { status: waiveStatus, waiverReason } = checklistItemWaiveSchema.parse(body)
 
       const item = await prisma.checklistItem.update({
         where: { id: params.itemId, packageId: params.id },
         data: {
-          status: 'WAIVED',
+          status: waiveStatus,
           waiverReason,
           waivedBy: session.user.id,
           waivedAt: new Date(),
@@ -42,8 +46,12 @@ export async function PATCH(
           permitPackageId: params.id,
           userId: session.user.id,
           activityType: 'ChecklistItemWaived',
-          description: `Checklist item "${item.requirement.documentName}" waived`,
-          metadata: JSON.stringify({ checklistItemId: item.id, waiverReason }),
+          description: `Checklist item "${item.requirement.documentName}" marked ${waiveStatus}`,
+          metadata: JSON.stringify({
+            checklistItemId: item.id,
+            status: waiveStatus,
+            waiverReason,
+          }),
         },
       })
 

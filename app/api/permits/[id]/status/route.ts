@@ -25,6 +25,10 @@ export async function POST(
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const role = normalizeRole(session.user?.role)
+    // Status/stage transitions are package updates — enforce the same write gate
+    // used by PATCH /api/permits/[id].
+    enforce(role, 'update', 'package')
+
     const body = await request.json()
     const validatedData = permitStatusUpdateSchema.parse(body)
 

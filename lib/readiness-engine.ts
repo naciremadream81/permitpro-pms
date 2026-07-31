@@ -9,6 +9,7 @@
  */
 
 import { prisma } from '@/lib/prisma'
+import { requirementAppliesToPermitType } from '@/lib/checklist-engine'
 
 export interface ReadinessBlocker {
   type:
@@ -74,6 +75,8 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
               isMandatoryForSubmission: true,
               documentName: true,
               documentCategory: true,
+              jurisdictionId: true,
+              permitTypes: true,
             },
           },
           document: {
@@ -114,11 +117,23 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
   }
 
   // ── Checklist evaluation ─────────────────────────────────────────────────
-  const mandatoryItems = pkg.checklistItems.filter(
+  // Only evaluate items that still apply to the package's current jurisdiction
+  // and permit type. Stale verified items from a prior jurisdiction/type must
+  // not satisfy ReadyToSubmit after a switch (syncChecklist may lag or fail).
+  const applicableItems = pkg.checklistItems.filter((item) => {
+    if (!pkg.jurisdictionId) return false
+    if (item.requirement.jurisdictionId !== pkg.jurisdictionId) return false
+    return requirementAppliesToPermitType(
+      item.requirement.permitTypes,
+      pkg.permitType
+    )
+  })
+
+  const mandatoryItems = applicableItems.filter(
     (item) => item.requirement.isMandatoryForSubmission
   )
 
-  if (pkg.jurisdictionId && pkg.checklistItems.length === 0) {
+  if (pkg.jurisdictionId && applicableItems.length === 0) {
     blockers.push({
       type: 'MISSING_REQUIRED_DOCUMENT',
       message:
@@ -133,6 +148,8 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
   }
 
   for (const item of mandatoryItems) {
+    // NOT_APPLICABLE only skips when set through the admin waive path
+    // (gated in the checklist item API). Still honor it for evaluation.
     if (item.status === 'WAIVED' || item.status === 'NOT_APPLICABLE') continue
 
     if (item.status === 'PENDING' || !item.document) {
@@ -152,7 +169,7 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
   }
 
   // Optional unverified items → warning only
-  const optionalItems = pkg.checklistItems.filter(
+  const optionalItems = applicableItems.filter(
     (item) => !item.requirement.isMandatoryForSubmission
   )
   for (const item of optionalItems) {
