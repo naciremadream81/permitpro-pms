@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx --test lib/readiness-checklist-invariants.test.ts",
+    "test": "tsx --test lib/readiness-checklist-invariants.test.ts lib/critical-bug-invariants.test.ts",
     "db:setup": "./setup-db.sh",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force && npm run db:seed",

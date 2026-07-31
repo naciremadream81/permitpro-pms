@@ -141,6 +141,13 @@ export async function buildExportZip(
     `---------`,
   ]
 
+  // Disambiguate colliding archive paths so unzip/county portals cannot
+  // silently overwrite one document with another of the same name.
+  const usedPaths = new Set<string>()
+  for (const doc of resolvedDocs) {
+    doc.archivePath = uniquifyArchivePath(doc.archivePath, usedPaths)
+  }
+
   let docCount = 0
   for (const doc of resolvedDocs) {
     archive.append(doc.buffer, { name: doc.archivePath })
@@ -243,6 +250,30 @@ function buildFileName(
     .replace('{category}', safe(category))
     .replace('{fileName}', safe(fileName))
     .replace('{version}', safe(versionTag ?? 'v1'))
+}
+
+/** Ensure each archive entry path is unique within the ZIP. */
+export function uniquifyArchivePath(archivePath: string, usedPaths: Set<string>): string {
+  if (!usedPaths.has(archivePath)) {
+    usedPaths.add(archivePath)
+    return archivePath
+  }
+
+  const lastSlash = archivePath.lastIndexOf('/')
+  const dir = lastSlash >= 0 ? archivePath.slice(0, lastSlash + 1) : ''
+  const base = lastSlash >= 0 ? archivePath.slice(lastSlash + 1) : archivePath
+  const dot = base.lastIndexOf('.')
+  const stem = dot > 0 ? base.slice(0, dot) : base
+  const ext = dot > 0 ? base.slice(dot) : ''
+
+  let n = 2
+  let candidate = `${dir}${stem}_${n}${ext}`
+  while (usedPaths.has(candidate)) {
+    n += 1
+    candidate = `${dir}${stem}_${n}${ext}`
+  }
+  usedPaths.add(candidate)
+  return candidate
 }
 
 function formatBytes(bytes: number): string {
