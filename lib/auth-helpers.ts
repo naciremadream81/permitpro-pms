@@ -6,11 +6,35 @@
  */
 
 import { auth } from '@/auth'
+import { prisma } from '@/lib/prisma'
 import { can, enforce, normalizeRole, ForbiddenError, UnauthorizedError } from '@/lib/permissions'
 import type { Action, Resource } from '@/lib/permissions'
 
+/**
+ * Return the current session with the role refreshed from the database.
+ *
+ * JWT sessions alone are sticky: a demoted or deleted user would otherwise
+ * keep their previous privileges until sign-out or token expiry. All API
+ * auth helpers go through this path so authorization always uses the live role.
+ */
 export async function getSession() {
-  return await auth()
+  const session = await auth()
+  if (!session?.user?.id) {
+    return session
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  })
+
+  // Deleted accounts must not retain API access via a stale JWT.
+  if (!user) {
+    return null
+  }
+
+  session.user.role = user.role
+  return session
 }
 
 /**
@@ -74,7 +98,12 @@ export async function requirePermission(action: Action, resource: Resource) {
  */
 export async function isAdmin(): Promise<boolean> {
   const session = await getSession()
-  return normalizeRole(session?.user?.role) === 'admin'
+  if (!session?.user?.role) return false
+  try {
+    return normalizeRole(session.user.role) === 'admin'
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -83,7 +112,11 @@ export async function isAdmin(): Promise<boolean> {
 export async function userCan(action: Action, resource: Resource): Promise<boolean> {
   const session = await getSession()
   if (!session?.user?.role) return false
-  return can(normalizeRole(session.user.role), action, resource)
+  try {
+    return can(normalizeRole(session.user.role), action, resource)
+  } catch {
+    return false
+  }
 }
 
 export { ForbiddenError, UnauthorizedError }
