@@ -117,10 +117,8 @@ export async function POST(
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    // Save file to storage
-    const storagePath = await storage.save(buffer, file.name, params.id)
-
-    // Generate version group ID if this is a new version
+    // Resolve version parent before writing to storage so a rejected parent
+    // (wrong package / missing id) cannot leave an orphan blob on disk.
     let versionGroupId: string | undefined
     let resolvedParentDocumentId: string | undefined
     if (isNewVersion && parentDocumentId) {
@@ -140,6 +138,9 @@ export async function POST(
     } else if (isNewVersion) {
       versionGroupId = randomBytes(16).toString('hex')
     }
+
+    // Save file to storage only after request validation succeeds
+    const storagePath = await storage.save(buffer, file.name, params.id)
 
     // Determine version tag
     const existingVersions = await prisma.permitDocument.count({
