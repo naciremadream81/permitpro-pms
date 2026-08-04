@@ -199,7 +199,14 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
           message: `Required document not uploaded: "${req.documentName}"`,
           checklistItemId: item.id,
         })
-      } else if (item.status !== 'VERIFIED' || !item.document.isVerified) {
+      } else if (
+        // Require both checklist VERIFIED and a live Verified document.
+        // isVerified alone is insufficient: PATCH can set isVerified while
+        // leaving status Pending/Rejected and still satisfy ReadyToSubmit.
+        item.status !== 'VERIFIED' ||
+        !item.document.isVerified ||
+        item.document.status !== 'Verified'
+      ) {
         blockers.push({
           type: 'UNVERIFIED_REQUIRED_DOCUMENT',
           message: `Required document not verified: "${req.documentName}"`,
