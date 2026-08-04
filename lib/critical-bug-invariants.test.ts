@@ -7,7 +7,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'fs'
 import path from 'path'
-import { uniquifyArchivePath } from './export-engine'
+import { uniquifyArchivePath, sanitizeArchivePath } from './export-engine'
 import { requirementAppliesToPermitType } from './checklist-engine'
 import { normalizeRole, ForbiddenError } from './permissions'
 
@@ -157,6 +157,75 @@ describe('export archive path uniquify', () => {
     assert.equal(uniquifyArchivePath('MANIFEST.txt', used), 'MANIFEST_2.txt')
     assert.ok(used.has('MANIFEST.txt'))
     assert.ok(used.has('MANIFEST_2.txt'))
+  })
+
+  it('strips Zip Slip traversal from archive entry paths', () => {
+    assert.equal(sanitizeArchivePath('../../../tmp/pwned/file.pdf'), 'tmp/pwned/file.pdf')
+    assert.equal(sanitizeArchivePath('/etc/passwd'), 'etc/passwd')
+    assert.equal(sanitizeArchivePath('..\\..\\evil.pdf'), 'evil.pdf')
+    assert.equal(sanitizeArchivePath('01_App/Application.pdf'), '01_App/Application.pdf')
+    assert.equal(sanitizeArchivePath(''), 'document')
+    assert.equal(sanitizeArchivePath('../..'), 'document')
+
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/export-engine.ts'),
+      'utf8'
+    )
+    assert.match(source, /sanitizeArchivePath/)
+    assert.match(
+      source,
+      /Array\.isArray\(r\.categories\)/,
+      'Malformed folderStructure without categories must not crash export'
+    )
+  })
+})
+
+describe('document delete clears FKs before removing the blob', () => {
+  it('deletes the DB row inside a transaction before storage.delete', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/documents/[id]/route.ts'),
+      'utf8'
+    )
+    const deleteFn = source.slice(source.indexOf('export async function DELETE'))
+    const txIdx = deleteFn.indexOf('$transaction')
+    const storageIdx = deleteFn.indexOf('storage.delete')
+    assert.ok(txIdx >= 0, 'DELETE must use a transaction for FK cleanup')
+    assert.ok(storageIdx >= 0, 'DELETE must still remove the storage blob')
+    assert.ok(
+      txIdx < storageIdx,
+      'DB delete must precede storage.delete to avoid ghost rows after FK failures'
+    )
+    assert.match(deleteFn, /checklistItem\.updateMany/)
+    assert.match(deleteFn, /parentDocumentId:\s*null/)
+  })
+})
+
+describe('readiness requires Verified document status', () => {
+  it('does not accept isVerified alone when status is Rejected or Pending', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/readiness-engine.ts'),
+      'utf8'
+    )
+    assert.match(
+      source,
+      /item\.document\.status\s*!==\s*['"]Verified['"]/,
+      'Rejected/Pending documents must not satisfy ReadyToSubmit'
+    )
+  })
+})
+
+describe('contractor vault renew is transactional', () => {
+  it('supersedes previous docs and creates the replacement in one transaction', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/contractors/[id]/documents/route.ts'),
+      'utf8'
+    )
+    const postFn = source.slice(source.indexOf('export async function POST'))
+    assert.match(postFn, /\$transaction/)
+    const txBlockStart = postFn.indexOf('$transaction')
+    const txSlice = postFn.slice(txBlockStart, txBlockStart + 1200)
+    assert.match(txSlice, /updateMany/)
+    assert.match(txSlice, /contractorDocument\.create/)
   })
 })
 
