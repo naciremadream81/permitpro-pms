@@ -9,6 +9,7 @@ import fs from 'fs'
 import path from 'path'
 import { uniquifyArchivePath } from './export-engine'
 import { requirementAppliesToPermitType } from './checklist-engine'
+import { normalizeRole, ForbiddenError } from './permissions'
 
 describe('syncChecklist removes all stale items', () => {
   it('does not limit deleteMany to PENDING-only status', () => {
@@ -111,6 +112,21 @@ describe('document version parent scoped to package', () => {
     assert.match(source, /permitPackageId:\s*params\.id/)
     assert.match(source, /Parent document must belong to this permit package/)
   })
+
+  it('validates parentDocumentId before writing the upload to storage', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/permits/[id]/documents/route.ts'),
+      'utf8'
+    )
+    const parentCheck = source.indexOf('Parent document must belong to this permit package')
+    const storageSave = source.indexOf('storage.save(')
+    assert.ok(parentCheck >= 0, 'parent package check must exist')
+    assert.ok(storageSave >= 0, 'storage.save must exist')
+    assert.ok(
+      parentCheck < storageSave,
+      'Invalid parentDocumentId must be rejected before storage.save to avoid orphan blobs'
+    )
+  })
 })
 
 describe('export archive path uniquify', () => {
@@ -127,6 +143,49 @@ describe('export archive path uniquify', () => {
       uniquifyArchivePath('01_App/Application_form.pdf', used),
       '01_App/Application_form_2.pdf'
     )
+  })
+
+  it('reserves MANIFEST.txt so uploaded documents cannot collide with the manifest', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/export-engine.ts'),
+      'utf8'
+    )
+    assert.match(source, /usedPaths\.add\(['"]MANIFEST\.txt['"]\)/)
+
+    // Simulate includeManifest reservation before uniquifying docs
+    const used = new Set<string>(['MANIFEST.txt'])
+    assert.equal(uniquifyArchivePath('MANIFEST.txt', used), 'MANIFEST_2.txt')
+    assert.ok(used.has('MANIFEST.txt'))
+    assert.ok(used.has('MANIFEST_2.txt'))
+  })
+})
+
+describe('normalizeRole fails closed on unknown roles', () => {
+  it('maps known and legacy roles; rejects unrecognized values', () => {
+    assert.equal(normalizeRole('admin'), 'admin')
+    assert.equal(normalizeRole('reviewer'), 'reviewer')
+    assert.equal(normalizeRole('coordinator'), 'coordinator')
+    assert.equal(normalizeRole('user'), 'coordinator')
+    assert.throws(() => normalizeRole('superadmin'), ForbiddenError)
+    assert.throws(() => normalizeRole(''), ForbiddenError)
+    assert.throws(() => normalizeRole(null), ForbiddenError)
+    assert.throws(() => normalizeRole(undefined), ForbiddenError)
+  })
+})
+
+describe('getSession refreshes role from the database', () => {
+  it('loads the live User.role and rejects deleted users', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/auth-helpers.ts'),
+      'utf8'
+    )
+    const getSessionFn = source.slice(
+      source.indexOf('export async function getSession'),
+      source.indexOf('export async function requireAuth')
+    )
+    assert.match(getSessionFn, /prisma\.user\.findUnique/)
+    assert.match(getSessionFn, /session\.user\.role\s*=\s*user\.role/)
+    assert.match(getSessionFn, /return null/)
   })
 })
 

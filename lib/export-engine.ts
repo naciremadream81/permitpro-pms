@@ -143,7 +143,12 @@ export async function buildExportZip(
 
   // Disambiguate colliding archive paths so unzip/county portals cannot
   // silently overwrite one document with another of the same name.
+  // Reserve MANIFEST.txt first when it will be appended — a document named
+  // MANIFEST.txt (e.g. with fileNamingPattern "{fileName}") must not collide.
   const usedPaths = new Set<string>()
+  if (includeManifest) {
+    usedPaths.add('MANIFEST.txt')
+  }
   for (const doc of resolvedDocs) {
     doc.archivePath = uniquifyArchivePath(doc.archivePath, usedPaths)
   }
