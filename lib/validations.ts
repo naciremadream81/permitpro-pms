@@ -227,15 +227,24 @@ export const requirementUpdateSchema = requirementSchema.omit({ jurisdictionId: 
 // CHECKLIST ITEM
 // ============================================================================
 
+// Operational statuses coordinators may set. WAIVED / NOT_APPLICABLE both skip
+// readiness and must go through the admin waive schema with a reason.
+export const checklistItemOperationalStatusEnum = z.enum([
+  'PENDING',
+  'UPLOADED',
+  'VERIFIED',
+  'REJECTED',
+])
+
 export const checklistItemUpdateSchema = z.object({
-  status: checklistItemStatusEnum.optional(),
+  status: checklistItemOperationalStatusEnum.optional(),
   documentId: z.string().optional().nullable(),
   notes: z.string().optional(),
-  waiverReason: z.string().optional(),
 })
 
-// Waiver requires an explicit reason
+// WAIVED / NOT_APPLICABLE both skip the readiness gate — admin-only with reason
 export const checklistItemWaiveSchema = z.object({
+  status: z.enum(['WAIVED', 'NOT_APPLICABLE']).default('WAIVED'),
   waiverReason: z.string().min(10, 'Waiver reason must be at least 10 characters'),
 })
 

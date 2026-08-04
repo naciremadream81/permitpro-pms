@@ -9,6 +9,7 @@
  */
 
 import { prisma } from '@/lib/prisma'
+import { requirementAppliesToPermitType } from '@/lib/checklist-engine'
 
 export interface ReadinessBlocker {
   type:
@@ -70,10 +71,14 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
         include: {
           requirement: {
             select: {
+              id: true,
               isRequired: true,
               isMandatoryForSubmission: true,
+              isActive: true,
               documentName: true,
               documentCategory: true,
+              jurisdictionId: true,
+              permitTypes: true,
             },
           },
           document: {
@@ -81,6 +86,8 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
           },
         },
       },
+      // All SENT_BACK cycles — not just the latest. Unresolved comments on an
+      // older send-back must still block ReadyToSubmit after a later cycle.
       reviewAssignments: {
         where: { status: 'SENT_BACK' },
         include: {
@@ -89,7 +96,6 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
           },
         },
         orderBy: { createdAt: 'desc' },
-        take: 1,
       },
     },
   })
@@ -114,17 +120,47 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
   }
 
   // ── Checklist evaluation ─────────────────────────────────────────────────
-  const mandatoryItems = pkg.checklistItems.filter(
-    (item) => item.requirement.isMandatoryForSubmission
+  // Evaluate against the live jurisdiction catalog so:
+  // - deactivated requirements cannot satisfy readiness via leftover VERIFIED items
+  // - newly added mandatory requirements block even if syncChecklist was never run
+  const catalogRequirements = pkg.jurisdictionId
+    ? await prisma.requirement.findMany({
+        where: {
+          jurisdictionId: { equals: pkg.jurisdictionId },
+          isActive: true,
+        },
+        select: {
+          id: true,
+          documentName: true,
+          isMandatoryForSubmission: true,
+          permitTypes: true,
+        },
+      })
+    : []
+
+  const applicableCatalog = catalogRequirements.filter((req) =>
+    requirementAppliesToPermitType(req.permitTypes, pkg.permitType)
+  )
+  const mandatoryCatalog = applicableCatalog.filter((req) => req.isMandatoryForSubmission)
+
+  const itemsByRequirementId = new Map(
+    pkg.checklistItems
+      .filter(
+        (item) =>
+          item.requirement.isActive &&
+          item.requirement.jurisdictionId === pkg.jurisdictionId &&
+          requirementAppliesToPermitType(item.requirement.permitTypes, pkg.permitType)
+      )
+      .map((item) => [item.requirementId, item])
   )
 
-  if (pkg.jurisdictionId && pkg.checklistItems.length === 0) {
-    blockers.push({
-      type: 'MISSING_REQUIRED_DOCUMENT',
+  if (pkg.jurisdictionId && applicableCatalog.length === 0) {
+    warnings.push({
+      type: 'NO_CHECKLIST_ITEMS',
       message:
-        'Checklist has not been generated for this jurisdiction. Generate the checklist before submission.',
+        'No active checklist requirements found for this jurisdiction/permit type. Verify the jurisdiction requirements are configured.',
     })
-  } else if (pkg.jurisdictionId && mandatoryItems.length === 0) {
+  } else if (pkg.jurisdictionId && mandatoryCatalog.length === 0) {
     warnings.push({
       type: 'NO_CHECKLIST_ITEMS',
       message:
@@ -132,34 +168,55 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
     })
   }
 
-  for (const item of mandatoryItems) {
-    if (item.status === 'WAIVED' || item.status === 'NOT_APPLICABLE') continue
+  const checklistNeverGenerated =
+    !!pkg.jurisdictionId &&
+    applicableCatalog.length > 0 &&
+    itemsByRequirementId.size === 0
 
-    if (item.status === 'PENDING' || !item.document) {
-      blockers.push({
-        type: 'MISSING_REQUIRED_DOCUMENT',
-        message: `Required document not uploaded: "${item.requirement.documentName}"`,
-        checklistItemId: item.id,
-      })
-    } else if (item.status !== 'VERIFIED' || !item.document.isVerified) {
-      blockers.push({
-        type: 'UNVERIFIED_REQUIRED_DOCUMENT',
-        message: `Required document not verified: "${item.requirement.documentName}"`,
-        checklistItemId: item.id,
-        documentId: item.document.id,
-      })
+  if (checklistNeverGenerated) {
+    blockers.push({
+      type: 'MISSING_REQUIRED_DOCUMENT',
+      message:
+        'Checklist has not been generated for this jurisdiction. Generate the checklist before submission.',
+    })
+  } else {
+    for (const req of mandatoryCatalog) {
+      const item = itemsByRequirementId.get(req.id)
+
+      if (!item) {
+        blockers.push({
+          type: 'MISSING_REQUIRED_DOCUMENT',
+          message: `Required document not uploaded: "${req.documentName}"`,
+        })
+        continue
+      }
+
+      if (item.status === 'WAIVED' || item.status === 'NOT_APPLICABLE') continue
+
+      if (item.status === 'PENDING' || !item.document) {
+        blockers.push({
+          type: 'MISSING_REQUIRED_DOCUMENT',
+          message: `Required document not uploaded: "${req.documentName}"`,
+          checklistItemId: item.id,
+        })
+      } else if (item.status !== 'VERIFIED' || !item.document.isVerified) {
+        blockers.push({
+          type: 'UNVERIFIED_REQUIRED_DOCUMENT',
+          message: `Required document not verified: "${req.documentName}"`,
+          checklistItemId: item.id,
+          documentId: item.document.id,
+        })
+      }
     }
   }
 
-  // Optional unverified items → warning only
-  const optionalItems = pkg.checklistItems.filter(
-    (item) => !item.requirement.isMandatoryForSubmission
-  )
-  for (const item of optionalItems) {
-    if (item.document && !item.document.isVerified) {
+  // Optional unverified items → warning only (active + applicable only)
+  for (const req of applicableCatalog.filter((r) => !r.isMandatoryForSubmission)) {
+    const item = itemsByRequirementId.get(req.id)
+    if (item?.document && !item.document.isVerified) {
       warnings.push({
         type: 'UNVERIFIED_OPTIONAL_DOCUMENT',
-        message: `Optional document not verified: "${item.requirement.documentName}"`,
+        message: `Optional document not verified: "${req.documentName}"`,
       })
     }
   }
@@ -249,15 +306,12 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
   }
 
   // ── Open correction comments ─────────────────────────────────────────────
-  if (pkg.reviewAssignments.length > 0) {
-    const latestSentBack = pkg.reviewAssignments[0]
-    const openComments = latestSentBack.comments.filter((c) => !c.isResolved)
-    if (openComments.length > 0) {
-      blockers.push({
-        type: 'OPEN_REVIEW_COMMENTS',
-        message: `${openComments.length} unresolved correction comment(s) must be addressed before resubmission.`,
-      })
-    }
+  const openComments = pkg.reviewAssignments.flatMap((assignment) => assignment.comments)
+  if (openComments.length > 0) {
+    blockers.push({
+      type: 'OPEN_REVIEW_COMMENTS',
+      message: `${openComments.length} unresolved correction comment(s) must be addressed before resubmission.`,
+    })
   }
 
   // ── Optional field warnings ───────────────────────────────────────────────
@@ -269,10 +323,16 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
   }
 
   // ── Checklist percentage ─────────────────────────────────────────────────
-  const totalRequired = mandatoryItems.length
-  const completedRequired = mandatoryItems.filter(
-    (i) => i.status === 'VERIFIED' || i.status === 'WAIVED' || i.status === 'NOT_APPLICABLE'
-  ).length
+  const totalRequired = mandatoryCatalog.length
+  const completedRequired = mandatoryCatalog.filter((req) => {
+    const item = itemsByRequirementId.get(req.id)
+    return (
+      !!item &&
+      (item.status === 'VERIFIED' ||
+        item.status === 'WAIVED' ||
+        item.status === 'NOT_APPLICABLE')
+    )
+  }).length
   const checklistPct =
     totalRequired === 0 ? 100 : Math.round((completedRequired / totalRequired) * 100)
 

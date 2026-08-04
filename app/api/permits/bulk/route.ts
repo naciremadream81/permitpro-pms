@@ -79,6 +79,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (data.action === 'update_stage') {
+      // ReadyToSubmit requires per-package readiness evaluation — never bulk-set it
+      if (data.internalStage === 'ReadyToSubmit') {
+        return NextResponse.json(
+          {
+            error:
+              'ReadyToSubmit cannot be set via bulk update; use POST /api/permits/[id]/status for readiness-gated transitions',
+          },
+          { status: 400 }
+        )
+      }
+
       const packages = await prisma.permitPackage.findMany({
         where: { id: { in: data.packageIds } },
         select: { id: true, internalStage: true },

@@ -110,6 +110,18 @@ export async function POST(request: NextRequest) {
     // Validate request data
     const validatedData = permitPackageSchema.parse(body)
 
+    // Creating directly as ReadyToSubmit skips evaluateReadiness() — force
+    // callers through POST /api/permits/[id]/status after checklist setup.
+    if (validatedData.internalStage === 'ReadyToSubmit') {
+      return NextResponse.json(
+        {
+          error:
+            'Cannot create a package as ReadyToSubmit; use POST /api/permits/[id]/status after readiness checks pass',
+        },
+        { status: 400 }
+      )
+    }
+
     // Convert date strings to Date objects and structure for Prisma
     // Note: We use customerId/contractorId directly as Prisma accepts both formats at runtime
     const { customerId, contractorId, targetIssueDate, ...rest } = validatedData

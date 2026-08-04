@@ -122,11 +122,21 @@ export async function POST(
 
     // Generate version group ID if this is a new version
     let versionGroupId: string | undefined
+    let resolvedParentDocumentId: string | undefined
     if (isNewVersion && parentDocumentId) {
-      const parentDoc = await prisma.permitDocument.findUnique({
-        where: { id: parentDocumentId },
+      // Parent must belong to this package — otherwise version groups can
+      // cross-link documents across unrelated permits.
+      const parentDoc = await prisma.permitDocument.findFirst({
+        where: { id: parentDocumentId, permitPackageId: params.id },
       })
-      versionGroupId = parentDoc?.versionGroupId || parentDocumentId
+      if (!parentDoc) {
+        return NextResponse.json(
+          { error: 'Parent document must belong to this permit package' },
+          { status: 400 }
+        )
+      }
+      versionGroupId = parentDoc.versionGroupId || parentDocumentId
+      resolvedParentDocumentId = parentDocumentId
     } else if (isNewVersion) {
       versionGroupId = randomBytes(16).toString('hex')
     }
@@ -154,7 +164,7 @@ export async function POST(
         fileSize: buffer.length,
         storagePath,
         versionTag,
-        parentDocumentId: isNewVersion && parentDocumentId ? parentDocumentId : undefined,
+        parentDocumentId: resolvedParentDocumentId,
         versionGroupId,
       },
       include: {
