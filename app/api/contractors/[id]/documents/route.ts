@@ -92,45 +92,60 @@ export async function POST(
     // Store under a contractor sub-path
     const storagePath = await storage.save(buffer, file.name, `contractors/${params.id}`)
 
-    // Mark previous documents of the same type as superseded
-    await prisma.contractorDocument.updateMany({
-      where: {
-        contractorId: { equals: params.id },
-        type: { equals: validated.type },
-        isSuperseded: false,
-      },
-      data: { isSuperseded: true },
-    })
+    // Supersede + create must be atomic. Otherwise a failed create leaves every
+    // prior LICENSE/WORKERS_COMP/LIABILITY row superseded and none active.
+    let document
+    try {
+      document = await prisma.$transaction(async (tx) => {
+        await tx.contractorDocument.updateMany({
+          where: {
+            contractorId: { equals: params.id },
+            type: { equals: validated.type },
+            isSuperseded: false,
+          },
+          data: { isSuperseded: true },
+        })
 
-    const document = await prisma.contractorDocument.create({
-      data: {
-        contractorId: params.id,
-        type: validated.type,
-        documentName: validated.documentName,
-        storagePath,
-        fileSize: buffer.length,
-        issueDate: validated.issueDate ? new Date(validated.issueDate) : undefined,
-        expirationDate: validated.expirationDate
-          ? new Date(validated.expirationDate)
-          : undefined,
-        uploadedBy: session.user.id,
-        notes: validated.notes,
-        status: 'ACTIVE',
-      },
-    })
+        const created = await tx.contractorDocument.create({
+          data: {
+            contractorId: params.id,
+            type: validated.type,
+            documentName: validated.documentName,
+            storagePath,
+            fileSize: buffer.length,
+            issueDate: validated.issueDate ? new Date(validated.issueDate) : undefined,
+            expirationDate: validated.expirationDate
+              ? new Date(validated.expirationDate)
+              : undefined,
+            uploadedBy: session.user.id,
+            notes: validated.notes,
+            status: 'ACTIVE',
+          },
+        })
 
-    // Sync legacy expiry fields on contractor for backward compat
-    if (validated.type === 'WORKERS_COMP' && validated.expirationDate) {
-      await prisma.contractor.update({
-        where: { id: params.id },
-        data: { workersCompExpirationDate: new Date(validated.expirationDate) },
+        // Sync legacy expiry fields on contractor for backward compat
+        if (validated.type === 'WORKERS_COMP' && validated.expirationDate) {
+          await tx.contractor.update({
+            where: { id: params.id },
+            data: { workersCompExpirationDate: new Date(validated.expirationDate) },
+          })
+        }
+        if (validated.type === 'LIABILITY' && validated.expirationDate) {
+          await tx.contractor.update({
+            where: { id: params.id },
+            data: { liabilityExpirationDate: new Date(validated.expirationDate) },
+          })
+        }
+
+        return created
       })
-    }
-    if (validated.type === 'LIABILITY' && validated.expirationDate) {
-      await prisma.contractor.update({
-        where: { id: params.id },
-        data: { liabilityExpirationDate: new Date(validated.expirationDate) },
-      })
+    } catch (error) {
+      try {
+        await storage.delete(storagePath)
+      } catch (cleanupError) {
+        console.error('Failed to clean up contractor upload after DB error:', cleanupError)
+      }
+      throw error
     }
 
     return NextResponse.json({ data: document }, { status: 201 })
