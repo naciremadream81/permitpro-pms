@@ -25,6 +25,7 @@ export type Resource =
   | 'jurisdiction'
   | 'requirement'
   | 'export_profile'
+  | 'saved_report'
   | 'user'
   | 'notification'
 
@@ -127,6 +128,11 @@ const MATRIX: PermissionMatrix = {
     read:              ['admin', 'coordinator'],
     update:            ['admin'],
     delete:            ['admin'],
+  },
+  saved_report: {
+    create:            ['admin', 'coordinator'],
+    read:              ['admin', 'coordinator', 'reviewer'],
+    delete:            ['admin', 'coordinator'],
   },
   user: {
     create:            ['admin'],

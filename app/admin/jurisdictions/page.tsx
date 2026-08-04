@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { Plus, MapPin, CheckCircle2, XCircle, ChevronRight } from 'lucide-react'
 
@@ -19,11 +19,7 @@ export default function JurisdictionsPage() {
   const [loading, setLoading] = useState(true)
   const [showInactive, setShowInactive] = useState(false)
 
-  useEffect(() => {
-    fetchJurisdictions()
-  }, [showInactive])
-
-  async function fetchJurisdictions() {
+  const fetchJurisdictions = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -34,7 +30,11 @@ export default function JurisdictionsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showInactive])
+
+  useEffect(() => {
+    fetchJurisdictions()
+  }, [fetchJurisdictions])
 
   async function toggleActive(id: string, current: boolean) {
     await fetch(`/api/jurisdictions/${id}`, {
