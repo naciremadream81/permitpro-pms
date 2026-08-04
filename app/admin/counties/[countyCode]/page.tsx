@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import {
@@ -328,11 +328,7 @@ export default function CountyDetailPage() {
     order: 0,
   })
 
-  useEffect(() => {
-    fetchJurisdiction()
-  }, [countyCode])
-
-  async function fetchJurisdiction() {
+  const fetchJurisdiction = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch(`/api/jurisdictions?state=FL`)
@@ -350,7 +346,11 @@ export default function CountyDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [countyCode])
+
+  useEffect(() => {
+    fetchJurisdiction()
+  }, [fetchJurisdiction])
 
   async function addRequirement() {
     if (!jurisdiction) return

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Plus, Trash2, ToggleLeft, ToggleRight, ArrowLeft, Save } from 'lucide-react'
 
@@ -62,11 +62,7 @@ export default function JurisdictionDetailPage() {
     order: 0,
   })
 
-  useEffect(() => {
-    fetchJurisdiction()
-  }, [id])
-
-  async function fetchJurisdiction() {
+  const fetchJurisdiction = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch(`/api/jurisdictions/${id}`)
@@ -75,7 +71,11 @@ export default function JurisdictionDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
+
+  useEffect(() => {
+    fetchJurisdiction()
+  }, [fetchJurisdiction])
 
   async function addRequirement() {
     setSaving(true)

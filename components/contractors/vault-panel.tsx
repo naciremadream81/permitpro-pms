@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Upload, CheckCircle2, AlertTriangle, XCircle, Clock } from 'lucide-react'
 
 type DocType = 'LICENSE' | 'WORKERS_COMP' | 'LIABILITY' | 'W9' | 'OTHER'
@@ -50,11 +50,7 @@ export function VaultPanel({ contractorId }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
-  useEffect(() => {
-    fetchDocuments()
-  }, [contractorId])
-
-  async function fetchDocuments() {
+  const fetchDocuments = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch(`/api/contractors/${contractorId}/documents`)
@@ -63,7 +59,11 @@ export function VaultPanel({ contractorId }: Props) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [contractorId])
+
+  useEffect(() => {
+    fetchDocuments()
+  }, [fetchDocuments])
 
   async function handleUpload() {
     if (!uploadType || !selectedFile) return

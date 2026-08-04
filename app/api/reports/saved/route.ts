@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
+import { handleApiError, requirePermission } from '@/lib/api-security'
 import { z } from 'zod'
 
 const savedReportSchema = z.object({
@@ -28,6 +29,7 @@ export async function GET() {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    requirePermission(session, 'read', 'saved_report')
 
     const reports = await prisma.savedReport.findMany({
       where: {
@@ -41,8 +43,7 @@ export async function GET() {
 
     return NextResponse.json({ data: reports })
   } catch (error) {
-    console.error('GET /api/reports/saved:', error)
-    return NextResponse.json({ error: 'Failed to fetch saved reports' }, { status: 500 })
+    return handleApiError(error, 'Failed to fetch saved reports')
   }
 }
 
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    requirePermission(session, 'create', 'saved_report')
 
     const body = await request.json()
     const data = savedReportSchema.parse(body)
@@ -60,9 +62,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ data: report }, { status: 201 })
   } catch (error) {
-    if (error instanceof Error && error.name === 'ZodError')
-      return NextResponse.json({ error: 'Validation error', details: error }, { status: 400 })
-    console.error('POST /api/reports/saved:', error)
-    return NextResponse.json({ error: 'Failed to save report' }, { status: 500 })
+    return handleApiError(error, 'Failed to save report')
   }
 }
