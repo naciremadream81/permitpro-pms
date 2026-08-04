@@ -112,8 +112,10 @@ export async function generateChecklist(
 /**
  * Regenerate checklist after a jurisdiction or permit type change.
  *
- * Removes PENDING items that no longer apply and adds new items for
- * newly applicable requirements. Verified/Waived items are left untouched.
+ * Removes every item whose requirement no longer applies (including
+ * VERIFIED / WAIVED / NOT_APPLICABLE) and adds items for newly applicable
+ * requirements. Leaving stale verified items would let ReadyToSubmit pass
+ * with documents from the previous jurisdiction or permit type.
  */
 export async function syncChecklist(
   packageId: string
@@ -142,11 +144,10 @@ export async function syncChecklist(
       .map((r) => r.id)
   )
 
-  // Remove PENDING items whose requirement no longer applies
+  // Remove all items whose requirement no longer applies — not only PENDING.
   await prisma.checklistItem.deleteMany({
     where: {
       packageId: { equals: packageId },
-      status: 'PENDING',
       requirementId: { notIn: Array.from(applicableIds) },
     },
   })
@@ -176,7 +177,7 @@ export async function checklistCompletionPct(packageId: string): Promise<number>
 }
 
 // ============================================================================
-// Internal helpers
+// Shared helpers
 // ============================================================================
 
 /**
@@ -186,7 +187,7 @@ export async function checklistCompletionPct(packageId: string): Promise<number>
  *   '["Building","Roofing"]'  — specific types
  *   '["*"]'                   — applies to all permit types
  */
-function requirementAppliesToPermitType(
+export function requirementAppliesToPermitType(
   permitTypesJson: string,
   permitType: PermitType
 ): boolean {

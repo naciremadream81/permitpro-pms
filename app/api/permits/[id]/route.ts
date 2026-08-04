@@ -78,6 +78,18 @@ export async function PATCH(
     requirePermission(session, 'update', 'package')
 
     const body = await request.json()
+
+    // ReadyToSubmit (and other stage moves) must use POST /api/permits/[id]/status
+    // so the readiness gate cannot be bypassed via this general update path.
+    if (body?.internalStage !== undefined) {
+      return NextResponse.json(
+        {
+          error:
+            'internalStage cannot be updated via PATCH; use POST /api/permits/[id]/status',
+        },
+        { status: 400 }
+      )
+    }
     
     // Validate request data
     const validatedData = permitPackageUpdateSchema.parse(body)

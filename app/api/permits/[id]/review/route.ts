@@ -169,6 +169,21 @@ export async function POST(
     }
 
     if (action === 'approve') {
+      // Re-check readiness at approve time — docs may have been removed or
+      // unverified after the assignment-time check.
+      const readiness = await evaluateReadiness(params.id)
+      if (!readiness.isReady) {
+        return NextResponse.json(
+          {
+            error: 'Package is no longer ready for submission',
+            blockers: readiness.blockers,
+            warnings: readiness.warnings,
+            checklistPct: readiness.checklistPct,
+          },
+          { status: 422 }
+        )
+      }
+
       const updated = await prisma.reviewAssignment.update({
         where: { id: activeAssignment.id },
         data: { status: 'APPROVED', completedAt: new Date() },
