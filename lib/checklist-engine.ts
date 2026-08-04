@@ -186,7 +186,7 @@ export async function checklistCompletionPct(packageId: string): Promise<number>
  *   '["Building","Roofing"]'  — specific types
  *   '["*"]'                   — applies to all permit types
  */
-function requirementAppliesToPermitType(
+export function requirementAppliesToPermitType(
   permitTypesJson: string,
   permitType: PermitType
 ): boolean {

@@ -9,19 +9,19 @@ import fs from 'fs'
 import path from 'path'
 
 describe('empty checklist blocks ReadyToSubmit', () => {
-  it('treats jurisdiction + zero checklist items as a blocker, not a warning', () => {
+  it('treats jurisdiction + zero applicable checklist items as a blocker, not a warning', () => {
     const source = fs.readFileSync(
       path.join(process.cwd(), 'lib/readiness-engine.ts'),
       'utf8'
     )
     assert.match(
       source,
-      /checklistItems\.length === 0/,
-      'Must detect never-generated / empty checklists'
+      /checklistNeverGenerated/,
+      'Must detect never-generated / empty checklists against the live catalog'
     )
     const emptyBranch = source.slice(
-      source.indexOf('checklistItems.length === 0'),
-      source.indexOf('mandatoryItems.length === 0')
+      source.indexOf('checklistNeverGenerated'),
+      source.indexOf('for (const req of mandatoryCatalog)')
     )
     assert.match(emptyBranch, /blockers\.push/, 'Empty checklist must block submission')
     assert.doesNotMatch(
