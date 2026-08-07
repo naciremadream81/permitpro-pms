@@ -100,10 +100,12 @@ export async function POST(
         },
       })
 
-      // Update package stage
+      // Keep the package in progress while review is outstanding.
+      // ReadyToSubmit is set only on approve (after readiness re-check) or via
+      // the status route — never at assign time.
       await prisma.permitPackage.update({
         where: { id: params.id },
-        data: { internalStage: 'ReadyToSubmit', lastActivityAt: new Date() },
+        data: { internalStage: 'InProgress', lastActivityAt: new Date() },
       })
 
       await prisma.activityLog.create({
