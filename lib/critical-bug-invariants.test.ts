@@ -53,12 +53,16 @@ describe('readiness evaluates live jurisdiction catalog', () => {
 })
 
 describe('ReadyToSubmit cannot bypass status gate', () => {
-  it('PATCH rejects internalStage updates', () => {
+  it('PATCH rejects status and internalStage updates', () => {
     const source = fs.readFileSync(
       path.join(process.cwd(), 'app/api/permits/[id]/route.ts'),
       'utf8'
     )
-    assert.match(source, /internalStage cannot be updated via PATCH/)
+    assert.match(
+      source,
+      /status and internalStage cannot be updated via PATCH/
+    )
+    assert.match(source, /body\?\.status !== undefined/)
   })
 
   it('create rejects ReadyToSubmit', () => {
@@ -211,5 +215,58 @@ describe('status route enforces package update permission', () => {
       'utf8'
     )
     assert.match(source, /enforce\(role, 'update', 'package'\)/)
+  })
+})
+
+describe('review comments cannot be injected across assignments', () => {
+  it('requires send_back permission and assignee/admin authorship', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/review-assignments/[id]/comments/route.ts'),
+      'utf8'
+    )
+    const postFn = source.slice(source.indexOf('export async function POST'))
+    assert.match(postFn, /enforce\(role, 'send_back', 'review'\)/)
+    assert.match(postFn, /assignment\.reviewerId !== session\.user\.id/)
+    assert.doesNotMatch(
+      postFn,
+      /enforce\([^)]*'read',\s*'review'\)/,
+      'Comment create must not be gated only on review.read'
+    )
+  })
+
+  it('scopes documentId and checklistItemId to the assignment package', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/review-assignments/[id]/comments/route.ts'),
+      'utf8'
+    )
+    const postFn = source.slice(source.indexOf('export async function POST'))
+    assert.match(postFn, /permitPackageId:\s*assignment\.packageId/)
+    assert.match(postFn, /packageId:\s*assignment\.packageId/)
+    assert.match(postFn, /documentId must belong to the same permit package/)
+    assert.match(postFn, /checklistItemId must belong to the same permit package/)
+  })
+})
+
+describe('task updates cannot reassign permit packages', () => {
+  it('omits permitPackageId from taskUpdateSchema', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/validations.ts'),
+      'utf8'
+    )
+    assert.match(
+      source,
+      /taskUpdateSchema\s*=\s*taskSchema\.omit\(\{\s*permitPackageId:\s*true\s*\}\)\.partial\(\)/
+    )
+  })
+})
+
+describe('permit detail status edits use gated status route', () => {
+  it('posts status changes to /status instead of PATCH', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/permits/[id]/permit-detail-client.tsx'),
+      'utf8'
+    )
+    assert.match(source, /\/api\/permits\/\$\{permit\.id\}\/status/)
+    assert.match(source, /field === 'status'/)
   })
 })
