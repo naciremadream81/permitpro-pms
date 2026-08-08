@@ -81,11 +81,13 @@ export async function PATCH(
 
     // ReadyToSubmit (and other stage moves) must use POST /api/permits/[id]/status
     // so the readiness gate cannot be bypassed via this general update path.
-    if (body?.internalStage !== undefined) {
+    // Status transitions also must use that route — PATCH was skipping Approved →
+    // "Send to Billing" automation and other status-route side effects.
+    if (body?.internalStage !== undefined || body?.status !== undefined) {
       return NextResponse.json(
         {
           error:
-            'internalStage cannot be updated via PATCH; use POST /api/permits/[id]/status',
+            'status and internalStage cannot be updated via PATCH; use POST /api/permits/[id]/status',
         },
         { status: 400 }
       )
