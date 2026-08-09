@@ -60,10 +60,17 @@ describe('legacy insurance expiry independent of LICENSE vault doc', () => {
     assert.match(source, /checkInsuranceExpiry/)
     assert.match(source, /legacyDate:\s*pkg\.contractor\.workersCompExpirationDate/)
     assert.match(source, /legacyDate:\s*pkg\.contractor\.liabilityExpirationDate/)
+
+    // LICENSE missing/undated handling must finish before insurance checks run
+    const licenseBlock = source.slice(
+      source.indexOf('// License — vault LICENSE'),
+      source.indexOf('// Workers Comp')
+    )
+    assert.match(licenseBlock, /CONTRACTOR_LICENSE_MISSING/)
     assert.doesNotMatch(
-      source,
-      /if \(!licenseDoc\) \{[\s\S]*workersCompExpirationDate[\s\S]*liabilityExpirationDate/,
-      'Legacy insurance must not be gated on absence of LICENSE vault document'
+      licenseBlock,
+      /workersCompExpirationDate|liabilityExpirationDate|checkInsuranceExpiry/,
+      'Insurance evaluation must not nest inside the LICENSE missing branch'
     )
   })
 })

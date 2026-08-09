@@ -352,13 +352,30 @@ function checkInsuranceExpiry(opts: {
   blockWithinDays: number
 }) {
   const { label, vaultDoc, legacyDate, now, blockers, blockWithinDays } = opts
-  const expiryDate = vaultDoc?.expirationDate ?? legacyDate ?? null
 
-  if (!expiryDate) {
+  // Vault is source of truth when present. An undated vault row must block —
+  // falling through to a stale legacy date would let an undated supersede clear
+  // an expired vault blocker.
+  let expiryDate: Date | null = null
+  let contractorDocumentId: string | undefined
+
+  if (vaultDoc) {
+    if (!vaultDoc.expirationDate) {
+      blockers.push({
+        type: 'CONTRACTOR_INSURANCE_MISSING',
+        message: `Contractor ${label} is missing an expiration date.`,
+        contractorDocumentId: vaultDoc.id,
+      })
+      return
+    }
+    expiryDate = vaultDoc.expirationDate
+    contractorDocumentId = vaultDoc.id
+  } else if (legacyDate) {
+    expiryDate = legacyDate
+  } else {
     blockers.push({
       type: 'CONTRACTOR_INSURANCE_MISSING',
       message: `Contractor ${label} with an expiration date is required before submission.`,
-      contractorDocumentId: vaultDoc?.id,
     })
     return
   }
@@ -368,13 +385,13 @@ function checkInsuranceExpiry(opts: {
     blockers.push({
       type: 'CONTRACTOR_INSURANCE_EXPIRED',
       message: `Contractor ${label} expired ${Math.abs(days)} day(s) ago.`,
-      contractorDocumentId: vaultDoc?.expirationDate ? vaultDoc.id : undefined,
+      contractorDocumentId,
     })
   } else if (days <= blockWithinDays) {
     blockers.push({
       type: 'CONTRACTOR_INSURANCE_EXPIRING_SOON',
       message: `${label} expires in ${days} day(s) — too soon for submission.`,
-      contractorDocumentId: vaultDoc?.expirationDate ? vaultDoc.id : undefined,
+      contractorDocumentId,
     })
   }
 }

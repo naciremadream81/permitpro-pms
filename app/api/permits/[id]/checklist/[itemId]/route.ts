@@ -69,6 +69,7 @@ export async function PATCH(
       where: { id: params.itemId, packageId: params.id },
       select: {
         id: true,
+        documentId: true,
         requirement: { select: { documentCategory: true, documentName: true } },
       },
     })
@@ -76,9 +77,19 @@ export async function PATCH(
       return NextResponse.json({ error: 'Checklist item not found' }, { status: 404 })
     }
 
-    if (data.documentId) {
+    const requiresLinkedDocument =
+      !!data.documentId || data.status === 'VERIFIED' || data.status === 'UPLOADED'
+    const targetDocumentId = data.documentId ?? existingItem.documentId ?? undefined
+
+    if (requiresLinkedDocument) {
+      if (!targetDocumentId) {
+        return NextResponse.json(
+          { error: 'A document must be linked before marking this checklist item verified' },
+          { status: 400 }
+        )
+      }
       const linkedDoc = await prisma.permitDocument.findFirst({
-        where: { id: data.documentId, permitPackageId: params.id },
+        where: { id: targetDocumentId, permitPackageId: params.id },
         select: { id: true, category: true },
       })
       if (!linkedDoc) {

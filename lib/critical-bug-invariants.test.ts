@@ -215,7 +215,7 @@ describe('status route enforces package update permission', () => {
 })
 
 describe('contractor compliance cannot be bypassed via missing/undated vault docs', () => {
-  it('requires LICENSE with expirationDate and blocks insurance without vault-or-legacy date', () => {
+  it('requires LICENSE with expirationDate and blocks undated insurance vault docs', () => {
     const source = fs.readFileSync(
       path.join(process.cwd(), 'lib/readiness-engine.ts'),
       'utf8'
@@ -224,9 +224,11 @@ describe('contractor compliance cannot be bypassed via missing/undated vault doc
     assert.match(source, /CONTRACTOR_INSURANCE_MISSING/)
     assert.match(source, /missing an expiration date/)
     assert.match(source, /checkInsuranceExpiry/)
-    // Undated vault docs must fall through to legacy, not silently pass
     const helper = source.slice(source.indexOf('function checkInsuranceExpiry'))
-    assert.match(helper, /vaultDoc\?\.expirationDate \?\? legacyDate/)
+    // Undated vault is source-of-truth missing — must not fall back to legacy
+    assert.match(helper, /if \(vaultDoc\)/)
+    assert.match(helper, /if \(!vaultDoc\.expirationDate\)/)
+    assert.match(helper, /else if \(legacyDate\)/)
     assert.match(helper, /CONTRACTOR_INSURANCE_MISSING/)
   })
 })
