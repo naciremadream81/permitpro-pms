@@ -213,3 +213,42 @@ describe('status route enforces package update permission', () => {
     assert.match(source, /enforce\(role, 'update', 'package'\)/)
   })
 })
+
+describe('contractor compliance cannot be bypassed via missing/undated vault docs', () => {
+  it('requires LICENSE with expirationDate and blocks insurance without vault-or-legacy date', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/readiness-engine.ts'),
+      'utf8'
+    )
+    assert.match(source, /CONTRACTOR_LICENSE_MISSING/)
+    assert.match(source, /CONTRACTOR_INSURANCE_MISSING/)
+    assert.match(source, /missing an expiration date/)
+    assert.match(source, /checkInsuranceExpiry/)
+    // Undated vault docs must fall through to legacy, not silently pass
+    const helper = source.slice(source.indexOf('function checkInsuranceExpiry'))
+    assert.match(helper, /vaultDoc\?\.expirationDate \?\? legacyDate/)
+    assert.match(helper, /CONTRACTOR_INSURANCE_MISSING/)
+  })
+})
+
+describe('wrong-category documents cannot satisfy readiness', () => {
+  it('blocks when linked document category mismatches requirement', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/readiness-engine.ts'),
+      'utf8'
+    )
+    assert.match(source, /WRONG_DOCUMENT_CATEGORY/)
+    assert.match(source, /item\.document\.category !== item\.requirement\.documentCategory/)
+  })
+})
+
+describe('create cannot skip Approved billing automation', () => {
+  it('rejects status Approved on package create', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/permits/route.ts'),
+      'utf8'
+    )
+    assert.match(source, /Cannot create a package as Approved/)
+    assert.match(source, /billing automation/)
+  })
+})

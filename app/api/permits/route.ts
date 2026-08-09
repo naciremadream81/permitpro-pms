@@ -122,6 +122,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Creating as Approved skips the status-route billing automation that
+    // auto-creates the "Send to Billing" task.
+    if (validatedData.status === 'Approved') {
+      return NextResponse.json(
+        {
+          error:
+            'Cannot create a package as Approved; use POST /api/permits/[id]/status so billing automation runs',
+        },
+        { status: 400 }
+      )
+    }
+
     // Convert date strings to Date objects and structure for Prisma
     // Note: We use customerId/contractorId directly as Prisma accepts both formats at runtime
     const { customerId, contractorId, targetIssueDate, ...rest } = validatedData
