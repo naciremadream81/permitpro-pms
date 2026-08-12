@@ -62,7 +62,7 @@ After fixing the Cloudflare Dashboard configuration:
 2. **Test access:**
    - Visit: `https://guacamole.permitpro.icu`
    - Should see Guacamole login page
-   - Default credentials: `guacadmin` / `guacadmin`
+   - Initial Guacamole admin is created by initdb; change or disable it before exposing access
 
 ## Current Configuration
 

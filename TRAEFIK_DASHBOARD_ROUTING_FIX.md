@@ -36,25 +36,20 @@ Updated `cloudflared/config.yml` to route through the proper entrypoint:
    - IP restrictions
    - Other security policies
 
-2. **Consistency:** All services now route through Traefik's entrypoints consistently:
+2. **Consistency:** Application traffic routes through Traefik's entrypoints consistently:
    - `permitpro.permitpro.icu` → `http://traefik:80`
-   - `guacamole.permitpro.icu` → `http://traefik:80`
-   - `n8n.permitpro.icu` → `http://traefik:80`
-   - `traefik.permitpro.icu` → `http://traefik:80` ✅ (now fixed)
+   - Optional tool routes require explicit edge auth before use.
+   - The Traefik dashboard is no longer exposed by the checked-in compose/tunnel config.
 
-3. **Router Rules:** The router configuration in `docker-compose.yml` is now actually used:
-   ```yaml
-   - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.permitpro.icu`)"
-   - "traefik.http.routers.traefik-dashboard.entrypoints=web"
-   ```
+3. **Router Rules:** Do not publish the Traefik dashboard route from local compose. Use Cloudflare Access, VPN, or a temporary localhost-only tunnel for operational access.
 
 ## Verification
 
 After the fix:
 - ✅ Traffic routes through port 80 (web entrypoint)
-- ✅ Router rules are applied
-- ✅ Dashboard accessible at `https://traefik.permitpro.icu`
-- ✅ Consistent routing with other services
+- ✅ Public app router rules are applied
+- ✅ Dashboard is not accessible at `https://traefik.permitpro.icu`
+- ✅ Optional tool routes require explicit additional authentication
 
 ## Important: Cloudflare Dashboard Override
 

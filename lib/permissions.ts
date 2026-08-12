@@ -182,6 +182,8 @@ export class UnauthorizedError extends Error {
 /** Normalize legacy role strings to the canonical UserRole union */
 export function normalizeRole(role: string | null | undefined): UserRole {
   if (role === 'admin') return 'admin'
+  if (role === 'coordinator') return 'coordinator'
   if (role === 'reviewer') return 'reviewer'
-  return 'coordinator' // 'user' and anything unknown defaults to coordinator
+  if (role === 'user') return 'coordinator'
+  throw new ForbiddenError('Invalid role')
 }

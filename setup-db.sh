@@ -196,9 +196,8 @@ if [[ ! $REPLY =~ ^[Nn]$ ]]; then
     if npm run db:seed; then
         print_success "Database seeded successfully"
         echo ""
-        echo -e "${GREEN}Sample login credentials:${NC}"
-        echo -e "  ${BLUE}Admin:${NC} admin@permitco.com / admin123"
-        echo -e "  ${BLUE}User:${NC}  user@permitco.com / user123"
+        echo -e "${GREEN}Sample login credentials were printed by the seed command.${NC}"
+        echo -e "  ${BLUE}Tip:${NC} Set SEED_ADMIN_PASSWORD and SEED_COORDINATOR_PASSWORD for local-only fixed passwords."
     else
         print_error "Failed to seed database"
         exit 1
@@ -272,4 +271,3 @@ echo "  • Generate Prisma Client: ${YELLOW}npx prisma generate${NC}"
 echo ""
 echo -e "${GREEN}Happy coding! 🚀${NC}"
 echo ""
-

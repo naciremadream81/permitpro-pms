@@ -6,6 +6,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
+import { z } from 'zod'
+
+const updatePermitTypeSchema = z.object({
+  label: z.string().trim().min(1, 'label is required').max(120, 'label is too long').optional(),
+  description: z.string().trim().max(1000, 'description is too long').nullable().optional(),
+  isActive: z.boolean().optional(),
+}).refine((value) => Object.keys(value).length > 0, {
+  message: 'At least one field is required',
+})
 
 export async function PATCH(
   request: NextRequest,
@@ -18,7 +27,11 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const body = await request.json()
-    const { label, description, isActive } = body
+    const parsed = updatePermitTypeSchema.safeParse(body)
+    if (!parsed.success)
+      return NextResponse.json({ error: 'Validation error', details: parsed.error.flatten() }, { status: 400 })
+
+    const { label, description, isActive } = parsed.data
 
     const updated = await prisma.permitTypeDefinition.update({
       where: { id: params.id },

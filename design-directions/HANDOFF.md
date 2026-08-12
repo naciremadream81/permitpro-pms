@@ -48,7 +48,7 @@ Authoritative docs:
 - **Port 3000** is the production Docker container (`next-server`, uid 1001) — don't kill it.
   `.claude/launch.json` has `autoPort: true`; dev server lands on a random port.
 - **Host dev DB:** `.env.local` (gitignored) → `DATABASE_URL=file:…/data/dev-local.db`, migrated
-  via SQL files + seeded. Logins: admin@permitco.com/admin123, user@permitco.com/user123.
+  via SQL files + seeded. Logins: admin@permitco.com and coordinator@permitco.com with generated seed passwords.
 - `preview_screenshot` frequently times out on this machine; verify via `preview_eval`
   (DOM + computed styles) instead.
 

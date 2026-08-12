@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { useTheme } from 'next-themes'
-import { Menu, Moon, Sun, X, LogOut, ChevronDown } from 'lucide-react'
+import { Menu, Moon, Sun, X, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   adminNav,

@@ -23,12 +23,12 @@ Initialized the Guacamole database by running the schema creation script:
 
 ```bash
 docker compose exec guacamole /opt/guacamole/bin/initdb.sh --mysql | \
-  docker compose exec -T guacamole-db mysql -u guacamole_user -pchange-this-password guacamole_db
+  docker compose exec -T guacamole-db mysql -u guacamole_user -p$GUACAMOLE_DB_PASSWORD guacamole_db
 ```
 
 This created:
 - ✅ 23 database tables
-- ✅ Default `guacadmin` user with full permissions
+- ✅ Initial admin user with full permissions
 - ✅ All required schema objects
 
 ## Default Login Credentials
@@ -43,14 +43,14 @@ After initialization, you can log in with:
 
 The database is now properly initialized:
 - ✅ Tables created: 23 tables
-- ✅ Default user exists: `guacadmin`
+- ✅ Initial admin user exists
 - ✅ Guacamole can connect to database
 
 ## Next Steps
 
 1. **Log in to Guacamole:**
    - Visit: `https://guacamole.permitpro.icu`
-   - Use: `guacadmin` / `guacadmin`
+   - Use the initial admin only for first-run setup, then change or disable it before exposing access.
    - The login should now work without 500 errors
 
 2. **Change the default password:**
@@ -68,11 +68,11 @@ If you need to start fresh (⚠️ **WARNING:** This will delete all data):
 
 ```bash
 # Drop and recreate database
-docker compose exec guacamole-db mysql -u root -pchange-root-password -e "DROP DATABASE guacamole_db; CREATE DATABASE guacamole_db;"
+docker compose exec guacamole-db mysql -u root -p$GUACAMOLE_DB_ROOT_PASSWORD -e "DROP DATABASE guacamole_db; CREATE DATABASE guacamole_db;"
 
 # Re-initialize
 docker compose exec guacamole /opt/guacamole/bin/initdb.sh --mysql | \
-  docker compose exec -T guacamole-db mysql -u guacamole_user -pchange-this-password guacamole_db
+  docker compose exec -T guacamole-db mysql -u guacamole_user -p$GUACAMOLE_DB_PASSWORD guacamole_db
 ```
 
 ## Note on Cloudflare Insights Warnings

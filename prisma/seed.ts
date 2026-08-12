@@ -10,11 +10,20 @@
 
 import { PrismaClient } from '@/lib/generated/prisma'
 import { hashPassword } from '../lib/auth'
+import { randomBytes } from 'crypto'
 
 const prisma = new PrismaClient()
 
 async function main() {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
+    throw new Error('Refusing to seed production without ALLOW_PRODUCTION_SEED=true')
+  }
+
   console.log('🌱 Starting database seed...')
+  const generatedAdminPassword = !process.env.SEED_ADMIN_PASSWORD
+  const generatedCoordinatorPassword = !process.env.SEED_COORDINATOR_PASSWORD
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? randomBytes(18).toString('base64url')
+  const coordinatorPassword = process.env.SEED_COORDINATOR_PASSWORD ?? randomBytes(18).toString('base64url')
 
   // Clear existing data (in reverse order of dependencies)
   console.log('🧹 Clearing existing data...')
@@ -33,17 +42,17 @@ async function main() {
     data: {
       email: 'admin@permitco.com',
       name: 'Admin User',
-      passwordHash: await hashPassword('admin123'),
+      passwordHash: await hashPassword(adminPassword),
       role: 'admin',
     },
   })
 
-  const regularUser = await prisma.user.create({
+  const coordinatorUser = await prisma.user.create({
     data: {
-      email: 'user@permitco.com',
-      name: 'Regular User',
-      passwordHash: await hashPassword('user123'),
-      role: 'user',
+      email: 'coordinator@permitco.com',
+      name: 'Coordinator User',
+      passwordHash: await hashPassword(coordinatorPassword),
+      role: 'coordinator',
     },
   })
 
@@ -336,7 +345,6 @@ async function main() {
 
   // Create documents for some permits
   console.log('📄 Creating documents...')
-  const documentCategories = ['Application', 'Plans', 'Specifications', 'Engineering', 'Photos']
   
   // Create documents for permit 0 (New)
   await prisma.permitDocument.create({
@@ -362,7 +370,7 @@ async function main() {
       fileName: 'site_plans.pdf',
       fileType: 'application/pdf',
       category: 'Plans',
-      uploadedBy: regularUser.id,
+      uploadedBy: coordinatorUser.id,
       isRequired: true,
       isVerified: true,
       status: 'Verified',
@@ -379,7 +387,7 @@ async function main() {
       fileName: 'site_plans.pdf',
       fileType: 'application/pdf',
       category: 'Plans',
-      uploadedBy: regularUser.id,
+      uploadedBy: coordinatorUser.id,
       isRequired: true,
       isVerified: false,
       status: 'Pending',
@@ -413,7 +421,7 @@ async function main() {
         name: 'Follow up with county',
         description: 'Check on review status',
         status: 'Waiting',
-        assignedTo: regularUser.email,
+        assignedTo: coordinatorUser.email,
         dueDate: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
         priority: 'medium',
       },
@@ -437,7 +445,7 @@ async function main() {
         name: 'Schedule final inspection',
         description: 'Coordinate with inspector',
         status: 'Completed',
-        assignedTo: regularUser.email,
+        assignedTo: coordinatorUser.email,
         dueDate: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
         completedAt: new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000), // 8 days ago
         priority: 'high',
@@ -464,7 +472,7 @@ async function main() {
       await prisma.activityLog.create({
         data: {
           permitPackageId: permit.id,
-          userId: regularUser.id,
+          userId: coordinatorUser.id,
           activityType: 'StatusChange',
           description: `Status changed from New to ${permit.status}`,
           oldValue: 'New',
@@ -548,8 +556,12 @@ async function main() {
   console.log(`   - ${customers.length} customers`)
   console.log(`   - ${contractors.length} contractors`)
   console.log(`   - ${permits.length} permit packages`)
-  console.log(`   - Users: admin@permitco.com (password: admin123)`)
-  console.log(`   - Users: user@permitco.com (password: user123)`)
+  console.log(
+    `   - Admin: admin@permitco.com (${generatedAdminPassword ? `password: ${adminPassword}` : 'password from SEED_ADMIN_PASSWORD'})`
+  )
+  console.log(
+    `   - Coordinator: coordinator@permitco.com (${generatedCoordinatorPassword ? `password: ${coordinatorPassword}` : 'password from SEED_COORDINATOR_PASSWORD'})`
+  )
 }
 
 main()
@@ -560,4 +572,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
-

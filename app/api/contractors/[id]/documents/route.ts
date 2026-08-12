@@ -6,7 +6,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession, ForbiddenError } from '@/lib/auth-helpers'
 import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
-import { storage } from '@/lib/storage'
+import {
+  assertWithinUploadRequestLimit,
+  FileValidationError,
+  storage,
+  validateUploadFile,
+} from '@/lib/storage'
 import { contractorDocumentSchema } from '@/lib/validations'
 
 // GET /api/contractors/[id]/documents
@@ -63,6 +68,8 @@ export async function POST(
     if (!contractor)
       return NextResponse.json({ error: 'Contractor not found' }, { status: 404 })
 
+    assertWithinUploadRequestLimit(request.headers.get('content-length'))
+
     const formData = await request.formData()
     const file = formData.get('file') as File | null
     if (!file)
@@ -83,8 +90,9 @@ export async function POST(
     })
 
     const buffer = Buffer.from(await file.arrayBuffer())
+    const validatedFile = validateUploadFile(buffer, file.name, file.type)
     // Store under a contractor sub-path
-    const storagePath = await storage.save(buffer, file.name, `contractors/${params.id}`)
+    const storagePath = await storage.save(buffer, validatedFile.fileName, `contractors/${params.id}`)
 
     // Mark previous documents of the same type as superseded
     await prisma.contractorDocument.updateMany({
@@ -133,6 +141,8 @@ export async function POST(
       return NextResponse.json({ error: error.message }, { status: 403 })
     if (error instanceof Error && error.name === 'ZodError')
       return NextResponse.json({ error: 'Validation error', details: error }, { status: 400 })
+    if (error instanceof FileValidationError)
+      return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('POST /api/contractors/[id]/documents:', error)
     return NextResponse.json({ error: 'Failed to upload contractor document' }, { status: 500 })
   }

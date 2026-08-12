@@ -8,7 +8,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
-import { storage, getMimeType } from '@/lib/storage'
+import {
+  assertWithinUploadRequestLimit,
+  FileValidationError,
+  storage,
+  validateUploadFile,
+} from '@/lib/storage'
 import { documentCategoryEnum } from '@/lib/validations'
 import { randomBytes } from 'crypto'
 
@@ -93,6 +98,8 @@ export async function POST(
       return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
     }
 
+    assertWithinUploadRequestLimit(request.headers.get('content-length'))
+
     // Parse form data
     const formData = await request.formData()
     const file = formData.get('file') as File | null
@@ -112,9 +119,10 @@ export async function POST(
     // Convert file to buffer
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
+    const validatedFile = validateUploadFile(buffer, file.name, file.type)
 
     // Save file to storage
-    const storagePath = await storage.save(buffer, file.name, params.id)
+    const storagePath = await storage.save(buffer, validatedFile.fileName, params.id)
 
     // Generate version group ID if this is a new version
     let versionGroupId: string | undefined
@@ -131,7 +139,7 @@ export async function POST(
     const existingVersions = await prisma.permitDocument.count({
       where: {
         permitPackageId: params.id,
-        fileName: file.name,
+        fileName: validatedFile.fileName,
         category: validatedCategory,
       },
     })
@@ -141,8 +149,8 @@ export async function POST(
     const document = await prisma.permitDocument.create({
       data: {
         permitPackageId: params.id,
-        fileName: file.name,
-        fileType: getMimeType(file.name),
+        fileName: validatedFile.fileName,
+        fileType: validatedFile.mimeType,
         category: validatedCategory,
         uploadedBy: session.user.id,
         notes: notes || undefined,
@@ -166,7 +174,7 @@ export async function POST(
         permitPackageId: params.id,
         userId: session.user.id,
         activityType: 'DocumentUploaded',
-        description: `Document "${file.name}" uploaded (${validatedCategory})`,
+        description: `Document "${validatedFile.fileName}" uploaded (${validatedCategory})`,
       },
     })
 
@@ -177,6 +185,9 @@ export async function POST(
         { error: 'Validation error', details: error },
         { status: 400 }
       )
+    }
+    if (error instanceof FileValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
     }
     // Enhanced error logging for debugging
     console.error('Error uploading document:', error)
@@ -194,4 +205,3 @@ export async function POST(
     )
   }
 }
-

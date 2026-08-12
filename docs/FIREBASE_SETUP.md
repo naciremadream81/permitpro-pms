@@ -181,7 +181,7 @@ firebase apphosting:rollouts:create BACKEND_ID --project PROJECT_ID
 ```
 
 Smoke-test the deployed URL:
-- [ ] **Log in** (use the production admin credentials — the DB carries production users, not the dev `admin123`).
+- [ ] **Log in** (use the production admin credentials — the DB carries production users, not the generated development password).
 - [ ] Dashboard / board / registers render with real data (67 counties etc.).
 - [ ] Open a permit → assign a county → checklist generates.
 - [ ] **Upload a document, then download it** — this is the end-to-end test of the GCS driver (couldn't be verified locally).

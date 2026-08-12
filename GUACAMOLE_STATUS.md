@@ -29,8 +29,7 @@
 - `https://guacamole.permitpro.icu`
 
 **Default Login Credentials:**
-- Username: `guacadmin`
-- Password: `guacadmin`
+- Use the initial admin only for first-run setup, then change or disable it before exposing access
 
 ⚠️ **IMPORTANT:** Change the default password immediately after first login!
 
@@ -39,7 +38,7 @@
 Guacamole is currently running via **QEMU emulation** (AMD64 images on ARM64):
 - Performance: Slower than native ARM64 (but functional)
 - Status: Working correctly
-- Images: Using official `guacamole/guacamole:latest` and `guacamole/guacd:latest`
+- Images: Using official `guacamole/guacamole:1.6.0` and `guacamole/guacd:1.6.0`
 
 ### Build from Source Status
 
@@ -75,7 +74,7 @@ To verify Guacamole is working:
 ### Next Steps
 
 1. **Access Guacamole:** Go to `https://guacamole.permitpro.icu`
-2. **Login:** Use `guacadmin` / `guacadmin`
+2. **Login:** Use the initial admin only for first-run setup, then change or disable it
 3. **Change Password:** Immediately change the default password
 4. **Configure Connections:** Add your first remote desktop connection
 

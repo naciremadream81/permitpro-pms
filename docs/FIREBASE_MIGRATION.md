@@ -105,7 +105,7 @@ as requested.
       for rollback. App verified against Supabase: board, registers, admin counties
       (67 jurisdictions + full requirements catalog render), auth path executes
       (NB: **the DB carries production users** — log in with the production admin
-      password, not the dev-seed `admin123`)
+      password, not the generated development password)
 - [x] Cloud Storage **driver** implemented in `lib/storage.ts` — env-switched
       `STORAGE_DRIVER=local|gcs`; the SDK is externalized via `next.config.mjs` webpack config
       so local builds work without `@google-cloud/storage` installed, and it's added to

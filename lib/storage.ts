@@ -25,7 +25,37 @@ import { randomBytes } from 'crypto'
 // Storage configuration
 const STORAGE_ROOT = process.env.STORAGE_ROOT || path.join(process.cwd(), 'storage')
 const STORAGE_DRIVER = (process.env.STORAGE_DRIVER || 'local').toLowerCase()
-const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+export const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+export const MAX_UPLOAD_REQUEST_SIZE = MAX_FILE_SIZE + 1024 * 1024 // allow multipart overhead
+
+const ALLOWED_FILE_TYPES: Record<string, string> = {
+  '.pdf': 'application/pdf',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.doc': 'application/msword',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.xls': 'application/vnd.ms-excel',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.txt': 'text/plain',
+}
+
+const BINARY_SIGNATURES: Record<string, (file: Buffer) => boolean> = {
+  '.pdf': (file) => file.subarray(0, 5).equals(Buffer.from('%PDF-')),
+  '.jpg': (file) => file.length >= 3 && file[0] === 0xff && file[1] === 0xd8 && file[2] === 0xff,
+  '.jpeg': (file) => file.length >= 3 && file[0] === 0xff && file[1] === 0xd8 && file[2] === 0xff,
+  '.png': (file) => file.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+  '.gif': (file) => {
+    const header = file.subarray(0, 6).toString('ascii')
+    return header === 'GIF87a' || header === 'GIF89a'
+  },
+  '.doc': (file) => isCompoundFileBinary(file),
+  '.xls': (file) => isCompoundFileBinary(file),
+  '.docx': (file) => isZipFile(file),
+  '.xlsx': (file) => isZipFile(file),
+  '.txt': (file) => isPlainText(file),
+}
 
 /**
  * Storage interface that can be implemented by different storage backends
@@ -37,12 +67,120 @@ export interface StorageAdapter {
   exists(filePath: string): Promise<boolean>
 }
 
+export class FileValidationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'FileValidationError'
+  }
+}
+
 /**
  * Reject files over the size limit (shared by all adapters).
  */
 function assertWithinSizeLimit(file: Buffer): void {
   if (file.length > MAX_FILE_SIZE) {
-    throw new Error(`File size exceeds maximum allowed size of ${MAX_FILE_SIZE / 1024 / 1024}MB`)
+    throw new FileValidationError(`File size exceeds maximum allowed size of ${MAX_FILE_SIZE / 1024 / 1024}MB`)
+  }
+}
+
+export function assertWithinUploadRequestLimit(contentLength: string | null): void {
+  if (!contentLength) return
+  const size = Number(contentLength)
+  if (!Number.isFinite(size)) return
+  if (size > MAX_UPLOAD_REQUEST_SIZE) {
+    throw new FileValidationError(`Upload request exceeds maximum allowed size of ${MAX_FILE_SIZE / 1024 / 1024}MB`)
+  }
+}
+
+export function sanitizeFileName(originalName: string): string {
+  const basename = path.basename(originalName).replace(/[\0\r\n]/g, '').trim()
+  const originalExt = path.extname(basename)
+  const ext = originalExt.toLowerCase()
+  const stem = path.basename(basename, originalExt)
+  const safeStem = stem
+    .replace(/[^\w .()-]/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120)
+
+  if (!safeStem || !ext) {
+    throw new FileValidationError('File name must include a valid base name and extension')
+  }
+
+  return `${safeStem}${ext}`
+}
+
+export function validateUploadFile(
+  file: Buffer,
+  originalName: string,
+  declaredMimeType?: string | null
+): { fileName: string; mimeType: string } {
+  assertWithinSizeLimit(file)
+
+  if (file.length === 0) {
+    throw new FileValidationError('Uploaded file is empty')
+  }
+
+  const fileName = sanitizeFileName(originalName)
+  const ext = path.extname(fileName).toLowerCase()
+  const expectedMimeType = ALLOWED_FILE_TYPES[ext]
+
+  if (!expectedMimeType) {
+    throw new FileValidationError('File type is not allowed')
+  }
+
+  const normalizedDeclaredType = declaredMimeType?.split(';')[0]?.trim().toLowerCase()
+  if (
+    normalizedDeclaredType &&
+    normalizedDeclaredType !== 'application/octet-stream' &&
+    normalizedDeclaredType !== expectedMimeType
+  ) {
+    throw new FileValidationError('Declared file type does not match the file extension')
+  }
+
+  const hasExpectedSignature = BINARY_SIGNATURES[ext]
+  if (!hasExpectedSignature?.(file)) {
+    throw new FileValidationError('File content does not match the allowed file type')
+  }
+
+  return { fileName, mimeType: expectedMimeType }
+}
+
+function isCompoundFileBinary(file: Buffer): boolean {
+  return file.subarray(0, 8).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]))
+}
+
+function isZipFile(file: Buffer): boolean {
+  return (
+    file.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04])) ||
+    file.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 0x05, 0x06])) ||
+    file.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 0x07, 0x08]))
+  )
+}
+
+function isPlainText(file: Buffer): boolean {
+  if (file.includes(0)) return false
+  try {
+    new TextDecoder('utf-8', { fatal: true }).decode(file)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function sanitizePathSegment(segment: string): string {
+  const safeSegment = segment.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 128)
+  if (!safeSegment) throw new FileValidationError('Invalid storage path segment')
+  return safeSegment
+}
+
+function assertPathInsideRoot(rootPath: string, targetPath: string): void {
+  const resolvedRoot = path.resolve(rootPath)
+  const resolvedPath = path.resolve(targetPath)
+  const relativePath = path.relative(resolvedRoot, resolvedPath)
+
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    throw new Error('Invalid file path: outside storage root')
   }
 }
 
@@ -50,8 +188,9 @@ function assertWithinSizeLimit(file: Buffer): void {
  * Generate a collision-resistant file name from the original (shared by all adapters).
  */
 function generateUniqueFileName(originalName: string): string {
-  const ext = path.extname(originalName)
-  const baseName = path.basename(originalName, ext)
+  const safeName = sanitizeFileName(originalName)
+  const ext = path.extname(safeName)
+  const baseName = path.basename(safeName, ext)
   const timestamp = Date.now()
   const random = randomBytes(4).toString('hex')
   return `${baseName}_${timestamp}_${random}${ext}`
@@ -62,7 +201,8 @@ function generateUniqueFileName(originalName: string): string {
  * Always forward-slashed so it doubles as a GCS object key.
  */
 function permitObjectKey(permitId: string, uniqueFileName: string): string {
-  return `permits/${permitId}/${uniqueFileName}`
+  const safePermitPath = permitId.split('/').map(sanitizePathSegment).join('/')
+  return `permits/${safePermitPath}/${uniqueFileName}`
 }
 
 /**
@@ -96,21 +236,16 @@ class LocalStorageAdapter implements StorageAdapter {
    * @returns Storage path relative to root
    */
   async save(file: Buffer, fileName: string, permitId: string): Promise<string> {
-    assertWithinSizeLimit(file)
-
-    // Create permit-specific directory
-    const permitDir = path.join(this.rootPath, 'permits', permitId)
-    await this.ensureDirectory(permitDir)
-
-    // Generate unique file name
+    validateUploadFile(file, fileName)
     const uniqueFileName = generateUniqueFileName(fileName)
-    const filePath = path.join(permitDir, uniqueFileName)
+    const key = permitObjectKey(permitId, uniqueFileName)
+    const filePath = path.join(this.rootPath, key)
+    assertPathInsideRoot(this.rootPath, filePath)
 
-    // Write file
+    await this.ensureDirectory(path.dirname(filePath))
     await fs.writeFile(filePath, file)
 
-    // Return relative key for database storage
-    return permitObjectKey(permitId, uniqueFileName)
+    return key
   }
 
   /**
@@ -120,13 +255,7 @@ class LocalStorageAdapter implements StorageAdapter {
    */
   async get(filePath: string): Promise<Buffer> {
     const fullPath = path.join(this.rootPath, filePath)
-    
-    // Security: Ensure path is within storage root
-    const resolvedPath = path.resolve(fullPath)
-    const resolvedRoot = path.resolve(this.rootPath)
-    if (!resolvedPath.startsWith(resolvedRoot)) {
-      throw new Error('Invalid file path: outside storage root')
-    }
+    assertPathInsideRoot(this.rootPath, fullPath)
 
     return await fs.readFile(fullPath)
   }
@@ -137,13 +266,7 @@ class LocalStorageAdapter implements StorageAdapter {
    */
   async delete(filePath: string): Promise<void> {
     const fullPath = path.join(this.rootPath, filePath)
-    
-    // Security: Ensure path is within storage root
-    const resolvedPath = path.resolve(fullPath)
-    const resolvedRoot = path.resolve(this.rootPath)
-    if (!resolvedPath.startsWith(resolvedRoot)) {
-      throw new Error('Invalid file path: outside storage root')
-    }
+    assertPathInsideRoot(this.rootPath, fullPath)
 
     try {
       await fs.unlink(fullPath)
@@ -206,7 +329,7 @@ class GcsStorageAdapter implements StorageAdapter {
   }
 
   async save(file: Buffer, fileName: string, permitId: string): Promise<string> {
-    assertWithinSizeLimit(file)
+    validateUploadFile(file, fileName)
     const key = permitObjectKey(permitId, generateUniqueFileName(fileName))
     await this.bucket.file(key).save(file, {
       contentType: getMimeType(fileName),
@@ -251,19 +374,7 @@ export const storage = createStorageAdapter()
  */
 export function getMimeType(fileName: string): string {
   const ext = path.extname(fileName).toLowerCase()
-  const mimeTypes: Record<string, string> = {
-    '.pdf': 'application/pdf',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.png': 'image/png',
-    '.gif': 'image/gif',
-    '.doc': 'application/msword',
-    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    '.xls': 'application/vnd.ms-excel',
-    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    '.txt': 'text/plain',
-  }
-  return mimeTypes[ext] || 'application/octet-stream'
+  return ALLOWED_FILE_TYPES[ext] || 'application/octet-stream'
 }
 
 /**
@@ -274,4 +385,3 @@ export function isPreviewable(fileName: string): boolean {
   const previewableTypes = ['.pdf', '.jpg', '.jpeg', '.png', '.gif']
   return previewableTypes.includes(ext)
 }
-

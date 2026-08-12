@@ -74,7 +74,8 @@ export async function requirePermission(action: Action, resource: Resource) {
  */
 export async function isAdmin(): Promise<boolean> {
   const session = await getSession()
-  return normalizeRole(session?.user?.role) === 'admin'
+  if (!session?.user?.role) return false
+  return normalizeRole(session.user.role) === 'admin'
 }
 
 /**

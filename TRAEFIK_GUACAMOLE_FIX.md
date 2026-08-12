@@ -73,4 +73,4 @@ The Let's Encrypt certificate errors in Traefik logs are expected and harmless:
 
 Once Traefik detects the container, Guacamole should be accessible at:
 - **URL:** `https://guacamole.permitpro.icu`
-- **Default Login:** `guacadmin` / `guacadmin`
+- **Initial Login:** change or disable Guacamole defaults before exposing access

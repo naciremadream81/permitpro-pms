@@ -187,7 +187,6 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
 
   // Review workflow state
   const [sessionRole, setSessionRole] = useState<string>('')
-  const [sessionUserId, setSessionUserId] = useState<string>('')
   const [reviewAssignments, setReviewAssignments] = useState<ReviewAssignment[]>([])
   const [reviewers, setReviewers] = useState<ReviewUser[]>([])
   const [reviewBusy, setReviewBusy] = useState(false)
@@ -311,7 +310,6 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
       .then((r) => (r.ok ? r.json() : null))
       .then((s) => {
         setSessionRole(s?.user?.role ?? '')
-        setSessionUserId(s?.user?.id ?? '')
       })
       .catch(() => {})
     fetch('/api/users', { credentials: 'include' })
@@ -1572,4 +1570,3 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
     </div>
   )
 }
-

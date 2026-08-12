@@ -17,13 +17,13 @@ Ran the Guacamole database initialization script to create all required tables:
 
 ```bash
 docker compose --profile guacamole run --rm guacamole-init | \
-  docker compose exec -T guacamole-db mysql -u guacamole_user -pchange-this-password guacamole_db
+  docker compose exec -T guacamole-db mysql -u guacamole_user -p$GUACAMOLE_DB_PASSWORD guacamole_db
 ```
 
 This:
 1. Generates the SQL schema from the Guacamole image
 2. Pipes it directly to MySQL to execute
-3. Creates all required tables and the default `guacadmin` user
+3. Creates all required tables and the default initial admin user
 
 ## Default Credentials
 
@@ -39,10 +39,10 @@ To verify the database is initialized:
 
 ```bash
 # Check tables exist
-docker compose exec guacamole-db mysql -u guacamole_user -pchange-this-password guacamole_db -e "SHOW TABLES;"
+docker compose exec guacamole-db mysql -u guacamole_user -p$GUACAMOLE_DB_PASSWORD guacamole_db -e "SHOW TABLES;"
 
 # Check default user exists
-docker compose exec guacamole-db mysql -u guacamole_user -pchange-this-password guacamole_db -e "SELECT username FROM guacamole_user JOIN guacamole_entity ON guacamole_user.entity_id = guacamole_entity.entity_id WHERE guacamole_entity.type = 'USER';"
+docker compose exec guacamole-db mysql -u guacamole_user -p$GUACAMOLE_DB_PASSWORD guacamole_db -e "SELECT username FROM guacamole_user JOIN guacamole_entity ON guacamole_user.entity_id = guacamole_entity.entity_id WHERE guacamole_entity.type = 'USER';"
 ```
 
 ## If You Need to Re-initialize
@@ -52,19 +52,19 @@ If you need to start fresh:
 1. **Backup any existing data first!**
 2. **Drop and recreate the database:**
    ```bash
-   docker compose exec guacamole-db mysql -u root -pchange-root-password -e "DROP DATABASE guacamole_db; CREATE DATABASE guacamole_db;"
+   docker compose exec guacamole-db mysql -u root -p$GUACAMOLE_DB_ROOT_PASSWORD -e "DROP DATABASE guacamole_db; CREATE DATABASE guacamole_db;"
    ```
 3. **Re-run initialization:**
    ```bash
    docker compose --profile guacamole run --rm guacamole-init | \
-     docker compose exec -T guacamole-db mysql -u guacamole_user -pchange-this-password guacamole_db
+     docker compose exec -T guacamole-db mysql -u guacamole_user -p$GUACAMOLE_DB_PASSWORD guacamole_db
    ```
 
 ## Next Steps
 
 1. **Log in to Guacamole:**
    - Visit: `https://guacamole.permitpro.icu`
-   - Use: `guacadmin` / `guacadmin`
+   - Use the initial admin only for first-run setup, then change or disable it before exposing access.
 
 2. **Change the default password:**
    - Go to Settings → Preferences → Change Password

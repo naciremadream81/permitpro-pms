@@ -88,7 +88,7 @@ All services route through Traefik on port 80 (HTTP):
 
 3. **Access Guacamole:**
    - Open: `https://guacamole.permitpro.icu`
-   - Default credentials: `guacadmin` / `guacadmin`
+   - Initial Guacamole admin is created by initdb; change or disable it before exposing access
    - **⚠️ Change password immediately!**
 
 4. **Check Cloudflare tunnel logs:**

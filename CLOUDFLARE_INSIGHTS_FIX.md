@@ -74,7 +74,7 @@ To verify Guacamole is working correctly:
 
 1. **Check if you can log in:**
    - Visit: `https://guacamole.permitpro.icu`
-   - Default credentials: `guacadmin` / `guacadmin`
+   - Initial Guacamole admin is created by initdb; change or disable it before exposing access
    - If login works, everything is fine!
 
 2. **Test a connection:**
