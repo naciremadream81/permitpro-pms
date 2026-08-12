@@ -109,31 +109,42 @@ export async function PATCH(
       data.targetIssueDate = new Date(validatedData.targetIssueDate)
     }
 
-    // Update permit package
-    const permitPackage = await prisma.permitPackage.update({
-      where: { id: params.id },
-      data,
-      include: {
-        customer: {
-          select: { id: true, name: true },
-        },
-        contractor: {
-          select: { id: true, companyName: true },
-        },
-      },
-    })
-
     // Jurisdiction / permit type changes must resync checklist items. Without this,
     // ReadyToSubmit can pass with an empty or stale checklist after a type switch.
+    // Run update + sync in one transaction: a failed sync after deleteMany otherwise
+    // leaves a wiped checklist, and retrying the same type skips sync entirely.
     const jurisdictionChanged =
       validatedData.jurisdictionId !== undefined &&
       validatedData.jurisdictionId !== currentPermit.jurisdictionId
     const permitTypeChanged =
       validatedData.permitType !== undefined &&
       validatedData.permitType !== currentPermit.permitType
-    if (jurisdictionChanged || permitTypeChanged) {
-      await syncChecklist(params.id)
-    }
+
+    const includeRelations = {
+      customer: {
+        select: { id: true, name: true },
+      },
+      contractor: {
+        select: { id: true, companyName: true },
+      },
+    } as const
+
+    const permitPackage =
+      jurisdictionChanged || permitTypeChanged
+        ? await prisma.$transaction(async (tx) => {
+            const updated = await tx.permitPackage.update({
+              where: { id: params.id },
+              data,
+              include: includeRelations,
+            })
+            await syncChecklist(params.id, tx)
+            return updated
+          })
+        : await prisma.permitPackage.update({
+            where: { id: params.id },
+            data,
+            include: includeRelations,
+          })
 
     // Log status changes
     if (validatedData.status && validatedData.status !== currentPermit.status) {

@@ -237,3 +237,23 @@ describe('storage get/delete use path.relative containment', () => {
     assert.match(deleteFn, /resolveWithinRoot/)
   })
 })
+
+describe('permit type/jurisdiction change syncs checklist atomically', () => {
+  it('runs permit update and syncChecklist inside the same transaction', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/permits/[id]/route.ts'),
+      'utf8'
+    )
+    assert.match(source, /\$transaction/)
+    assert.match(source, /syncChecklist\(params\.id,\s*tx\)/)
+  })
+
+  it('syncChecklist uses an explicit empty-applicable delete and a transaction by default', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/checklist-engine.ts'),
+      'utf8'
+    )
+    assert.match(source, /applicableIds\.size === 0/)
+    assert.match(source, /\$transaction/)
+  })
+})
