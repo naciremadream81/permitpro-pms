@@ -213,3 +213,27 @@ describe('status route enforces package update permission', () => {
     assert.match(source, /enforce\(role, 'update', 'package'\)/)
   })
 })
+
+describe('storage get/delete use path.relative containment', () => {
+  it('does not use startsWith for root checks on get/delete', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/storage.ts'),
+      'utf8'
+    )
+    assert.match(source, /resolveWithinRoot/)
+    assert.match(source, /path\.relative/)
+    // Prefix startsWith allows /storage-evil when root is /storage
+    const getFn = source.slice(
+      source.indexOf('async get(filePath'),
+      source.indexOf('async delete(filePath')
+    )
+    const deleteFn = source.slice(
+      source.indexOf('async delete(filePath'),
+      source.indexOf('async exists(filePath')
+    )
+    assert.doesNotMatch(getFn, /startsWith/)
+    assert.doesNotMatch(deleteFn, /startsWith/)
+    assert.match(getFn, /resolveWithinRoot/)
+    assert.match(deleteFn, /resolveWithinRoot/)
+  })
+})
