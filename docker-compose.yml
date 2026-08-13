@@ -67,92 +67,6 @@ services:
     networks:
       - traefik-network
 
-  # Guacamole Server - Browser-based remote desktop gateway
-  # NOTE: Official Guacamole images only support AMD64. For ARM64, see guacamole/README.md
-  guacamole:
-    image: guacamole/guacamole:1.6.0
-    platform: linux/amd64  # Uncomment for ARM64 systems (requires QEMU emulation)
-    container_name: guacamole
-    restart: unless-stopped
-    environment:
-      - GUACD_HOSTNAME=guacd
-      - GUACD_PORT=4822
-      - MYSQL_HOSTNAME=guacamole-db
-      - MYSQL_DATABASE=guacamole_db
-      - MYSQL_USERNAME=guacamole_user
-      - MYSQL_PASSWORD=${GUACAMOLE_DB_PASSWORD}
-    networks:
-      - traefik-network
-    depends_on:
-      - guacd
-      - guacamole-db
-    labels:
-      - "traefik.enable=true"
-      # Guacamole - protected by a default-deny Traefik allowlist
-      - "traefik.http.routers.guacamole.rule=Host(`guacamole.permitpro.icu`)"
-      - "traefik.http.routers.guacamole.entrypoints=web"
-      - "traefik.http.routers.guacamole.middlewares=guacamole-allowlist"
-      - "traefik.http.middlewares.guacamole-allowlist.ipallowlist.sourcerange=${TRAEFIK_TOOLS_ALLOWED_IPS:-127.0.0.1/32}"
-      - "traefik.http.services.guacamole.loadbalancer.server.port=8080"
-    profiles:
-      - guacamole  # Disabled by default - use --profile guacamole to enable
-
-  # Guacamole Daemon - Handles remote desktop connections
-  # NOTE: Official Guacamole images only support AMD64
-  guacd:
-    image: guacamole/guacd:1.6.0
-    platform: linux/amd64  # Uncomment for ARM64 systems (requires QEMU emulation)
-    container_name: guacd
-    restart: unless-stopped
-    networks:
-      - traefik-network
-    profiles:
-      - guacamole  # Disabled by default - use --profile guacamole to enable
-
-  # MySQL Database for Guacamole
-  guacamole-db:
-    image: mysql:8.0
-    container_name: guacamole-db
-    restart: unless-stopped
-    environment:
-      - MYSQL_ROOT_PASSWORD=${GUACAMOLE_DB_ROOT_PASSWORD}
-      - MYSQL_DATABASE=guacamole_db
-      - MYSQL_USER=guacamole_user
-      - MYSQL_PASSWORD=${GUACAMOLE_DB_PASSWORD}
-    volumes:
-      - guacamole-db-data:/var/lib/mysql
-    networks:
-      - traefik-network
-    command: --default-authentication-plugin=mysql_native_password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${GUACAMOLE_DB_ROOT_PASSWORD}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    profiles:
-      - guacamole  # Use profiles to enable only when needed
-
-  # Guacamole Database Initialization (runs once on first startup)
-  # NOTE: Official Guacamole images only support AMD64
-  guacamole-init:
-    image: guacamole/guacamole:1.6.0
-    platform: linux/amd64  # Uncomment to use emulation on ARM64 (slower)
-    container_name: guacamole-init
-    restart: "no"
-    command: /opt/guacamole/bin/initdb.sh --mysql
-    environment:
-      - MYSQL_HOSTNAME=guacamole-db
-      - MYSQL_DATABASE=guacamole_db
-      - MYSQL_USERNAME=guacamole_user
-      - MYSQL_PASSWORD=${GUACAMOLE_DB_PASSWORD}
-    networks:
-      - traefik-network
-    depends_on:
-      guacamole-db:
-        condition: service_healthy
-    profiles:
-      - guacamole  # Use profiles to enable only when needed
-
   # n8n - Workflow automation tool
   n8n:
     image: n8nio/n8n:2.34.4
@@ -228,8 +142,6 @@ services:
 
 volumes:
   permitpro-data:
-    driver: local
-  guacamole-db-data:
     driver: local
   n8n-data:
     driver: local

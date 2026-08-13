@@ -17,7 +17,6 @@ const eslintConfig = [
       '.claude/**',
       'node_modules/**',
       'lib/generated/**',
-      'guacamole/**',
     ],
   },
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
