@@ -18,6 +18,9 @@
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
+  "overrides": {
+    "sharp@<0.35.0": "0.35.0"
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^6.9.0",
@@ -39,7 +42,7 @@
     "react-dom": "^18",
     "react-hook-form": "^7.69.0",
     "tailwind-merge": "^3.4.0",
-    "zod": "^4.3.4"
+    "zod": "^4.4.0"
   },
   "devDependencies": {
     "@types/node": "^20",
