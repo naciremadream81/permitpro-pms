@@ -14,10 +14,8 @@ import { randomBytes } from 'crypto'
 import { handleApiError, requirePermission, validateUploadedFile } from '@/lib/api-security'
 
 // GET /api/permits/[id]/documents - List all documents for a permit
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -71,10 +69,8 @@ export async function GET(
 }
 
 // POST /api/permits/[id]/documents - Upload a new document
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()

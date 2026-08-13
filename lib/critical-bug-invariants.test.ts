@@ -213,3 +213,24 @@ describe('status route enforces package update permission', () => {
     assert.match(source, /enforce\(role, 'update', 'package'\)/)
   })
 })
+
+describe('Next 15 async request params', () => {
+  it('permit write routes type params as Promise and await them', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/permits/[id]/route.ts'),
+      'utf8'
+    )
+    assert.match(source, /params:\s*Promise<\{ id: string \}>/)
+    assert.match(source, /await props\.params/)
+    assert.doesNotMatch(source, /params:\s*\{\s*id:\s*string\s*\}/)
+  })
+
+  it('permit list page awaits Promise searchParams', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/permits/page.tsx'),
+      'utf8'
+    )
+    assert.match(source, /searchParams:\s*Promise</)
+    assert.match(source, /await props\.searchParams/)
+  })
+})

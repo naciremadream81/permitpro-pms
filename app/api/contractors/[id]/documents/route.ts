@@ -11,10 +11,8 @@ import { contractorDocumentSchema } from '@/lib/validations'
 import { handleApiError, requirePermission, validateUploadedFile } from '@/lib/api-security'
 
 // GET /api/contractors/[id]/documents
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -51,10 +49,8 @@ export async function GET(
 }
 
 // POST /api/contractors/[id]/documents — upload a contractor compliance document
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

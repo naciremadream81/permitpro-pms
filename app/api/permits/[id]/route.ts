@@ -13,10 +13,8 @@ import { Prisma } from '@prisma/client'
 import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // GET /api/permits/[id] - Get permit by ID with all related data
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -65,10 +63,8 @@ export async function GET(
 }
 
 // PATCH /api/permits/[id] - Update permit
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -169,10 +165,8 @@ export async function PATCH(
 }
 
 // DELETE /api/permits/[id] - Delete permit
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
