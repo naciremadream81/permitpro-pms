@@ -43,9 +43,10 @@ async function getCustomers(searchParams: { [key: string]: string | string[] | u
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  const data = await getCustomers(searchParams)
+  const resolvedSearchParams = await searchParams
+  const data = await getCustomers(resolvedSearchParams)
 
   return (
     <AppLayout>
@@ -68,10 +69,10 @@ export default async function CustomersPage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="px-4 py-2 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-muted">Name</th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-muted">Contact</th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-muted">Email</th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-muted">Phone</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Name</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Contact</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Email</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Phone</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -98,4 +99,3 @@ export default async function CustomersPage({
     </AppLayout>
   )
 }
-

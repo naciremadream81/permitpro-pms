@@ -13,7 +13,7 @@ import { Prisma } from '@/lib/generated/prisma'
 // GET /api/customers/[id] - Get customer by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -23,7 +23,7 @@ export async function GET(
     }
 
     const customer = await prisma.customer.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: {
         permitPackages: {
           include: {
@@ -56,7 +56,7 @@ export async function GET(
 // PATCH /api/customers/[id] - Update customer
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -72,7 +72,7 @@ export async function PATCH(
 
     // Update customer
     const customer = await prisma.customer.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: validatedData,
     })
 
@@ -98,7 +98,7 @@ export async function PATCH(
 // DELETE /api/customers/[id] - Delete customer
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -109,7 +109,7 @@ export async function DELETE(
 
     // Check if customer has permit packages
     const permitCount = await prisma.permitPackage.count({
-      where: { customerId: params.id },
+      where: { customerId: (await params).id },
     })
 
     if (permitCount > 0) {
@@ -120,7 +120,7 @@ export async function DELETE(
     }
 
     await prisma.customer.delete({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     return NextResponse.json({ message: 'Customer deleted successfully' })

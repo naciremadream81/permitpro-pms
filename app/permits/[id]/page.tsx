@@ -46,9 +46,10 @@ async function getPermit(id: string) {
 export default async function PermitDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const permit = await getPermit(params.id)
+  const { id } = await params
+  const permit = await getPermit(id)
 
   if (!permit) {
     notFound()

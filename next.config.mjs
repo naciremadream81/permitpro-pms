@@ -1,13 +1,33 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  eslint: {
-    // Don't run ESLint during `next build` (App Hosting / Cloud Build). The
-    // generated Prisma client lives in-tree at lib/generated/prisma and is
-    // minified code that trips thousands of lint rules, which would fail the
-    // production build. Type-checking (tsc) still runs; lint is for `npm run
-    // lint` / CI, not the deploy build.
-    ignoreDuringBuilds: true,
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'none'",
+              "img-src 'self' data: blob:",
+              "font-src 'self' data:",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline'",
+              "connect-src 'self'",
+            ].join('; '),
+          },
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+        ],
+      },
+    ];
   },
   webpack: (config, { isServer }) => {
     if (isServer) {

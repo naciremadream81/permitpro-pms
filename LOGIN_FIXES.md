@@ -19,8 +19,8 @@
 - Created database directory with correct permissions
 - Ran Prisma migrations
 - Created test users:
-  - `admin@permitco.com` / `admin123`
-  - `user@permitco.com` / `user123`
+  - `admin@permitco.com` with the generated seed password
+  - `coordinator@permitco.com` with the generated seed password
 
 ## Current Status
 
@@ -35,8 +35,8 @@
 1. **Go to:** `https://permitpro.permitpro.icu` (or your domain)
 2. **You should see:** Login page
 3. **Try logging in with:**
-   - Admin: `admin@permitco.com` / `admin123`
-   - User: `user@permitco.com` / `user123`
+   - Admin: `admin@permitco.com` with the generated seed password
+   - User: `coordinator@permitco.com` with the generated seed password
 
 ## Pages That Need Authentication Checks
 

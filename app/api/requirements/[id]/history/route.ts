@@ -9,14 +9,14 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const logs = await prisma.requirementChangeLog.findMany({
-      where: { requirementId: params.id },
+      where: { requirementId: (await params).id },
       orderBy: { createdAt: 'desc' },
       include: {
         seedBatch: {

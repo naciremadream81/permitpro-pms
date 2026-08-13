@@ -16,9 +16,9 @@ import Link from 'next/link'
 const STALL_DAYS = 3
 
 const thClass =
-  'px-4 py-2 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-muted'
+  'px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted'
 const tdLinkClass =
-  'text-[12px] font-bold tracking-[0.06em] text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+  'text-xs font-bold tracking-[0.06em] text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
 function buildPermitsQuery(
   searchParams: { [key: string]: string | string[] | undefined },
@@ -123,17 +123,18 @@ async function getPermits(searchParams: { [key: string]: string | string[] | und
 export default async function PermitsPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  const data = await getPermits(searchParams)
+  const resolvedSearchParams = await searchParams
+  const data = await getPermits(resolvedSearchParams)
   const stalledFilter =
-    searchParams.stalled === '1' ||
-    searchParams.stalled === 'true'
+    resolvedSearchParams.stalled === '1' ||
+    resolvedSearchParams.stalled === 'true'
   const statusFilter =
-    typeof searchParams.status === 'string' && searchParams.status.length > 0
-      ? searchParams.status
+    typeof resolvedSearchParams.status === 'string' && resolvedSearchParams.status.length > 0
+      ? resolvedSearchParams.status
       : undefined
-  const courtParam = typeof searchParams.court === 'string' ? searchParams.court : undefined
+  const courtParam = typeof resolvedSearchParams.court === 'string' ? resolvedSearchParams.court : undefined
   const courtFilter = !statusFilter && !stalledFilter && isCourt(courtParam) ? courtParam : undefined
 
   return (
@@ -171,7 +172,7 @@ export default async function PermitsPage({
             type="search"
             name="search"
             placeholder="Search permit no., address, customer…"
-            defaultValue={typeof searchParams.search === 'string' ? searchParams.search : ''}
+            defaultValue={typeof resolvedSearchParams.search === 'string' ? resolvedSearchParams.search : ''}
             className="pp-input flex-1"
           />
           <label htmlFor="permits-status" className="sr-only">
@@ -199,7 +200,7 @@ export default async function PermitsPage({
         {courtFilter && (
           <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border py-2.5 text-sm">
             <span className="flex items-baseline gap-3">
-              <span className={`border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] ${COURT_META[courtFilter].textClass} border-current`}>
+              <span className={`border px-2 py-0.5 text-xs font-bold uppercase tracking-[0.1em] ${COURT_META[courtFilter].textClass} border-current`}>
                 {COURT_META[courtFilter].label}
               </span>
               <span className="text-ink">
@@ -221,8 +222,8 @@ export default async function PermitsPage({
               <span
                 className={
                   stalledFilter
-                    ? 'border border-urgent px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-urgent'
-                    : 'border border-ink px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-ink'
+                    ? 'border border-urgent px-2 py-0.5 text-xs font-bold uppercase tracking-[0.1em] text-urgent'
+                    : 'border border-ink px-2 py-0.5 text-xs font-bold uppercase tracking-[0.1em] text-ink'
                 }
               >
                 {stalledFilter ? 'Stalled' : 'Filtered'}
@@ -304,20 +305,20 @@ export default async function PermitsPage({
           </div>
 
           <div className="mt-0 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted">
               Page {data.page} of {Math.max(data.totalPages, 1)}
             </p>
             {data.totalPages > 1 && (
               <div className="flex gap-2">
                 {data.page > 1 && (
-                  <Link href={buildPermitsQuery(searchParams, { page: data.page - 1 })}>
+                  <Link href={buildPermitsQuery(resolvedSearchParams, { page: data.page - 1 })}>
                     <Button variant="outline" size="sm">
                       ← Previous
                     </Button>
                   </Link>
                 )}
                 {data.page < data.totalPages && (
-                  <Link href={buildPermitsQuery(searchParams, { page: data.page + 1 })}>
+                  <Link href={buildPermitsQuery(resolvedSearchParams, { page: data.page + 1 })}>
                     <Button variant="outline" size="sm">
                       Next →
                     </Button>

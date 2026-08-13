@@ -28,7 +28,7 @@ A comprehensive web application for permit coordination and document management,
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
 - **UI**: TailwindCSS + Custom Components
 - **Database**: Prisma + SQLite (dev) / Postgres (production)
@@ -40,7 +40,7 @@ A comprehensive web application for permit coordination and document management,
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 20.9+
 - npm or yarn
 - SQLite (included with Node.js)
 
@@ -77,8 +77,7 @@ npm run dev
 Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
 **Demo Login Credentials:**
-- **Admin**: admin@permitco.com / admin123
-- **User**: user@permitco.com / user123
+The seed command prints generated development passwords when it finishes. To use known local-only credentials, set `SEED_ADMIN_PASSWORD` and `SEED_COORDINATOR_PASSWORD` before running the seed.
 
 ### Manual Setup (Alternative)
 
@@ -141,7 +140,7 @@ npm run db:seed
 ```
 
 This will create:
-- 2 users (admin@permitco.com / admin123, user@permitco.com / user123)
+- 2 users with generated development passwords
 - 5 customers
 - 5 contractors
 - 10 permit packages with various statuses
@@ -157,9 +156,7 @@ npm run dev
 
 Navigate to [http://localhost:3000](http://localhost:3000)
 
-You'll be redirected to the login page. Use the demo credentials:
-- **Admin**: admin@permitco.com / admin123
-- **User**: user@permitco.com / user123
+You'll be redirected to the login page. Use the generated demo credentials printed by the seed command.
 
 ## Project Structure
 

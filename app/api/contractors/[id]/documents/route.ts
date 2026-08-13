@@ -6,24 +6,29 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession, ForbiddenError } from '@/lib/auth-helpers'
 import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
-import { storage } from '@/lib/storage'
+import {
+  assertWithinUploadRequestLimit,
+  FileValidationError,
+  storage,
+  validateUploadFile,
+} from '@/lib/storage'
 import { contractorDocumentSchema } from '@/lib/validations'
 
 // GET /api/contractors/[id]/documents
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const contractor = await prisma.contractor.findUnique({ where: { id: params.id } })
+    const contractor = await prisma.contractor.findUnique({ where: { id: (await params).id } })
     if (!contractor)
       return NextResponse.json({ error: 'Contractor not found' }, { status: 404 })
 
     const documents = await prisma.contractorDocument.findMany({
-      where: { contractorId: params.id },
+      where: { contractorId: (await params).id },
       orderBy: [{ type: 'asc' }, { uploadedAt: 'desc' }],
     })
 
@@ -52,16 +57,18 @@ export async function GET(
 // POST /api/contractors/[id]/documents — upload a contractor compliance document
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     enforce(normalizeRole(session.user?.role), 'create', 'contractor_document')
 
-    const contractor = await prisma.contractor.findUnique({ where: { id: params.id } })
+    const contractor = await prisma.contractor.findUnique({ where: { id: (await params).id } })
     if (!contractor)
       return NextResponse.json({ error: 'Contractor not found' }, { status: 404 })
+
+    assertWithinUploadRequestLimit(request.headers.get('content-length'))
 
     const formData = await request.formData()
     const file = formData.get('file') as File | null
@@ -83,13 +90,14 @@ export async function POST(
     })
 
     const buffer = Buffer.from(await file.arrayBuffer())
+    const validatedFile = validateUploadFile(buffer, file.name, file.type)
     // Store under a contractor sub-path
-    const storagePath = await storage.save(buffer, file.name, `contractors/${params.id}`)
+    const storagePath = await storage.save(buffer, validatedFile.fileName, `contractors/${(await params).id}`)
 
     // Mark previous documents of the same type as superseded
     await prisma.contractorDocument.updateMany({
       where: {
-        contractorId: params.id,
+        contractorId: (await params).id,
         type: validated.type,
         isSuperseded: false,
       },
@@ -98,7 +106,7 @@ export async function POST(
 
     const document = await prisma.contractorDocument.create({
       data: {
-        contractorId: params.id,
+        contractorId: (await params).id,
         type: validated.type,
         documentName: validated.documentName,
         storagePath,
@@ -116,13 +124,13 @@ export async function POST(
     // Sync legacy expiry fields on contractor for backward compat
     if (validated.type === 'WORKERS_COMP' && validated.expirationDate) {
       await prisma.contractor.update({
-        where: { id: params.id },
+        where: { id: (await params).id },
         data: { workersCompExpirationDate: new Date(validated.expirationDate) },
       })
     }
     if (validated.type === 'LIABILITY' && validated.expirationDate) {
       await prisma.contractor.update({
-        where: { id: params.id },
+        where: { id: (await params).id },
         data: { liabilityExpirationDate: new Date(validated.expirationDate) },
       })
     }
@@ -133,6 +141,8 @@ export async function POST(
       return NextResponse.json({ error: error.message }, { status: 403 })
     if (error instanceof Error && error.name === 'ZodError')
       return NextResponse.json({ error: 'Validation error', details: error }, { status: 400 })
+    if (error instanceof FileValidationError)
+      return NextResponse.json({ error: error.message }, { status: 400 })
     console.error('POST /api/contractors/[id]/documents:', error)
     return NextResponse.json({ error: 'Failed to upload contractor document' }, { status: 500 })
   }

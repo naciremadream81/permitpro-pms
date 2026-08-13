@@ -14,7 +14,7 @@ import { syncChecklist } from '@/lib/checklist-engine'
 // GET /api/permits/[id] - Get permit by ID with all related data
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -24,7 +24,7 @@ export async function GET(
     }
 
     const permitPackage = await prisma.permitPackage.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: {
         customer: true,
         contractor: true,
@@ -70,7 +70,7 @@ export async function GET(
 // PATCH /api/permits/[id] - Update permit
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -86,7 +86,7 @@ export async function PATCH(
 
     // Get current permit to track changes
     const currentPermit = await prisma.permitPackage.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!currentPermit) {
@@ -120,7 +120,7 @@ export async function PATCH(
 
     // Update permit package
     const permitPackage = await prisma.permitPackage.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data,
       include: {
         customer: {
@@ -136,7 +136,7 @@ export async function PATCH(
     // syncChecklist adds newly-applicable items and prunes only stale PENDING
     // ones — verified/waived progress is preserved.
     if (jurisdictionChanged) {
-      const result = await syncChecklist(params.id)
+      const result = await syncChecklist((await params).id)
       await prisma.activityLog.create({
         data: {
           permitPackageId: permitPackage.id,
@@ -200,7 +200,7 @@ export async function PATCH(
 // DELETE /api/permits/[id] - Delete permit
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -210,7 +210,7 @@ export async function DELETE(
     }
 
     await prisma.permitPackage.delete({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     return NextResponse.json({ message: 'Permit deleted successfully' })

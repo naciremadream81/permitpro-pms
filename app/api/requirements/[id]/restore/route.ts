@@ -13,7 +13,7 @@ import { DocumentCategory } from '@/lib/generated/prisma'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
@@ -31,7 +31,7 @@ export async function POST(
     const log = await prisma.requirementChangeLog.findUnique({
       where: { id: changeLogId },
     })
-    if (!log || log.requirementId !== params.id)
+    if (!log || log.requirementId !== (await params).id)
       return NextResponse.json({ error: 'Change log entry not found' }, { status: 404 })
 
     let snapshot: Record<string, unknown>
@@ -43,13 +43,13 @@ export async function POST(
 
     // Get current state before overwriting (for the new log entry)
     const current = await prisma.requirement.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
     if (!current) return NextResponse.json({ error: 'Requirement not found' }, { status: 404 })
 
     // Restore — only restore editable fields, never id/createdAt/jurisdictionId
     const restored = await prisma.requirement.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: {
         documentName:            snapshot.documentName as string,
         documentCategory:        snapshot.documentCategory as DocumentCategory,
@@ -66,7 +66,7 @@ export async function POST(
     // Log the restore action
     await prisma.requirementChangeLog.create({
       data: {
-        requirementId: params.id,
+        requirementId: (await params).id,
         changedBy:     session.user.id as string,
         action:        'RESTORED',
         fieldName:     null,

@@ -7,12 +7,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
-import { storage, isPreviewable } from '@/lib/storage'
+import { isPreviewable, sanitizeFileName, storage } from '@/lib/storage'
 
 // GET /api/documents/[id]/preview - Preview document (for PDFs and images)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -22,7 +22,7 @@ export async function GET(
     }
 
     const document = await prisma.permitDocument.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!document) {
@@ -39,13 +39,15 @@ export async function GET(
 
     // Get file from storage
     const fileBuffer = await storage.get(document.storagePath)
+    const fileName = sanitizeFileName(document.fileName)
 
     // Return file with appropriate headers for inline viewing
     return new NextResponse(fileBuffer as unknown as BodyInit, {
       headers: {
         'Content-Type': document.fileType,
-        'Content-Disposition': `inline; filename="${document.fileName}"`,
+        'Content-Disposition': `inline; filename="${fileName}"`,
         'Content-Length': document.fileSize.toString(),
+        'X-Content-Type-Options': 'nosniff',
       },
     })
   } catch (error) {
@@ -56,4 +58,3 @@ export async function GET(
     )
   }
 }
-

@@ -10,14 +10,14 @@ import { jurisdictionUpdateSchema } from '@/lib/validations'
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const jurisdiction = await prisma.jurisdiction.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: {
         requirements: {
           where: { isActive: true },
@@ -40,7 +40,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
@@ -51,7 +51,7 @@ export async function PATCH(
     const data = jurisdictionUpdateSchema.parse(body)
 
     const jurisdiction = await prisma.jurisdiction.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data,
     })
 
@@ -68,7 +68,7 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
@@ -77,7 +77,7 @@ export async function DELETE(
 
     // Prevent deletion if packages are linked
     const packageCount = await prisma.permitPackage.count({
-      where: { jurisdictionId: params.id },
+      where: { jurisdictionId: (await params).id },
     })
     if (packageCount > 0) {
       return NextResponse.json(
@@ -86,7 +86,7 @@ export async function DELETE(
       )
     }
 
-    await prisma.jurisdiction.delete({ where: { id: params.id } })
+    await prisma.jurisdiction.delete({ where: { id: (await params).id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     if (error instanceof ForbiddenError)

@@ -8,14 +8,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
-import { storage, getMimeType } from '@/lib/storage'
+import {
+  assertWithinUploadRequestLimit,
+  FileValidationError,
+  storage,
+  validateUploadFile,
+} from '@/lib/storage'
 import { documentCategoryEnum } from '@/lib/validations'
 import { randomBytes } from 'crypto'
 
 // GET /api/permits/[id]/documents - List all documents for a permit
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -26,7 +31,7 @@ export async function GET(
 
     // Verify permit exists
     const permit = await prisma.permitPackage.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!permit) {
@@ -34,7 +39,7 @@ export async function GET(
     }
 
     const documents = await prisma.permitDocument.findMany({
-      where: { permitPackageId: params.id },
+      where: { permitPackageId: (await params).id },
       include: {
         uploadedByUser: {
           select: { id: true, name: true, email: true },
@@ -75,7 +80,7 @@ export async function GET(
 // POST /api/permits/[id]/documents - Upload a new document
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -86,12 +91,14 @@ export async function POST(
 
     // Verify permit exists
     const permit = await prisma.permitPackage.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!permit) {
       return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
     }
+
+    assertWithinUploadRequestLimit(request.headers.get('content-length'))
 
     // Parse form data
     const formData = await request.formData()
@@ -112,9 +119,10 @@ export async function POST(
     // Convert file to buffer
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
+    const validatedFile = validateUploadFile(buffer, file.name, file.type)
 
     // Save file to storage
-    const storagePath = await storage.save(buffer, file.name, params.id)
+    const storagePath = await storage.save(buffer, validatedFile.fileName, (await params).id)
 
     // Generate version group ID if this is a new version
     let versionGroupId: string | undefined
@@ -130,8 +138,8 @@ export async function POST(
     // Determine version tag
     const existingVersions = await prisma.permitDocument.count({
       where: {
-        permitPackageId: params.id,
-        fileName: file.name,
+        permitPackageId: (await params).id,
+        fileName: validatedFile.fileName,
         category: validatedCategory,
       },
     })
@@ -140,9 +148,9 @@ export async function POST(
     // Create document record
     const document = await prisma.permitDocument.create({
       data: {
-        permitPackageId: params.id,
-        fileName: file.name,
-        fileType: getMimeType(file.name),
+        permitPackageId: (await params).id,
+        fileName: validatedFile.fileName,
+        fileType: validatedFile.mimeType,
         category: validatedCategory,
         uploadedBy: session.user.id,
         notes: notes || undefined,
@@ -163,10 +171,10 @@ export async function POST(
     // Create activity log entry
     await prisma.activityLog.create({
       data: {
-        permitPackageId: params.id,
+        permitPackageId: (await params).id,
         userId: session.user.id,
         activityType: 'DocumentUploaded',
-        description: `Document "${file.name}" uploaded (${validatedCategory})`,
+        description: `Document "${validatedFile.fileName}" uploaded (${validatedCategory})`,
       },
     })
 
@@ -177,6 +185,9 @@ export async function POST(
         { error: 'Validation error', details: error },
         { status: 400 }
       )
+    }
+    if (error instanceof FileValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
     }
     // Enhanced error logging for debugging
     console.error('Error uploading document:', error)
@@ -194,4 +205,3 @@ export async function POST(
     )
   }
 }
-

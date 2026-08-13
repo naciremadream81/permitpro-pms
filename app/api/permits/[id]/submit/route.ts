@@ -13,7 +13,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
@@ -21,7 +21,7 @@ export async function POST(
 
     enforce(normalizeRole(session.user?.role), 'submit_review', 'package')
 
-    const permit = await prisma.permitPackage.findUnique({ where: { id: params.id } })
+    const permit = await prisma.permitPackage.findUnique({ where: { id: (await params).id } })
     if (!permit) return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
 
     // Only packages that passed internal review (Ready to Submit) can be submitted.
@@ -33,7 +33,7 @@ export async function POST(
     }
 
     const updated = await prisma.permitPackage.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: {
         status: 'Submitted',
         internalStage: 'WaitingOnCounty',
@@ -43,7 +43,7 @@ export async function POST(
 
     await prisma.activityLog.create({
       data: {
-        permitPackageId: params.id,
+        permitPackageId: (await params).id,
         userId: session.user.id,
         activityType: 'StatusChange',
         description: `Status changed from ${permit.status} to Submitted (submitted to county)`,

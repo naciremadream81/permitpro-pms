@@ -34,9 +34,10 @@ async function getContractor(id: string) {
 export default async function ContractorDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const contractor = await getContractor(params.id)
+  const { id } = await params
+  const contractor = await getContractor(id)
 
   if (!contractor) {
     notFound()
@@ -64,4 +65,3 @@ export default async function ContractorDetailPage({
     </AppLayout>
   )
 }
-

@@ -10,7 +10,7 @@ import { reviewCommentUpdateSchema } from '@/lib/validations'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
@@ -21,7 +21,7 @@ export async function PATCH(
     const { isResolved } = reviewCommentUpdateSchema.parse(body)
 
     const comment = await prisma.reviewComment.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: {
         isResolved,
         resolvedBy: isResolved ? session.user.id : null,
@@ -38,7 +38,7 @@ export async function PATCH(
         userId: session.user.id,
         activityType: 'CommentResolved',
         description: `Review comment ${isResolved ? 'resolved' : 'reopened'}`,
-        metadata: JSON.stringify({ commentId: params.id }),
+        metadata: JSON.stringify({ commentId: (await params).id }),
       },
     })
 

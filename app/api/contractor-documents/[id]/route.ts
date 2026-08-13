@@ -10,14 +10,14 @@ import { contractorDocumentUpdateSchema } from '@/lib/validations'
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const doc = await prisma.contractorDocument.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: { contractor: { select: { id: true, companyName: true } } },
     })
 
@@ -33,7 +33,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
@@ -62,7 +62,7 @@ export async function PATCH(
     }
 
     const doc = await prisma.contractorDocument.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: updateData,
     })
 
@@ -79,14 +79,14 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     enforce(normalizeRole(session.user?.role), 'delete', 'contractor_document')
 
-    await prisma.contractorDocument.delete({ where: { id: params.id } })
+    await prisma.contractorDocument.delete({ where: { id: (await params).id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     if (error instanceof ForbiddenError)

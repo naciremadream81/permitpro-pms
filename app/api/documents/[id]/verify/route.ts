@@ -12,7 +12,7 @@ import { documentVerifySchema } from '@/lib/validations'
 // POST /api/documents/[id]/verify - Verify or unverify a document
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -28,7 +28,7 @@ export async function POST(
 
     // Get current document
     const currentDocument = await prisma.permitDocument.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!currentDocument) {
@@ -37,7 +37,7 @@ export async function POST(
 
     // Update document verification status
     const document = await prisma.permitDocument.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: {
         isVerified: validatedData.isVerified,
         status: validatedData.isVerified ? 'Verified' : 'Pending',

@@ -63,10 +63,11 @@ async function getContractors(searchParams: { [key: string]: string | string[] |
 export default async function ContractorsPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  const data = await getContractors(searchParams)
-  const search = typeof searchParams.search === 'string' ? searchParams.search : ''
+  const resolvedSearchParams = await searchParams
+  const data = await getContractors(resolvedSearchParams)
+  const search = typeof resolvedSearchParams.search === 'string' ? resolvedSearchParams.search : ''
 
   return (
     <AppLayout>
@@ -104,7 +105,7 @@ export default async function ContractorsPage({
         {data.complianceExpiring && (
           <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border py-2.5 text-sm">
             <span className="flex items-baseline gap-3">
-              <span className="border border-warning px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-warning">
+              <span className="border border-warning px-2 py-0.5 text-xs font-bold uppercase tracking-[0.1em] text-warning">
                 Expiring
               </span>
               <span className="text-ink">
@@ -128,10 +129,10 @@ export default async function ContractorsPage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="px-4 py-2 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-muted">Company</th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-muted">License</th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-muted">Email</th>
-                  <th className="px-4 py-2 text-left text-[11px] font-medium uppercase tracking-[0.08em] text-muted">Phone</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Company</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">License</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Email</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Phone</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
