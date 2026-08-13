@@ -18,7 +18,7 @@ import { Prisma } from '@/lib/generated/prisma'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
@@ -29,7 +29,7 @@ export async function POST(
     const validatedData = permitStatusUpdateSchema.parse(body)
 
     const currentPermit = await prisma.permitPackage.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
     if (!currentPermit)
       return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
@@ -39,7 +39,7 @@ export async function POST(
     const transitioningToReady = validatedData.internalStage === 'ReadyToSubmit'
 
     if (transitioningToReady) {
-      const readiness = await evaluateReadiness(params.id)
+      const readiness = await evaluateReadiness((await params).id)
 
       if (!readiness.isReady) {
         if (validatedData.overrideReadiness) {
@@ -55,7 +55,7 @@ export async function POST(
 
           await prisma.activityLog.create({
             data: {
-              permitPackageId: params.id,
+              permitPackageId: (await params).id,
               userId: session.user.id,
               activityType: 'ReadinessOverridden',
               description: `Readiness gate overridden: ${validatedData.overrideReason}`,
@@ -89,7 +89,7 @@ export async function POST(
     }
 
     const permitPackage = await prisma.permitPackage.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: updateData,
       include: {
         customer: { select: { id: true, name: true } },

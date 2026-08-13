@@ -10,14 +10,14 @@ import { reviewCommentSchema } from '@/lib/validations'
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const comments = await prisma.reviewComment.findMany({
-      where: { assignmentId: params.id },
+      where: { assignmentId: (await params).id },
       include: {
         author: { select: { id: true, name: true, role: true } },
         document: { select: { id: true, fileName: true } },
@@ -34,7 +34,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
@@ -42,7 +42,7 @@ export async function POST(
     enforce(normalizeRole(session.user?.role), 'read', 'review') // any authenticated user with review access
 
     const assignment = await prisma.reviewAssignment.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
     if (!assignment)
       return NextResponse.json({ error: 'Review assignment not found' }, { status: 404 })
@@ -52,7 +52,7 @@ export async function POST(
 
     const comment = await prisma.reviewComment.create({
       data: {
-        assignmentId: params.id,
+        assignmentId: (await params).id,
         authorId: session.user.id,
         body: data.body,
         checklistItemId: data.checklistItemId,
@@ -69,7 +69,7 @@ export async function POST(
         userId: session.user.id,
         activityType: 'CommentAdded',
         description: `Review comment added`,
-        metadata: JSON.stringify({ assignmentId: params.id, commentId: comment.id }),
+        metadata: JSON.stringify({ assignmentId: (await params).id, commentId: comment.id }),
       },
     })
 

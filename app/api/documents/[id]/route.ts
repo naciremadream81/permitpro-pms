@@ -14,7 +14,7 @@ import { Prisma } from '@/lib/generated/prisma'
 // GET /api/documents/[id] - Get document by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -24,7 +24,7 @@ export async function GET(
     }
 
     const document = await prisma.permitDocument.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: {
         permitPackage: {
           select: { id: true, projectName: true },
@@ -59,7 +59,7 @@ export async function GET(
 // PATCH /api/documents/[id] - Update document metadata
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -75,7 +75,7 @@ export async function PATCH(
 
     // Get current document
     const currentDocument = await prisma.permitDocument.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!currentDocument) {
@@ -84,7 +84,7 @@ export async function PATCH(
 
     // Update document
     const document = await prisma.permitDocument.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: validatedData,
     })
 
@@ -122,7 +122,7 @@ export async function PATCH(
 // DELETE /api/documents/[id] - Delete document
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -132,7 +132,7 @@ export async function DELETE(
     }
 
     const document = await prisma.permitDocument.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!document) {
@@ -149,7 +149,7 @@ export async function DELETE(
 
     // Delete document record
     await prisma.permitDocument.delete({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     // Create activity log entry

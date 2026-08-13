@@ -15,7 +15,7 @@ import { buildExportZip } from '@/lib/export-engine'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
@@ -26,7 +26,7 @@ export async function GET(
     const profileId = request.nextUrl.searchParams.get('profileId')
 
     const permit = await prisma.permitPackage.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       select: { id: true, projectName: true },
     })
 
@@ -34,7 +34,7 @@ export async function GET(
       return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
     }
 
-    const result = await buildExportZip(params.id, profileId, session.user.id)
+    const result = await buildExportZip((await params).id, profileId, session.user.id)
 
     return new NextResponse(result.buffer as unknown as BodyInit, {
       headers: {

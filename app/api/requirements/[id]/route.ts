@@ -12,7 +12,7 @@ import { requirementUpdateSchema } from '@/lib/validations'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
@@ -23,11 +23,11 @@ export async function PATCH(
     const data = requirementUpdateSchema.parse(body)
 
     // Capture current state for change log
-    const before = await prisma.requirement.findUnique({ where: { id: params.id } })
+    const before = await prisma.requirement.findUnique({ where: { id: (await params).id } })
     if (!before) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     const requirement = await prisma.requirement.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data,
     })
 
@@ -44,7 +44,7 @@ export async function PATCH(
       if (String(oldVal) === String(newVal)) continue
       await prisma.requirementChangeLog.create({
         data: {
-          requirementId: params.id,
+          requirementId: (await params).id,
           changedBy: session.user?.id as string,
           action: action as ChangeAction,
           fieldName: field,
@@ -68,29 +68,29 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     enforce(normalizeRole(session.user?.role), 'delete', 'requirement')
 
-    const before = await prisma.requirement.findUnique({ where: { id: params.id } })
+    const before = await prisma.requirement.findUnique({ where: { id: (await params).id } })
     if (!before) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     // Soft-delete: mark inactive rather than destroy if checklist items exist
     const checklistCount = await prisma.checklistItem.count({
-      where: { requirementId: params.id },
+      where: { requirementId: (await params).id },
     })
 
     if (checklistCount > 0) {
       const requirement = await prisma.requirement.update({
-        where: { id: params.id },
+        where: { id: (await params).id },
         data: { isActive: false },
       })
       await prisma.requirementChangeLog.create({
         data: {
-          requirementId: params.id,
+          requirementId: (await params).id,
           changedBy: session.user?.id as string,
           action: 'DEACTIVATED',
           fieldName: 'isActive',
@@ -104,13 +104,13 @@ export async function DELETE(
 
     await prisma.requirementChangeLog.create({
       data: {
-        requirementId: params.id,
+        requirementId: (await params).id,
         changedBy: session.user?.id as string,
         action: 'DELETED',
         snapshot: JSON.stringify(before),
       },
     })
-    await prisma.requirement.delete({ where: { id: params.id } })
+    await prisma.requirement.delete({ where: { id: (await params).id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     if (error instanceof ForbiddenError)

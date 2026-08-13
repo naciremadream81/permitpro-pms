@@ -12,7 +12,7 @@ import { isPreviewable, sanitizeFileName, storage } from '@/lib/storage'
 // GET /api/documents/[id]/preview - Preview document (for PDFs and images)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -22,7 +22,7 @@ export async function GET(
     }
 
     const document = await prisma.permitDocument.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!document) {

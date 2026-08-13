@@ -10,14 +10,14 @@ import { exportProfileUpdateSchema } from '@/lib/validations'
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const profile = await prisma.exportProfile.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       include: {
         jurisdiction: { select: { id: true, name: true } },
         exportLogs: {
@@ -40,7 +40,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
@@ -51,14 +51,14 @@ export async function PATCH(
     const data = exportProfileUpdateSchema.parse(body)
 
     if (data.isDefault) {
-      const current = await prisma.exportProfile.findUnique({ where: { id: params.id } })
+      const current = await prisma.exportProfile.findUnique({ where: { id: (await params).id } })
       await prisma.exportProfile.updateMany({
-        where: { jurisdictionId: current?.jurisdictionId ?? null, isDefault: true, id: { not: params.id } },
+        where: { jurisdictionId: current?.jurisdictionId ?? null, isDefault: true, id: { not: (await params).id } },
         data: { isDefault: false },
       })
     }
 
-    const profile = await prisma.exportProfile.update({ where: { id: params.id }, data })
+    const profile = await prisma.exportProfile.update({ where: { id: (await params).id }, data })
     return NextResponse.json({ data: profile })
   } catch (error) {
     if (error instanceof ForbiddenError)
@@ -72,14 +72,14 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     enforce(normalizeRole(session.user?.role), 'delete', 'export_profile')
 
-    await prisma.exportProfile.delete({ where: { id: params.id } })
+    await prisma.exportProfile.delete({ where: { id: (await params).id } })
     return NextResponse.json({ success: true })
   } catch (error) {
     if (error instanceof ForbiddenError)

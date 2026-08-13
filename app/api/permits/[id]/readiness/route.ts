@@ -10,16 +10,16 @@ import { evaluateReadiness } from '@/lib/readiness-engine'
 // GET /api/permits/[id]/readiness — evaluate readiness without triggering a transition
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const permit = await prisma.permitPackage.findUnique({ where: { id: params.id } })
+    const permit = await prisma.permitPackage.findUnique({ where: { id: (await params).id } })
     if (!permit) return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
 
-    const result = await evaluateReadiness(params.id)
+    const result = await evaluateReadiness((await params).id)
 
     return NextResponse.json({ data: result })
   } catch (error) {

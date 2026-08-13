@@ -12,7 +12,7 @@ import { taskSchema } from '@/lib/validations'
 // GET /api/permits/[id]/tasks - List all tasks for a permit
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -23,7 +23,7 @@ export async function GET(
 
     // Verify permit exists
     const permit = await prisma.permitPackage.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!permit) {
@@ -31,7 +31,7 @@ export async function GET(
     }
 
     const tasks = await prisma.task.findMany({
-      where: { permitPackageId: params.id },
+      where: { permitPackageId: (await params).id },
       orderBy: [
         { status: 'asc' },
         { dueDate: 'asc' },
@@ -51,7 +51,7 @@ export async function GET(
 // POST /api/permits/[id]/tasks - Create a new task
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -65,12 +65,12 @@ export async function POST(
     // Validate request data
     const validatedData = taskSchema.parse({
       ...body,
-      permitPackageId: params.id,
+      permitPackageId: (await params).id,
     })
 
     // Verify permit exists
     const permit = await prisma.permitPackage.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!permit) {
@@ -94,7 +94,7 @@ export async function POST(
     // Create activity log entry
     await prisma.activityLog.create({
       data: {
-        permitPackageId: params.id,
+        permitPackageId: (await params).id,
         userId: session.user.id,
         activityType: 'TaskCreated',
         description: `Task "${task.name}" created`,

@@ -10,17 +10,17 @@ import { generateChecklist, checklistCompletionPct } from '@/lib/checklist-engin
 // GET /api/permits/[id]/checklist — fetch all checklist items with requirement detail
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const permit = await prisma.permitPackage.findUnique({ where: { id: params.id } })
+    const permit = await prisma.permitPackage.findUnique({ where: { id: (await params).id } })
     if (!permit) return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
 
     const items = await prisma.checklistItem.findMany({
-      where: { packageId: params.id },
+      where: { packageId: (await params).id },
       include: {
         requirement: {
           select: {
@@ -48,7 +48,7 @@ export async function GET(
       orderBy: [{ requirement: { order: 'asc' } }],
     })
 
-    const completionPct = await checklistCompletionPct(params.id)
+    const completionPct = await checklistCompletionPct((await params).id)
 
     return NextResponse.json({ data: items, completionPct })
   } catch (error) {
@@ -60,16 +60,16 @@ export async function GET(
 // POST /api/permits/[id]/checklist — (re)generate checklist from jurisdiction requirements
 export async function POST(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const permit = await prisma.permitPackage.findUnique({ where: { id: params.id } })
+    const permit = await prisma.permitPackage.findUnique({ where: { id: (await params).id } })
     if (!permit) return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
 
-    const result = await generateChecklist(params.id)
+    const result = await generateChecklist((await params).id)
 
     return NextResponse.json({ data: result }, { status: 201 })
   } catch (error) {

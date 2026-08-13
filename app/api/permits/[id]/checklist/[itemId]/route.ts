@@ -11,7 +11,7 @@ import { checklistItemUpdateSchema, checklistItemWaiveSchema } from '@/lib/valid
 // PATCH /api/permits/[id]/checklist/[itemId]
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
   try {
     const session = await getSession()
@@ -27,7 +27,7 @@ export async function PATCH(
       const { waiverReason } = checklistItemWaiveSchema.parse(body)
 
       const item = await prisma.checklistItem.update({
-        where: { id: params.itemId, packageId: params.id },
+        where: { id: (await params).itemId, packageId: (await params).id },
         data: {
           status: 'WAIVED',
           waiverReason,
@@ -39,7 +39,7 @@ export async function PATCH(
 
       await prisma.activityLog.create({
         data: {
-          permitPackageId: params.id,
+          permitPackageId: (await params).id,
           userId: session.user.id,
           activityType: 'ChecklistItemWaived',
           description: `Checklist item "${item.requirement.documentName}" waived`,
@@ -56,7 +56,7 @@ export async function PATCH(
     const data = checklistItemUpdateSchema.parse(body)
 
     const item = await prisma.checklistItem.update({
-      where: { id: params.itemId, packageId: params.id },
+      where: { id: (await params).itemId, packageId: (await params).id },
       data: {
         ...(data.status ? { status: data.status } : {}),
         ...(data.documentId !== undefined ? { documentId: data.documentId } : {}),
@@ -70,7 +70,7 @@ export async function PATCH(
 
     await prisma.activityLog.create({
       data: {
-        permitPackageId: params.id,
+        permitPackageId: (await params).id,
         userId: session.user.id,
         activityType: 'ChecklistItemUpdated',
         description: `Checklist item "${item.requirement.documentName}" updated to ${item.status}`,
@@ -80,7 +80,7 @@ export async function PATCH(
 
     // Update package lastActivityAt
     await prisma.permitPackage.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: { lastActivityAt: new Date() },
     })
 

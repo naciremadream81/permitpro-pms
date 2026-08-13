@@ -10,14 +10,14 @@ import { requirementSchema } from '@/lib/validations'
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const requirements = await prisma.requirement.findMany({
-      where: { jurisdictionId: params.id },
+      where: { jurisdictionId: (await params).id },
       orderBy: [{ permitTypes: 'asc' }, { order: 'asc' }],
     })
 
@@ -30,7 +30,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
@@ -39,13 +39,13 @@ export async function POST(
 
     // Verify jurisdiction exists
     const jurisdiction = await prisma.jurisdiction.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
     if (!jurisdiction)
       return NextResponse.json({ error: 'Jurisdiction not found' }, { status: 404 })
 
     const body = await request.json()
-    const data = requirementSchema.parse({ ...body, jurisdictionId: params.id })
+    const data = requirementSchema.parse({ ...body, jurisdictionId: (await params).id })
 
     const requirement = await prisma.requirement.create({ data })
 

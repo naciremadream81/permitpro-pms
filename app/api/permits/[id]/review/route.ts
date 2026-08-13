@@ -14,14 +14,14 @@ import { evaluateReadiness } from '@/lib/readiness-engine'
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const assignments = await prisma.reviewAssignment.findMany({
-      where: { packageId: params.id },
+      where: { packageId: (await params).id },
       include: {
         reviewer: { select: { id: true, name: true, email: true } },
         comments: {
@@ -44,7 +44,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession()
@@ -53,7 +53,7 @@ export async function POST(
     const role = normalizeRole(session.user?.role)
     const body = await request.json()
 
-    const permit = await prisma.permitPackage.findUnique({ where: { id: params.id } })
+    const permit = await prisma.permitPackage.findUnique({ where: { id: (await params).id } })
     if (!permit) return NextResponse.json({ error: 'Permit not found' }, { status: 404 })
 
     // ── Assign reviewer ──────────────────────────────────────────────────
@@ -63,7 +63,7 @@ export async function POST(
       const data = reviewAssignSchema.parse(body)
 
       // Validate readiness before assigning (unless admin overrides)
-      const readiness = await evaluateReadiness(params.id)
+      const readiness = await evaluateReadiness((await params).id)
       if (!readiness.isReady && !body.overrideReadiness) {
         return NextResponse.json(
           {
@@ -79,7 +79,7 @@ export async function POST(
         enforce(role, 'override_readiness', 'checklist')
         await prisma.activityLog.create({
           data: {
-            permitPackageId: params.id,
+            permitPackageId: (await params).id,
             userId: session.user.id,
             activityType: 'ReadinessOverridden',
             description: `Readiness gate overridden by admin`,
@@ -90,7 +90,7 @@ export async function POST(
 
       const assignment = await prisma.reviewAssignment.create({
         data: {
-          packageId: params.id,
+          packageId: (await params).id,
           reviewerId: data.reviewerId,
           dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
           status: 'ASSIGNED',
@@ -102,13 +102,13 @@ export async function POST(
 
       // Move the package into review (not "ready to submit" — that happens on approval)
       await prisma.permitPackage.update({
-        where: { id: params.id },
+        where: { id: (await params).id },
         data: { internalStage: 'InProgress', lastActivityAt: new Date() },
       })
 
       await prisma.activityLog.create({
         data: {
-          permitPackageId: params.id,
+          permitPackageId: (await params).id,
           userId: session.user.id,
           activityType: 'ReviewAssigned',
           description: `Review assigned to ${assignment.reviewer.name}`,
@@ -125,7 +125,7 @@ export async function POST(
     // Find the active assignment for this reviewer
     const assignment = await prisma.reviewAssignment.findFirst({
       where: {
-        packageId: params.id,
+        packageId: (await params).id,
         reviewerId: session.user.id,
         status: { in: ['ASSIGNED', 'IN_REVIEW'] },
       },
@@ -136,7 +136,7 @@ export async function POST(
     const adminAssignment =
       role === 'admin'
         ? await prisma.reviewAssignment.findFirst({
-            where: { packageId: params.id, status: { in: ['ASSIGNED', 'IN_REVIEW'] } },
+            where: { packageId: (await params).id, status: { in: ['ASSIGNED', 'IN_REVIEW'] } },
             include: { comments: { where: { isResolved: false } } },
             orderBy: { assignedAt: 'desc' },
           })
@@ -158,7 +158,7 @@ export async function POST(
 
       await prisma.activityLog.create({
         data: {
-          permitPackageId: params.id,
+          permitPackageId: (await params).id,
           userId: session.user.id,
           activityType: 'ReviewStarted',
           description: 'Review started',
@@ -179,22 +179,22 @@ export async function POST(
           data: { status: 'APPROVED', completedAt: new Date() },
         }),
         prisma.permitDocument.updateMany({
-          where: { permitPackageId: params.id, status: 'Pending' },
+          where: { permitPackageId: (await params).id, status: 'Pending' },
           data: { status: 'Verified', isVerified: true },
         }),
         prisma.checklistItem.updateMany({
-          where: { packageId: params.id, status: 'UPLOADED' },
+          where: { packageId: (await params).id, status: 'UPLOADED' },
           data: { status: 'VERIFIED' },
         }),
         prisma.permitPackage.update({
-          where: { id: params.id },
+          where: { id: (await params).id },
           data: { internalStage: 'ReadyToSubmit', lastActivityAt: new Date() },
         }),
       ])
 
       await prisma.activityLog.create({
         data: {
-          permitPackageId: params.id,
+          permitPackageId: (await params).id,
           userId: session.user.id,
           activityType: 'ReviewApproved',
           description: note
@@ -233,13 +233,13 @@ export async function POST(
       })
 
       await prisma.permitPackage.update({
-        where: { id: params.id },
+        where: { id: (await params).id },
         data: { internalStage: 'InProgress', lastActivityAt: new Date() },
       })
 
       await prisma.activityLog.create({
         data: {
-          permitPackageId: params.id,
+          permitPackageId: (await params).id,
           userId: session.user.id,
           activityType: 'ReviewSentBack',
           description: `Package sent back for corrections: ${note}`,

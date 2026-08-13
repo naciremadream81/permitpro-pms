@@ -15,14 +15,14 @@ import { Prisma } from '@/lib/generated/prisma'
 // GET /api/users/[id] - Get user by ID (admin only)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication and admin role
     await requireAdmin()
 
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
       select: {
         id: true,
         email: true,
@@ -62,7 +62,7 @@ export async function GET(
 // PATCH /api/users/[id] - Update user (admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication and admin role
@@ -75,7 +75,7 @@ export async function PATCH(
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!existingUser) {
@@ -107,7 +107,7 @@ export async function PATCH(
 
     // Update user
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id: (await params).id },
       data: updateData,
       select: {
         id: true,
@@ -147,14 +147,14 @@ export async function PATCH(
 // DELETE /api/users/[id] - Delete user (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication and admin role
     const session = await requireAdmin()
 
     // Prevent deleting yourself
-    if (session.user?.id === params.id) {
+    if (session.user?.id === (await params).id) {
       return NextResponse.json(
         { error: 'Cannot delete your own account' },
         { status: 400 }
@@ -163,7 +163,7 @@ export async function DELETE(
 
     // Check if user exists
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!user) {
@@ -172,7 +172,7 @@ export async function DELETE(
 
     // Delete user
     await prisma.user.delete({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     return NextResponse.json({ message: 'User deleted successfully' })

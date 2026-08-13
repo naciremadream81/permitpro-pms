@@ -20,7 +20,7 @@ import { randomBytes } from 'crypto'
 // GET /api/permits/[id]/documents - List all documents for a permit
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -31,7 +31,7 @@ export async function GET(
 
     // Verify permit exists
     const permit = await prisma.permitPackage.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!permit) {
@@ -39,7 +39,7 @@ export async function GET(
     }
 
     const documents = await prisma.permitDocument.findMany({
-      where: { permitPackageId: params.id },
+      where: { permitPackageId: (await params).id },
       include: {
         uploadedByUser: {
           select: { id: true, name: true, email: true },
@@ -80,7 +80,7 @@ export async function GET(
 // POST /api/permits/[id]/documents - Upload a new document
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -91,7 +91,7 @@ export async function POST(
 
     // Verify permit exists
     const permit = await prisma.permitPackage.findUnique({
-      where: { id: params.id },
+      where: { id: (await params).id },
     })
 
     if (!permit) {
@@ -122,7 +122,7 @@ export async function POST(
     const validatedFile = validateUploadFile(buffer, file.name, file.type)
 
     // Save file to storage
-    const storagePath = await storage.save(buffer, validatedFile.fileName, params.id)
+    const storagePath = await storage.save(buffer, validatedFile.fileName, (await params).id)
 
     // Generate version group ID if this is a new version
     let versionGroupId: string | undefined
@@ -138,7 +138,7 @@ export async function POST(
     // Determine version tag
     const existingVersions = await prisma.permitDocument.count({
       where: {
-        permitPackageId: params.id,
+        permitPackageId: (await params).id,
         fileName: validatedFile.fileName,
         category: validatedCategory,
       },
@@ -148,7 +148,7 @@ export async function POST(
     // Create document record
     const document = await prisma.permitDocument.create({
       data: {
-        permitPackageId: params.id,
+        permitPackageId: (await params).id,
         fileName: validatedFile.fileName,
         fileType: validatedFile.mimeType,
         category: validatedCategory,
@@ -171,7 +171,7 @@ export async function POST(
     // Create activity log entry
     await prisma.activityLog.create({
       data: {
-        permitPackageId: params.id,
+        permitPackageId: (await params).id,
         userId: session.user.id,
         activityType: 'DocumentUploaded',
         description: `Document "${validatedFile.fileName}" uploaded (${validatedCategory})`,
