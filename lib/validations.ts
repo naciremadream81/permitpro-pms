@@ -200,7 +200,16 @@ export const jurisdictionSchema = z.object({
   notes: z.string().optional(),
 })
 
-export const jurisdictionUpdateSchema = jurisdictionSchema.partial()
+// Do not derive this from jurisdictionSchema.partial() — Zod still applies
+// inner .default() values for omitted keys, so PATCH { isActive: false }
+// would also write state: "FL" and reactivate via isActive default on other fields.
+export const jurisdictionUpdateSchema = z.object({
+  name: z.string().min(1, 'Name is required').optional(),
+  countyCode: z.string().min(1, 'County code is required').max(10).optional(),
+  state: z.string().length(2, 'State must be a 2-letter code').optional(),
+  isActive: z.boolean().optional(),
+  notes: z.string().optional(),
+})
 
 // ============================================================================
 // REQUIREMENT
@@ -221,7 +230,21 @@ export const requirementSchema = z.object({
   isActive: z.boolean().default(true),
 })
 
-export const requirementUpdateSchema = requirementSchema.omit({ jurisdictionId: true }).partial()
+// Explicit optional fields only. requirementSchema.partial() injects
+// isRequired/isMandatoryForSubmission/order/isActive defaults on every PATCH,
+// which reactivates soft-deleted requirements and resets catalog order.
+export const requirementUpdateSchema = z.object({
+  permitTypes: z.string().min(1, 'At least one permit type is required').optional(),
+  documentCategory: documentCategoryEnum.optional(),
+  documentName: z.string().min(1, 'Document name is required').optional(),
+  description: z.string().optional(),
+  helpText: z.string().optional(),
+  isRequired: z.boolean().optional(),
+  isMandatoryForSubmission: z.boolean().optional(),
+  order: z.number().int().min(0).optional(),
+  validationRules: z.string().optional(),
+  isActive: z.boolean().optional(),
+})
 
 // ============================================================================
 // CHECKLIST ITEM
@@ -355,4 +378,14 @@ export const exportProfileSchema = z.object({
   includeManifest: z.boolean().default(true),
 })
 
-export const exportProfileUpdateSchema = exportProfileSchema.partial()
+// exportProfileSchema.partial() still applies folderStructure/isDefault/
+// fileNamingPattern/includeManifest defaults, wiping custom layouts on rename.
+export const exportProfileUpdateSchema = z.object({
+  name: z.string().min(1, 'Name is required').optional(),
+  jurisdictionId: z.string().optional(),
+  description: z.string().optional(),
+  isDefault: z.boolean().optional(),
+  folderStructure: z.string().optional(),
+  fileNamingPattern: z.string().optional(),
+  includeManifest: z.boolean().optional(),
+})

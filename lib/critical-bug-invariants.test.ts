@@ -10,6 +10,11 @@ import path from 'path'
 import { uniquifyArchivePath, sanitizeArchivePath } from './export-engine'
 import { requirementAppliesToPermitType } from './checklist-engine'
 import { normalizeRole, ForbiddenError } from './permissions'
+import {
+  exportProfileUpdateSchema,
+  jurisdictionUpdateSchema,
+  requirementUpdateSchema,
+} from './validations'
 
 describe('syncChecklist removes all stale items', () => {
   it('does not limit deleteMany to PENDING-only status', () => {
@@ -358,5 +363,51 @@ describe('permit detail status edits use gated status route', () => {
     )
     assert.match(source, /\/api\/permits\/\$\{permit\.id\}\/status/)
     assert.match(source, /field === 'status'/)
+  })
+})
+
+describe('update schemas do not inject create-time defaults', () => {
+  it('requirement toggle does not reset order or mandatory flags', () => {
+    const parsed = requirementUpdateSchema.parse({ isActive: false })
+    assert.deepEqual(parsed, { isActive: false })
+  })
+
+  it('requirement name edit does not reactivate or reorder', () => {
+    const parsed = requirementUpdateSchema.parse({ documentName: 'Site Plan' })
+    assert.deepEqual(parsed, { documentName: 'Site Plan' })
+    assert.equal('isActive' in parsed, false)
+    assert.equal('order' in parsed, false)
+    assert.equal('isMandatoryForSubmission' in parsed, false)
+  })
+
+  it('jurisdiction toggle does not overwrite state to FL', () => {
+    const parsed = jurisdictionUpdateSchema.parse({ isActive: false })
+    assert.deepEqual(parsed, { isActive: false })
+    assert.equal('state' in parsed, false)
+  })
+
+  it('export profile rename does not wipe folder layout or default flag', () => {
+    const parsed = exportProfileUpdateSchema.parse({ name: 'County Layout' })
+    assert.deepEqual(parsed, { name: 'County Layout' })
+    assert.equal('folderStructure' in parsed, false)
+    assert.equal('isDefault' in parsed, false)
+    assert.equal('fileNamingPattern' in parsed, false)
+    assert.equal('includeManifest' in parsed, false)
+  })
+
+  it('export profile PATCH 404s before unsetting other defaults', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/export-profiles/[id]/route.ts'),
+      'utf8'
+    )
+    const patchFn = source.slice(source.indexOf('export async function PATCH'))
+    const notFoundIdx = patchFn.indexOf("Profile not found")
+    const unsetIdx = patchFn.indexOf('isDefault: false')
+    assert.ok(notFoundIdx >= 0, 'missing profile must 404')
+    assert.ok(unsetIdx >= 0, 'default unset must still exist')
+    assert.ok(
+      notFoundIdx < unsetIdx,
+      'must 404 on a missing id before updateMany clears sibling defaults'
+    )
   })
 })
