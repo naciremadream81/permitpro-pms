@@ -308,6 +308,39 @@ describe('status route enforces package update permission', () => {
   })
 })
 
+describe('customer/contractor delete is atomic against cascade wipe', () => {
+  it('helper uses DELETE … AND NOT EXISTS instead of count-then-delete', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/safe-parent-delete.ts'),
+      'utf8'
+    )
+    assert.match(source, /DELETE FROM "Customer"/)
+    assert.match(source, /DELETE FROM "Contractor"/)
+    assert.match(source, /AND NOT EXISTS/)
+    assert.match(source, /FROM "PermitPackage"/)
+    assert.doesNotMatch(
+      source,
+      /permitPackage\.count/,
+      'Count-then-delete leaves a TOCTOU window under ON DELETE CASCADE'
+    )
+  })
+
+  it('customer and contractor DELETE routes use the atomic helpers', () => {
+    const customerRoute = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/customers/[id]/route.ts'),
+      'utf8'
+    )
+    const contractorRoute = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/contractors/[id]/route.ts'),
+      'utf8'
+    )
+    assert.match(customerRoute, /deleteCustomerIfNoPackages/)
+    assert.match(contractorRoute, /deleteContractorIfNoPackages/)
+    assert.doesNotMatch(customerRoute, /permitPackage\.count/)
+    assert.doesNotMatch(contractorRoute, /permitPackage\.count/)
+  })
+})
+
 describe('storage get/delete use path.relative containment', () => {
   it('does not use startsWith for root checks on get/delete', () => {
     const source = fs.readFileSync(

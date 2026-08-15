@@ -9,6 +9,7 @@ import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { customerUpdateSchema } from '@/lib/validations'
 import { handleApiError, requirePermission } from '@/lib/api-security'
+import { deleteCustomerIfNoPackages } from '@/lib/safe-parent-delete'
 
 // GET /api/customers/[id] - Get customer by ID
 export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -87,21 +88,18 @@ export async function DELETE(request: NextRequest, props: { params: Promise<{ id
     }
     requirePermission(session, 'delete', 'customer')
 
-    // Check if customer has permit packages
-    const permitCount = await prisma.permitPackage.count({
-      where: { customerId: params.id },
-    })
-
-    if (permitCount > 0) {
+    // Atomic guard: PermitPackage.customer is ON DELETE CASCADE, so a
+    // count-then-delete race can wipe a package created in the gap.
+    const result = await deleteCustomerIfNoPackages(params.id)
+    if (result === 'has_packages') {
       return NextResponse.json(
         { error: 'Cannot delete customer with existing permit packages' },
         { status: 400 }
       )
     }
-
-    await prisma.customer.delete({
-      where: { id: params.id },
-    })
+    if (result === 'not_found') {
+      return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+    }
 
     return NextResponse.json({ message: 'Customer deleted successfully' })
   } catch (error) {
