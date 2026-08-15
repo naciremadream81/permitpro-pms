@@ -14,10 +14,8 @@ import { Prisma } from '@prisma/client'
 import { handleApiError } from '@/lib/api-security'
 
 // GET /api/users/[id] - Get user by ID (admin only)
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication and admin role
     await requireAdmin()
@@ -51,10 +49,8 @@ export async function GET(
 }
 
 // PATCH /api/users/[id] - Update user (admin only)
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication and admin role
     await requireAdmin()
@@ -117,10 +113,8 @@ export async function PATCH(
 }
 
 // DELETE /api/users/[id] - Delete user (admin only)
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication and admin role
     const session = await requireAdmin()

@@ -12,10 +12,8 @@ import { documentUpdateSchema } from '@/lib/validations'
 import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // GET /api/documents/[id] - Get document by ID
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -54,10 +52,8 @@ export async function GET(
 }
 
 // PATCH /api/documents/[id] - Update document metadata
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -105,10 +101,8 @@ export async function PATCH(
 }
 
 // DELETE /api/documents/[id] - Delete document
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()

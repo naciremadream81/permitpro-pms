@@ -42,11 +42,12 @@ async function getPermit(id: string) {
   return permit
 }
 
-export default async function PermitDetailPage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default async function PermitDetailPage(
+  props: {
+    params: Promise<{ id: string }>
+  }
+) {
+  const params = await props.params;
   const permit = await getPermit(params.id)
 
   if (!permit) {

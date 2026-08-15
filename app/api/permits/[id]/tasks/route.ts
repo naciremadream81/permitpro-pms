@@ -11,10 +11,8 @@ import { taskSchema } from '@/lib/validations'
 import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // GET /api/permits/[id]/tasks - List all tasks for a permit
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -47,10 +45,8 @@ export async function GET(
 }
 
 // POST /api/permits/[id]/tasks - Create a new task
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()

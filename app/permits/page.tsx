@@ -61,11 +61,12 @@ async function getPermits(searchParams: { [key: string]: string | string[] | und
   return { permits, total, page, limit, totalPages: Math.ceil(total / limit) }
 }
 
-export default async function PermitsPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined }
-}) {
+export default async function PermitsPage(
+  props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+  }
+) {
+  const searchParams = await props.searchParams;
   const data = await getPermits(searchParams)
 
   return (
