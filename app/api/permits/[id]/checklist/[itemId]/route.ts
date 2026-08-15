@@ -64,16 +64,49 @@ export async function PATCH(
 
     const data = checklistItemUpdateSchema.parse(body)
 
-    // Documents must belong to this package — otherwise readiness can be satisfied
-    // by linking a verified document from another permit package.
-    if (data.documentId) {
+    // Documents must belong to this package and match the requirement category —
+    // otherwise readiness can be satisfied by linking an unrelated verified doc.
+    const existingItem = await prisma.checklistItem.findFirst({
+      where: { id: params.itemId, packageId: params.id },
+      select: {
+        id: true,
+        documentId: true,
+        requirement: { select: { documentCategory: true, documentName: true } },
+      },
+    })
+    if (!existingItem) {
+      return NextResponse.json({ error: 'Checklist item not found' }, { status: 404 })
+    }
+
+    const requiresLinkedDocument =
+      !!data.documentId || data.status === 'VERIFIED' || data.status === 'UPLOADED'
+    const documentIdProvided = Object.prototype.hasOwnProperty.call(data, 'documentId')
+    const targetDocumentId = documentIdProvided
+      ? data.documentId ?? undefined
+      : existingItem.documentId ?? undefined
+
+    if (requiresLinkedDocument) {
+      if (!targetDocumentId) {
+        return NextResponse.json(
+          { error: 'A document must be linked before marking this checklist item verified' },
+          { status: 400 }
+        )
+      }
       const linkedDoc = await prisma.permitDocument.findFirst({
-        where: { id: data.documentId, permitPackageId: params.id },
-        select: { id: true },
+        where: { id: targetDocumentId, permitPackageId: params.id },
+        select: { id: true, category: true },
       })
       if (!linkedDoc) {
         return NextResponse.json(
           { error: 'Document must belong to this permit package' },
+          { status: 400 }
+        )
+      }
+      if (linkedDoc.category !== existingItem.requirement.documentCategory) {
+        return NextResponse.json(
+          {
+            error: `Document category "${linkedDoc.category}" does not match required "${existingItem.requirement.documentCategory}"`,
+          },
           { status: 400 }
         )
       }
@@ -88,7 +121,7 @@ export async function PATCH(
       },
       include: {
         requirement: { select: { documentName: true } },
-        document: { select: { id: true, fileName: true, status: true, isVerified: true } },
+        document: { select: { id: true, fileName: true, status: true, isVerified: true, category: true } },
       },
     })
 

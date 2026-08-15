@@ -105,6 +105,18 @@ describe('checklist NOT_APPLICABLE is admin-gated', () => {
     assert.match(source, /body\.status === 'NOT_APPLICABLE'/)
     assert.match(source, /waive_item/)
   })
+
+  it('explicit documentId null does not fall back to the existing linked document', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/permits/[id]/checklist/[itemId]/route.ts'),
+      'utf8'
+    )
+    assert.match(
+      source,
+      /Object\.prototype\.hasOwnProperty\.call\(data,\s*['"]documentId['"]\)/
+    )
+    assert.match(source, /documentIdProvided\s*\?\s*data\.documentId\s*\?\?\s*undefined/)
+  })
 })
 
 describe('document version parent scoped to package', () => {
@@ -305,6 +317,47 @@ describe('status route enforces package update permission', () => {
       'utf8'
     )
     assert.match(source, /enforce\(role, 'update', 'package'\)/)
+  })
+})
+
+describe('contractor compliance cannot be bypassed via missing/undated vault docs', () => {
+  it('requires LICENSE with expirationDate and blocks undated insurance vault docs', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/readiness-engine.ts'),
+      'utf8'
+    )
+    assert.match(source, /CONTRACTOR_LICENSE_MISSING/)
+    assert.match(source, /CONTRACTOR_INSURANCE_MISSING/)
+    assert.match(source, /missing an expiration date/)
+    assert.match(source, /checkInsuranceExpiry/)
+    const helper = source.slice(source.indexOf('function checkInsuranceExpiry'))
+    // Undated vault is source-of-truth missing — must not fall back to legacy
+    assert.match(helper, /if \(vaultDoc\)/)
+    assert.match(helper, /if \(!vaultDoc\.expirationDate\)/)
+    assert.match(helper, /else if \(legacyDate\)/)
+    assert.match(helper, /CONTRACTOR_INSURANCE_MISSING/)
+  })
+})
+
+describe('wrong-category documents cannot satisfy readiness', () => {
+  it('blocks when linked document category mismatches requirement', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/readiness-engine.ts'),
+      'utf8'
+    )
+    assert.match(source, /WRONG_DOCUMENT_CATEGORY/)
+    assert.match(source, /item\.document\.category !== item\.requirement\.documentCategory/)
+  })
+})
+
+describe('create cannot skip Approved billing automation', () => {
+  it('rejects status Approved on package create', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/permits/route.ts'),
+      'utf8'
+    )
+    assert.match(source, /Cannot create a package as Approved/)
+    assert.match(source, /billing automation/)
   })
 })
 

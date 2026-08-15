@@ -15,7 +15,11 @@ export interface ReadinessBlocker {
   type:
     | 'MISSING_REQUIRED_DOCUMENT'
     | 'UNVERIFIED_REQUIRED_DOCUMENT'
+    | 'WRONG_DOCUMENT_CATEGORY'
+    | 'NO_CHECKLIST_ITEMS'
+    | 'CONTRACTOR_LICENSE_MISSING'
     | 'CONTRACTOR_LICENSE_EXPIRED'
+    | 'CONTRACTOR_INSURANCE_MISSING'
     | 'CONTRACTOR_INSURANCE_EXPIRED'
     | 'CONTRACTOR_INSURANCE_EXPIRING_SOON'
     | 'MISSING_JURISDICTION'
@@ -30,7 +34,6 @@ export interface ReadinessBlocker {
 export interface ReadinessWarning {
   type:
     | 'CONTRACTOR_LICENSE_EXPIRING_SOON'
-    | 'NO_CHECKLIST_ITEMS'
     | 'UNVERIFIED_OPTIONAL_DOCUMENT'
     | 'MISSING_TARGET_DATE'
   message: string
@@ -82,7 +85,7 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
             },
           },
           document: {
-            select: { id: true, status: true, isVerified: true },
+            select: { id: true, status: true, isVerified: true, category: true },
           },
         },
       },
@@ -154,17 +157,19 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
       .map((item) => [item.requirementId, item])
   )
 
+  // An empty or optional-only catalog must block ReadyToSubmit — otherwise a
+  // misconfigured jurisdiction yields vacuous isReady=true (100% of nothing).
   if (pkg.jurisdictionId && applicableCatalog.length === 0) {
-    warnings.push({
+    blockers.push({
       type: 'NO_CHECKLIST_ITEMS',
       message:
-        'No active checklist requirements found for this jurisdiction/permit type. Verify the jurisdiction requirements are configured.',
+        'No active checklist requirements found for this jurisdiction/permit type. Configure jurisdiction requirements before submission.',
     })
   } else if (pkg.jurisdictionId && mandatoryCatalog.length === 0) {
-    warnings.push({
+    blockers.push({
       type: 'NO_CHECKLIST_ITEMS',
       message:
-        'No mandatory checklist items found. Verify the jurisdiction requirements are configured.',
+        'No mandatory checklist items found. Configure at least one mandatory requirement before submission.',
     })
   }
 
@@ -199,6 +204,13 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
           message: `Required document not uploaded: "${req.documentName}"`,
           checklistItemId: item.id,
         })
+      } else if (item.document.category !== item.requirement.documentCategory) {
+        blockers.push({
+          type: 'WRONG_DOCUMENT_CATEGORY',
+          message: `Linked document category "${item.document.category}" does not match required "${item.requirement.documentCategory}" for "${req.documentName}".`,
+          checklistItemId: item.id,
+          documentId: item.document.id,
+        })
       } else if (
         // Require both checklist VERIFIED and a live Verified document.
         // isVerified alone is insufficient: PATCH can set isVerified while
@@ -229,6 +241,8 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
   }
 
   // ── Contractor compliance ────────────────────────────────────────────────
+  // Missing / undated vault docs must block — otherwise deleting or superseding
+  // an expired LICENSE/insurance with an undated upload clears the blocker.
   const now = new Date()
 
   const licenseDoc = pkg.contractor.contractorDocuments.find(
@@ -241,8 +255,19 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
     (d) => d.type === 'LIABILITY'
   )
 
-  // License
-  if (licenseDoc?.expirationDate) {
+  // License — vault LICENSE with a future expirationDate is required
+  if (!licenseDoc) {
+    blockers.push({
+      type: 'CONTRACTOR_LICENSE_MISSING',
+      message: 'Contractor license document is required before submission.',
+    })
+  } else if (!licenseDoc.expirationDate) {
+    blockers.push({
+      type: 'CONTRACTOR_LICENSE_MISSING',
+      message: 'Contractor license is missing an expiration date.',
+      contractorDocumentId: licenseDoc.id,
+    })
+  } else {
     const daysUntilExpiry = daysBetween(now, licenseDoc.expirationDate)
     if (daysUntilExpiry < 0) {
       blockers.push({
@@ -258,59 +283,25 @@ export async function evaluateReadiness(packageId: string): Promise<ReadinessRes
     }
   }
 
-  // Workers Comp — vault doc preferred; legacy contractor field if no vault row
-  if (workersCompDoc?.expirationDate) {
-    const daysUntilExpiry = daysBetween(now, workersCompDoc.expirationDate)
-    if (daysUntilExpiry < 0) {
-      blockers.push({
-        type: 'CONTRACTOR_INSURANCE_EXPIRED',
-        message: `Contractor workers compensation expired ${Math.abs(daysUntilExpiry)} day(s) ago.`,
-        contractorDocumentId: workersCompDoc.id,
-      })
-    } else if (daysUntilExpiry <= INSURANCE_EXPIRY_BLOCK_DAYS) {
-      blockers.push({
-        type: 'CONTRACTOR_INSURANCE_EXPIRING_SOON',
-        message: `Workers compensation expires in ${daysUntilExpiry} day(s) — too soon for submission.`,
-        contractorDocumentId: workersCompDoc.id,
-      })
-    }
-  } else if (pkg.contractor.workersCompExpirationDate) {
-    checkLegacyExpiry(
-      pkg.contractor.workersCompExpirationDate,
-      'Workers Comp',
-      now,
-      blockers,
-      warnings,
-      INSURANCE_EXPIRY_BLOCK_DAYS
-    )
-  }
+  // Workers Comp — vault expiration preferred; undated vault falls through to legacy
+  checkInsuranceExpiry({
+    label: 'Workers compensation',
+    vaultDoc: workersCompDoc,
+    legacyDate: pkg.contractor.workersCompExpirationDate,
+    now,
+    blockers,
+    blockWithinDays: INSURANCE_EXPIRY_BLOCK_DAYS,
+  })
 
-  // Liability — vault doc preferred; legacy contractor field if no vault row
-  if (liabilityDoc?.expirationDate) {
-    const daysUntilExpiry = daysBetween(now, liabilityDoc.expirationDate)
-    if (daysUntilExpiry < 0) {
-      blockers.push({
-        type: 'CONTRACTOR_INSURANCE_EXPIRED',
-        message: `Contractor liability insurance expired ${Math.abs(daysUntilExpiry)} day(s) ago.`,
-        contractorDocumentId: liabilityDoc.id,
-      })
-    } else if (daysUntilExpiry <= INSURANCE_EXPIRY_BLOCK_DAYS) {
-      blockers.push({
-        type: 'CONTRACTOR_INSURANCE_EXPIRING_SOON',
-        message: `Liability insurance expires in ${daysUntilExpiry} day(s) — too soon for submission.`,
-        contractorDocumentId: liabilityDoc.id,
-      })
-    }
-  } else if (pkg.contractor.liabilityExpirationDate) {
-    checkLegacyExpiry(
-      pkg.contractor.liabilityExpirationDate,
-      'Liability Insurance',
-      now,
-      blockers,
-      warnings,
-      INSURANCE_EXPIRY_BLOCK_DAYS
-    )
-  }
+  // Liability — vault expiration preferred; undated vault falls through to legacy
+  checkInsuranceExpiry({
+    label: 'Liability insurance',
+    vaultDoc: liabilityDoc,
+    legacyDate: pkg.contractor.liabilityExpirationDate,
+    now,
+    blockers,
+    blockWithinDays: INSURANCE_EXPIRY_BLOCK_DAYS,
+  })
 
   // ── Open correction comments ─────────────────────────────────────────────
   const openComments = pkg.reviewAssignments.flatMap((assignment) => assignment.comments)
@@ -359,24 +350,55 @@ function daysBetween(from: Date, to: Date): number {
   return Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24))
 }
 
-function checkLegacyExpiry(
-  expiryDate: Date,
-  label: string,
-  now: Date,
-  blockers: ReadinessBlocker[],
-  warnings: ReadinessWarning[],
+function checkInsuranceExpiry(opts: {
+  label: string
+  vaultDoc: { id: string; expirationDate: Date | null } | undefined
+  legacyDate: Date | null | undefined
+  now: Date
+  blockers: ReadinessBlocker[]
   blockWithinDays: number
-) {
+}) {
+  const { label, vaultDoc, legacyDate, now, blockers, blockWithinDays } = opts
+
+  // Vault is source of truth when present. An undated vault row must block —
+  // falling through to a stale legacy date would let an undated supersede clear
+  // an expired vault blocker.
+  let expiryDate: Date | null = null
+  let contractorDocumentId: string | undefined
+
+  if (vaultDoc) {
+    if (!vaultDoc.expirationDate) {
+      blockers.push({
+        type: 'CONTRACTOR_INSURANCE_MISSING',
+        message: `Contractor ${label} is missing an expiration date.`,
+        contractorDocumentId: vaultDoc.id,
+      })
+      return
+    }
+    expiryDate = vaultDoc.expirationDate
+    contractorDocumentId = vaultDoc.id
+  } else if (legacyDate) {
+    expiryDate = legacyDate
+  } else {
+    blockers.push({
+      type: 'CONTRACTOR_INSURANCE_MISSING',
+      message: `Contractor ${label} with an expiration date is required before submission.`,
+    })
+    return
+  }
+
   const days = daysBetween(now, expiryDate)
   if (days < 0) {
     blockers.push({
       type: 'CONTRACTOR_INSURANCE_EXPIRED',
       message: `Contractor ${label} expired ${Math.abs(days)} day(s) ago.`,
+      contractorDocumentId,
     })
   } else if (days <= blockWithinDays) {
     blockers.push({
       type: 'CONTRACTOR_INSURANCE_EXPIRING_SOON',
       message: `${label} expires in ${days} day(s) — too soon for submission.`,
+      contractorDocumentId,
     })
   }
 }
