@@ -7,7 +7,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'fs'
 import path from 'path'
-import { uniquifyArchivePath } from './export-engine'
+import { uniquifyArchivePath, sanitizeArchivePath } from './export-engine'
 import { requirementAppliesToPermitType } from './checklist-engine'
 import { normalizeRole, ForbiddenError } from './permissions'
 
@@ -53,12 +53,16 @@ describe('readiness evaluates live jurisdiction catalog', () => {
 })
 
 describe('ReadyToSubmit cannot bypass status gate', () => {
-  it('PATCH rejects internalStage updates', () => {
+  it('PATCH rejects status and internalStage updates', () => {
     const source = fs.readFileSync(
       path.join(process.cwd(), 'app/api/permits/[id]/route.ts'),
       'utf8'
     )
-    assert.match(source, /internalStage cannot be updated via PATCH/)
+    assert.match(
+      source,
+      /status and internalStage cannot be updated via PATCH/
+    )
+    assert.match(source, /body\?\.status !== undefined/)
   })
 
   it('create rejects ReadyToSubmit', () => {
@@ -158,6 +162,75 @@ describe('export archive path uniquify', () => {
     assert.ok(used.has('MANIFEST.txt'))
     assert.ok(used.has('MANIFEST_2.txt'))
   })
+
+  it('strips Zip Slip traversal from archive entry paths', () => {
+    assert.equal(sanitizeArchivePath('../../../tmp/pwned/file.pdf'), 'tmp/pwned/file.pdf')
+    assert.equal(sanitizeArchivePath('/etc/passwd'), 'etc/passwd')
+    assert.equal(sanitizeArchivePath('..\\..\\evil.pdf'), 'evil.pdf')
+    assert.equal(sanitizeArchivePath('01_App/Application.pdf'), '01_App/Application.pdf')
+    assert.equal(sanitizeArchivePath(''), 'document')
+    assert.equal(sanitizeArchivePath('../..'), 'document')
+
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/export-engine.ts'),
+      'utf8'
+    )
+    assert.match(source, /sanitizeArchivePath/)
+    assert.match(
+      source,
+      /Array\.isArray\(r\.categories\)/,
+      'Malformed folderStructure without categories must not crash export'
+    )
+  })
+})
+
+describe('document delete clears FKs before removing the blob', () => {
+  it('deletes the DB row inside a transaction before storage.delete', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/documents/[id]/route.ts'),
+      'utf8'
+    )
+    const deleteFn = source.slice(source.indexOf('export async function DELETE'))
+    const txIdx = deleteFn.indexOf('$transaction')
+    const storageIdx = deleteFn.indexOf('storage.delete')
+    assert.ok(txIdx >= 0, 'DELETE must use a transaction for FK cleanup')
+    assert.ok(storageIdx >= 0, 'DELETE must still remove the storage blob')
+    assert.ok(
+      txIdx < storageIdx,
+      'DB delete must precede storage.delete to avoid ghost rows after FK failures'
+    )
+    assert.match(deleteFn, /checklistItem\.updateMany/)
+    assert.match(deleteFn, /parentDocumentId:\s*null/)
+  })
+})
+
+describe('readiness requires Verified document status', () => {
+  it('does not accept isVerified alone when status is Rejected or Pending', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/readiness-engine.ts'),
+      'utf8'
+    )
+    assert.match(
+      source,
+      /item\.document\.status\s*!==\s*['"]Verified['"]/,
+      'Rejected/Pending documents must not satisfy ReadyToSubmit'
+    )
+  })
+})
+
+describe('contractor vault renew is transactional', () => {
+  it('supersedes previous docs and creates the replacement in one transaction', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/contractors/[id]/documents/route.ts'),
+      'utf8'
+    )
+    const postFn = source.slice(source.indexOf('export async function POST'))
+    assert.match(postFn, /\$transaction/)
+    const txBlockStart = postFn.indexOf('$transaction')
+    const txSlice = postFn.slice(txBlockStart, txBlockStart + 1200)
+    assert.match(txSlice, /updateMany/)
+    assert.match(txSlice, /contractorDocument\.create/)
+  })
 })
 
 describe('normalizeRole fails closed on unknown roles', () => {
@@ -201,6 +274,27 @@ describe('review approve re-checks readiness', () => {
     )
     assert.match(approveBranch, /evaluateReadiness/)
     assert.match(approveBranch, /no longer ready/)
+  })
+
+  it('does not mark ReadyToSubmit when assigning a reviewer', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/permits/[id]/review/route.ts'),
+      'utf8'
+    )
+    const assignBranch = source.slice(
+      source.indexOf('if (body.reviewerId)'),
+      source.indexOf("const { action, note } = reviewActionSchema.parse(body)")
+    )
+    assert.match(
+      assignBranch,
+      /internalStage:\s*['"]InProgress['"]/,
+      'Assign must leave the package InProgress until approve'
+    )
+    assert.doesNotMatch(
+      assignBranch,
+      /internalStage:\s*['"]ReadyToSubmit['"]/,
+      'ReadyToSubmit before review completes mislabels packages as county-ready'
+    )
   })
 })
 
@@ -255,5 +349,79 @@ describe('permit type/jurisdiction change syncs checklist atomically', () => {
     )
     assert.match(source, /applicableIds\.size === 0/)
     assert.match(source, /\$transaction/)
+  })
+})
+
+describe('Next 15 async request params', () => {
+  it('permit write routes type params as Promise and await them', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/permits/[id]/route.ts'),
+      'utf8'
+    )
+    assert.match(source, /params:\s*Promise<\{ id: string \}>/)
+    assert.match(source, /await props\.params/)
+    assert.doesNotMatch(source, /params:\s*\{\s*id:\s*string\s*\}/)
+  })
+
+  it('permit list page awaits Promise searchParams', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/permits/page.tsx'),
+      'utf8'
+    )
+    assert.match(source, /searchParams:\s*Promise</)
+    assert.match(source, /await props\.searchParams/)
+  })
+})
+
+describe('review comments cannot be injected across assignments', () => {
+  it('requires send_back permission and assignee/admin authorship', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/review-assignments/[id]/comments/route.ts'),
+      'utf8'
+    )
+    const postFn = source.slice(source.indexOf('export async function POST'))
+    assert.match(postFn, /enforce\(role, 'send_back', 'review'\)/)
+    assert.match(postFn, /assignment\.reviewerId !== session\.user\.id/)
+    assert.doesNotMatch(
+      postFn,
+      /enforce\([^)]*'read',\s*'review'\)/,
+      'Comment create must not be gated only on review.read'
+    )
+  })
+
+  it('scopes documentId and checklistItemId to the assignment package', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/review-assignments/[id]/comments/route.ts'),
+      'utf8'
+    )
+    const postFn = source.slice(source.indexOf('export async function POST'))
+    assert.match(postFn, /permitPackageId:\s*assignment\.packageId/)
+    assert.match(postFn, /packageId:\s*assignment\.packageId/)
+    assert.match(postFn, /documentId must belong to the same permit package/)
+    assert.match(postFn, /checklistItemId must belong to the same permit package/)
+  })
+})
+
+describe('task updates cannot reassign permit packages', () => {
+  it('omits permitPackageId from taskUpdateSchema', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/validations.ts'),
+      'utf8'
+    )
+    assert.match(
+      source,
+      /taskUpdateSchema\s*=\s*taskSchema\.omit\(\{\s*permitPackageId:\s*true\s*\}\)\.partial\(\)/
+    )
+  })
+})
+
+describe('permit detail status edits use gated status route', () => {
+  it('posts status changes to /status instead of PATCH', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/permits/[id]/permit-detail-client.tsx'),
+      'utf8'
+    )
+    assert.match(source, /\/api\/permits\/\$\{permit\.id\}\/status/)
+    assert.match(source, /field === 'status'/)
   })
 })

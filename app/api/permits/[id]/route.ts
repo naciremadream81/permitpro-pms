@@ -13,10 +13,8 @@ import { Prisma } from '@prisma/client'
 import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // GET /api/permits/[id] - Get permit by ID with all related data
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -65,10 +63,8 @@ export async function GET(
 }
 
 // PATCH /api/permits/[id] - Update permit
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -81,11 +77,13 @@ export async function PATCH(
 
     // ReadyToSubmit (and other stage moves) must use POST /api/permits/[id]/status
     // so the readiness gate cannot be bypassed via this general update path.
-    if (body?.internalStage !== undefined) {
+    // Status transitions also must use that route — PATCH was skipping Approved →
+    // "Send to Billing" automation and other status-route side effects.
+    if (body?.internalStage !== undefined || body?.status !== undefined) {
       return NextResponse.json(
         {
           error:
-            'internalStage cannot be updated via PATCH; use POST /api/permits/[id]/status',
+            'status and internalStage cannot be updated via PATCH; use POST /api/permits/[id]/status',
         },
         { status: 400 }
       )
@@ -180,10 +178,8 @@ export async function PATCH(
 }
 
 // DELETE /api/permits/[id] - Delete permit
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()

@@ -9,10 +9,8 @@ import { generateChecklist, checklistCompletionPct } from '@/lib/checklist-engin
 import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // GET /api/permits/[id]/checklist — fetch all checklist items with requirement detail
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -59,10 +57,8 @@ export async function GET(
 }
 
 // POST /api/permits/[id]/checklist — (re)generate checklist from jurisdiction requirements
-export async function POST(
-  _request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(_request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

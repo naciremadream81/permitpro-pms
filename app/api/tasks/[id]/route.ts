@@ -12,10 +12,8 @@ import { Prisma } from '@prisma/client'
 import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // PATCH /api/tasks/[id] - Update task
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -79,10 +77,8 @@ export async function PATCH(
 }
 
 // DELETE /api/tasks/[id] - Delete task
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()

@@ -31,11 +31,12 @@ async function getContractor(id: string) {
   return contractor
 }
 
-export default async function ContractorDetailPage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default async function ContractorDetailPage(
+  props: {
+    params: Promise<{ id: string }>
+  }
+) {
+  const params = await props.params;
   const contractor = await getContractor(params.id)
 
   if (!contractor) {

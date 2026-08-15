@@ -14,10 +14,8 @@ import { prisma } from '@/lib/prisma'
 import { buildExportZip } from '@/lib/export-engine'
 import { handleApiError, requirePermission, sanitizeContentDispositionFilename } from '@/lib/api-security'
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getSession()
     if (!session) {

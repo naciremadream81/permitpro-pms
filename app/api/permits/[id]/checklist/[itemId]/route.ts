@@ -11,8 +11,9 @@ import { checklistItemUpdateSchema, checklistItemWaiveSchema } from '@/lib/valid
 // PATCH /api/permits/[id]/checklist/[itemId]
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; itemId: string } }
+  props: { params: Promise<{ id: string; itemId: string }> }
 ) {
+  const params = await props.params;
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
