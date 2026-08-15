@@ -9,13 +9,15 @@
  */
 
 import { prisma } from '@/lib/prisma'
-import { PermitType } from '@prisma/client'
+import { PermitType, Prisma } from '@prisma/client'
 
 export interface ChecklistGenerationResult {
   generated: number
   skipped: number   // already existed (idempotent re-runs)
   requirementIds: string[]
 }
+
+type DbClient = Prisma.TransactionClient | typeof prisma
 
 /**
  * Generate checklist items for a permit package.
@@ -27,12 +29,14 @@ export interface ChecklistGenerationResult {
  * not duplicated.
  *
  * @param packageId  ID of the PermitPackage
+ * @param db         Optional Prisma client / transaction client
  * @returns          Count of generated and skipped items
  */
 export async function generateChecklist(
-  packageId: string
+  packageId: string,
+  db: DbClient = prisma
 ): Promise<ChecklistGenerationResult> {
-  const pkg = await prisma.permitPackage.findUnique({
+  const pkg = await db.permitPackage.findUnique({
     where: { id: packageId },
     select: {
       id: true,
@@ -51,7 +55,7 @@ export async function generateChecklist(
   }
 
   // Fetch active requirements for this jurisdiction
-  const requirements = await prisma.requirement.findMany({
+  const requirements = await db.requirement.findMany({
     where: {
       jurisdictionId: pkg.jurisdictionId,
       isActive: true,
@@ -69,7 +73,7 @@ export async function generateChecklist(
   }
 
   // Load existing checklist item requirement IDs to avoid duplicates
-  const existing = await prisma.checklistItem.findMany({
+  const existing = await db.checklistItem.findMany({
     where: { packageId },
     select: { requirementId: true },
   })
@@ -78,7 +82,7 @@ export async function generateChecklist(
   const toCreate = applicable.filter((req) => !existingSet.has(req.id))
 
   if (toCreate.length > 0) {
-    await prisma.checklistItem.createMany({
+    await db.checklistItem.createMany({
       data: toCreate.map((req) => ({
         packageId,
         requirementId: req.id,
@@ -87,7 +91,7 @@ export async function generateChecklist(
     })
 
     // Log the generation event
-    await prisma.activityLog.create({
+    await db.activityLog.create({
       data: {
         permitPackageId: packageId,
         activityType: 'ChecklistGenerated',
@@ -116,11 +120,26 @@ export async function generateChecklist(
  * VERIFIED / WAIVED / NOT_APPLICABLE) and adds items for newly applicable
  * requirements. Leaving stale verified items would let ReadyToSubmit pass
  * with documents from the previous jurisdiction or permit type.
+ *
+ * Delete + regenerate run in one transaction (unless a transaction client is
+ * already provided) so a mid-sync failure cannot wipe items without restoring
+ * replacements.
  */
 export async function syncChecklist(
-  packageId: string
+  packageId: string,
+  db?: DbClient
 ): Promise<ChecklistGenerationResult> {
-  const pkg = await prisma.permitPackage.findUnique({
+  if (db) {
+    return syncChecklistWithClient(packageId, db)
+  }
+  return prisma.$transaction((tx) => syncChecklistWithClient(packageId, tx))
+}
+
+async function syncChecklistWithClient(
+  packageId: string,
+  db: DbClient
+): Promise<ChecklistGenerationResult> {
+  const pkg = await db.permitPackage.findUnique({
     where: { id: packageId },
     select: {
       id: true,
@@ -133,7 +152,7 @@ export async function syncChecklist(
     return { generated: 0, skipped: 0, requirementIds: [] }
   }
 
-  const requirements = await prisma.requirement.findMany({
+  const requirements = await db.requirement.findMany({
     where: { jurisdictionId: pkg.jurisdictionId, isActive: true },
     orderBy: { order: 'asc' },
   })
@@ -144,16 +163,23 @@ export async function syncChecklist(
       .map((r) => r.id)
   )
 
-  // Remove all items whose requirement no longer applies — not only PENDING.
-  await prisma.checklistItem.deleteMany({
-    where: {
-      packageId: { equals: packageId },
-      requirementId: { notIn: Array.from(applicableIds) },
-    },
-  })
+  // Prisma renders `notIn: []` as `1=1` (match all). Prefer an explicit
+  // package-scoped delete when nothing applies so intent is obvious.
+  if (applicableIds.size === 0) {
+    await db.checklistItem.deleteMany({
+      where: { packageId: { equals: packageId } },
+    })
+  } else {
+    await db.checklistItem.deleteMany({
+      where: {
+        packageId: { equals: packageId },
+        requirementId: { notIn: Array.from(applicableIds) },
+      },
+    })
+  }
 
   // Add new items for requirements not yet on the checklist
-  return generateChecklist(packageId)
+  return generateChecklist(packageId, db)
 }
 
 /**

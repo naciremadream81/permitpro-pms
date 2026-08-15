@@ -39,11 +39,12 @@ async function getContractors(searchParams: { [key: string]: string | string[] |
   return { contractors, total, page, limit, totalPages: Math.ceil(total / limit) }
 }
 
-export default async function ContractorsPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined }
-}) {
+export default async function ContractorsPage(
+  props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+  }
+) {
+  const searchParams = await props.searchParams;
   const data = await getContractors(searchParams)
 
   return (

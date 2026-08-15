@@ -84,7 +84,7 @@ describe('permit PATCH resyncs checklist on jurisdiction/type change', () => {
     assert.match(source, /import \{ syncChecklist \} from '@\/lib\/checklist-engine'/)
     assert.match(source, /jurisdictionChanged/)
     assert.match(source, /permitTypeChanged/)
-    assert.match(source, /await syncChecklist\(params\.id\)/)
+    assert.match(source, /syncChecklist\(params\.id/)
   })
 })
 

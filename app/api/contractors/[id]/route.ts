@@ -9,12 +9,11 @@ import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { contractorUpdateSchema } from '@/lib/validations'
 import { handleApiError, requirePermission } from '@/lib/api-security'
+import { deleteContractorIfNoPackages } from '@/lib/safe-parent-delete'
 
 // GET /api/contractors/[id] - Get contractor by ID
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -51,10 +50,8 @@ export async function GET(
 }
 
 // PATCH /api/contractors/[id] - Update contractor
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -81,10 +78,8 @@ export async function PATCH(
 }
 
 // DELETE /api/contractors/[id] - Delete contractor
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -93,21 +88,18 @@ export async function DELETE(
     }
     requirePermission(session, 'delete', 'contractor')
 
-    // Check if contractor has permit packages
-    const permitCount = await prisma.permitPackage.count({
-      where: { contractorId: params.id },
-    })
-
-    if (permitCount > 0) {
+    // Atomic guard: PermitPackage.contractor is ON DELETE CASCADE, so a
+    // count-then-delete race can wipe a package created in the gap.
+    const result = await deleteContractorIfNoPackages(params.id)
+    if (result === 'has_packages') {
       return NextResponse.json(
         { error: 'Cannot delete contractor with existing permit packages' },
         { status: 400 }
       )
     }
-
-    await prisma.contractor.delete({
-      where: { id: params.id },
-    })
+    if (result === 'not_found') {
+      return NextResponse.json({ error: 'Contractor not found' }, { status: 404 })
+    }
 
     return NextResponse.json({ message: 'Contractor deleted successfully' })
   } catch (error) {

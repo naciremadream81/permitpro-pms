@@ -12,10 +12,8 @@ import { documentUpdateSchema } from '@/lib/validations'
 import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // GET /api/documents/[id] - Get document by ID
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -54,10 +52,8 @@ export async function GET(
 }
 
 // PATCH /api/documents/[id] - Update document metadata
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -105,10 +101,8 @@ export async function PATCH(
 }
 
 // DELETE /api/documents/[id] - Delete document
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -125,28 +119,40 @@ export async function DELETE(
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // Delete file from storage
+    // Persist DB changes before touching storage. Deleting the blob first left
+    // ghost rows when Prisma rejected the delete (checklist/review/version FKs).
+    await prisma.$transaction(async (tx) => {
+      await tx.checklistItem.updateMany({
+        where: { documentId: params.id },
+        data: { documentId: null },
+      })
+      await tx.reviewComment.updateMany({
+        where: { documentId: params.id },
+        data: { documentId: null },
+      })
+      await tx.permitDocument.updateMany({
+        where: { parentDocumentId: params.id },
+        data: { parentDocumentId: null },
+      })
+      await tx.permitDocument.delete({
+        where: { id: params.id },
+      })
+      await tx.activityLog.create({
+        data: {
+          permitPackageId: document.permitPackageId,
+          userId: session.user.id,
+          activityType: 'FieldUpdated',
+          description: `Document "${document.fileName}" deleted`,
+        },
+      })
+    })
+
     try {
       await storage.delete(document.storagePath)
     } catch (error) {
-      console.error('Error deleting file from storage:', error)
-      // Continue with database deletion even if file deletion fails
+      console.error('Error deleting file from storage after DB delete:', error)
+      // Row is already gone — orphan blob is recoverable; ghost row is not.
     }
-
-    // Delete document record
-    await prisma.permitDocument.delete({
-      where: { id: params.id },
-    })
-
-    // Create activity log entry
-    await prisma.activityLog.create({
-      data: {
-        permitPackageId: document.permitPackageId,
-        userId: session.user.id,
-        activityType: 'FieldUpdated',
-        description: `Document "${document.fileName}" deleted`,
-      },
-    })
 
     return NextResponse.json({ message: 'Document deleted successfully' })
   } catch (error) {

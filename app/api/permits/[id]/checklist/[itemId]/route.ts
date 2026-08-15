@@ -11,8 +11,9 @@ import { checklistItemUpdateSchema, checklistItemWaiveSchema } from '@/lib/valid
 // PATCH /api/permits/[id]/checklist/[itemId]
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; itemId: string } }
+  props: { params: Promise<{ id: string; itemId: string }> }
 ) {
+  const params = await props.params;
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -79,7 +80,10 @@ export async function PATCH(
 
     const requiresLinkedDocument =
       !!data.documentId || data.status === 'VERIFIED' || data.status === 'UPLOADED'
-    const targetDocumentId = data.documentId ?? existingItem.documentId ?? undefined
+    const documentIdProvided = Object.prototype.hasOwnProperty.call(data, 'documentId')
+    const targetDocumentId = documentIdProvided
+      ? data.documentId ?? undefined
+      : existingItem.documentId ?? undefined
 
     if (requiresLinkedDocument) {
       if (!targetDocumentId) {

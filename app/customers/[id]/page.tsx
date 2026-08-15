@@ -31,11 +31,12 @@ async function getCustomer(id: string) {
   return customer
 }
 
-export default async function CustomerDetailPage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default async function CustomerDetailPage(
+  props: {
+    params: Promise<{ id: string }>
+  }
+) {
+  const params = await props.params;
   const customer = await getCustomer(params.id)
 
   if (!customer) {

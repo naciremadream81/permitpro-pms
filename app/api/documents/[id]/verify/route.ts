@@ -11,10 +11,8 @@ import { documentVerifySchema } from '@/lib/validations'
 import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // POST /api/documents/[id]/verify - Verify or unverify a document
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
