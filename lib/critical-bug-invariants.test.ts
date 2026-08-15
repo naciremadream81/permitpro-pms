@@ -271,6 +271,27 @@ describe('review approve re-checks readiness', () => {
     assert.match(approveBranch, /evaluateReadiness/)
     assert.match(approveBranch, /no longer ready/)
   })
+
+  it('does not mark ReadyToSubmit when assigning a reviewer', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/permits/[id]/review/route.ts'),
+      'utf8'
+    )
+    const assignBranch = source.slice(
+      source.indexOf('if (body.reviewerId)'),
+      source.indexOf("const { action, note } = reviewActionSchema.parse(body)")
+    )
+    assert.match(
+      assignBranch,
+      /internalStage:\s*['"]InProgress['"]/,
+      'Assign must leave the package InProgress until approve'
+    )
+    assert.doesNotMatch(
+      assignBranch,
+      /internalStage:\s*['"]ReadyToSubmit['"]/,
+      'ReadyToSubmit before review completes mislabels packages as county-ready'
+    )
+  })
 })
 
 describe('status route enforces package update permission', () => {
