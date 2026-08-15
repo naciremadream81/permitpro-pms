@@ -308,6 +308,50 @@ describe('status route enforces package update permission', () => {
   })
 })
 
+describe('storage get/delete use path.relative containment', () => {
+  it('does not use startsWith for root checks on get/delete', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/storage.ts'),
+      'utf8'
+    )
+    assert.match(source, /resolveWithinRoot/)
+    assert.match(source, /path\.relative/)
+    // Prefix startsWith allows /storage-evil when root is /storage
+    const getFn = source.slice(
+      source.indexOf('async get(filePath'),
+      source.indexOf('async delete(filePath')
+    )
+    const deleteFn = source.slice(
+      source.indexOf('async delete(filePath'),
+      source.indexOf('async exists(filePath')
+    )
+    assert.doesNotMatch(getFn, /startsWith/)
+    assert.doesNotMatch(deleteFn, /startsWith/)
+    assert.match(getFn, /resolveWithinRoot/)
+    assert.match(deleteFn, /resolveWithinRoot/)
+  })
+})
+
+describe('permit type/jurisdiction change syncs checklist atomically', () => {
+  it('runs permit update and syncChecklist inside the same transaction', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/permits/[id]/route.ts'),
+      'utf8'
+    )
+    assert.match(source, /\$transaction/)
+    assert.match(source, /syncChecklist\(params\.id,\s*tx\)/)
+  })
+
+  it('syncChecklist uses an explicit empty-applicable delete and a transaction by default', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/checklist-engine.ts'),
+      'utf8'
+    )
+    assert.match(source, /applicableIds\.size === 0/)
+    assert.match(source, /\$transaction/)
+  })
+})
+
 describe('Next 15 async request params', () => {
   it('permit write routes type params as Promise and await them', () => {
     const source = fs.readFileSync(
