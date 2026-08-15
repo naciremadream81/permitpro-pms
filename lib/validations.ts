@@ -295,7 +295,9 @@ export const taskSchema = z.object({
   priority: z.enum(['low', 'medium', 'high']).optional(),
 })
 
-export const taskUpdateSchema = taskSchema.partial()
+// permitPackageId is immutable after create — allowing it on PATCH silently
+// moves tasks across packages and drops workflow obligations (e.g. billing).
+export const taskUpdateSchema = taskSchema.omit({ permitPackageId: true }).partial()
 
 // ============================================================================
 // DOCUMENT

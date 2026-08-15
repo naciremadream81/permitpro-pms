@@ -39,7 +39,12 @@ export async function POST(
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    enforce(normalizeRole(session.user?.role), 'read', 'review') // any authenticated user with review access
+
+    const role = normalizeRole(session.user?.role)
+    // Comment authors must be able to participate in review (not merely read).
+    // `review.read` alone let any reviewer inject unresolved comments onto others'
+    // SENT_BACK assignments and permanently block ReadyToSubmit (reviewers cannot resolve).
+    enforce(role, 'send_back', 'review')
 
     const assignment = await prisma.reviewAssignment.findUnique({
       where: { id: params.id },
@@ -47,8 +52,44 @@ export async function POST(
     if (!assignment)
       return NextResponse.json({ error: 'Review assignment not found' }, { status: 404 })
 
+    // Only the assigned reviewer (or an admin acting for them) may comment.
+    if (role !== 'admin' && assignment.reviewerId !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Only the assigned reviewer or an admin may add review comments' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     const data = reviewCommentSchema.parse(body)
+
+    // Pin targets must belong to this package — otherwise comments can reference
+    // another permit's documents/checklist items and corrupt review state.
+    if (data.documentId) {
+      const document = await prisma.permitDocument.findFirst({
+        where: { id: data.documentId, permitPackageId: assignment.packageId },
+        select: { id: true },
+      })
+      if (!document) {
+        return NextResponse.json(
+          { error: 'documentId must belong to the same permit package as the review assignment' },
+          { status: 400 }
+        )
+      }
+    }
+
+    if (data.checklistItemId) {
+      const item = await prisma.checklistItem.findFirst({
+        where: { id: data.checklistItemId, packageId: assignment.packageId },
+        select: { id: true },
+      })
+      if (!item) {
+        return NextResponse.json(
+          { error: 'checklistItemId must belong to the same permit package as the review assignment' },
+          { status: 400 }
+        )
+      }
+    }
 
     const comment = await prisma.reviewComment.create({
       data: {
