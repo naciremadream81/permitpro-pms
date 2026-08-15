@@ -13,10 +13,8 @@ import { Prisma } from '@prisma/client'
 import { handleApiError, requirePermission } from '@/lib/api-security'
 
 // GET /api/permits/[id] - Get permit by ID with all related data
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -65,10 +63,8 @@ export async function GET(
 }
 
 // PATCH /api/permits/[id] - Update permit
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -81,11 +77,13 @@ export async function PATCH(
 
     // ReadyToSubmit (and other stage moves) must use POST /api/permits/[id]/status
     // so the readiness gate cannot be bypassed via this general update path.
-    if (body?.internalStage !== undefined) {
+    // Status transitions also must use that route — PATCH was skipping Approved →
+    // "Send to Billing" automation and other status-route side effects.
+    if (body?.internalStage !== undefined || body?.status !== undefined) {
       return NextResponse.json(
         {
           error:
-            'internalStage cannot be updated via PATCH; use POST /api/permits/[id]/status',
+            'status and internalStage cannot be updated via PATCH; use POST /api/permits/[id]/status',
         },
         { status: 400 }
       )
@@ -109,31 +107,42 @@ export async function PATCH(
       data.targetIssueDate = new Date(validatedData.targetIssueDate)
     }
 
-    // Update permit package
-    const permitPackage = await prisma.permitPackage.update({
-      where: { id: params.id },
-      data,
-      include: {
-        customer: {
-          select: { id: true, name: true },
-        },
-        contractor: {
-          select: { id: true, companyName: true },
-        },
-      },
-    })
-
     // Jurisdiction / permit type changes must resync checklist items. Without this,
     // ReadyToSubmit can pass with an empty or stale checklist after a type switch.
+    // Run update + sync in one transaction: a failed sync after deleteMany otherwise
+    // leaves a wiped checklist, and retrying the same type skips sync entirely.
     const jurisdictionChanged =
       validatedData.jurisdictionId !== undefined &&
       validatedData.jurisdictionId !== currentPermit.jurisdictionId
     const permitTypeChanged =
       validatedData.permitType !== undefined &&
       validatedData.permitType !== currentPermit.permitType
-    if (jurisdictionChanged || permitTypeChanged) {
-      await syncChecklist(params.id)
-    }
+
+    const includeRelations = {
+      customer: {
+        select: { id: true, name: true },
+      },
+      contractor: {
+        select: { id: true, companyName: true },
+      },
+    } as const
+
+    const permitPackage =
+      jurisdictionChanged || permitTypeChanged
+        ? await prisma.$transaction(async (tx) => {
+            const updated = await tx.permitPackage.update({
+              where: { id: params.id },
+              data,
+              include: includeRelations,
+            })
+            await syncChecklist(params.id, tx)
+            return updated
+          })
+        : await prisma.permitPackage.update({
+            where: { id: params.id },
+            data,
+            include: includeRelations,
+          })
 
     // Log status changes
     if (validatedData.status && validatedData.status !== currentPermit.status) {
@@ -169,10 +178,8 @@ export async function PATCH(
 }
 
 // DELETE /api/permits/[id] - Delete permit
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()

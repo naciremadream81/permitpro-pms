@@ -175,27 +175,45 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
     setError('')
 
     try {
-      const updateData: Record<string, unknown> = {}
-      
-      // Handle different field types
-      if (field === 'targetIssueDate') {
-        updateData[field] = editValue ? new Date(editValue).toISOString() : null
+      // Status transitions go through the gated status route so Approved packages
+      // still get "Send to Billing" automation and activity logging.
+      if (field === 'status') {
+        const response = await fetch(`/api/permits/${permit.id}/status`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: editValue }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to update permit status')
+        }
       } else {
-        updateData[field] = editValue || null
-      }
+        const updateData: Record<string, unknown> = {}
 
-      const response = await fetch(`/api/permits/${permit.id}`, {
-        method: 'PATCH',
-        credentials: 'include', // Include cookies for authentication
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
-      })
+        // Handle different field types
+        if (field === 'targetIssueDate') {
+          updateData[field] = editValue ? new Date(editValue).toISOString() : null
+        } else {
+          updateData[field] = editValue || null
+        }
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update permit')
+        const response = await fetch(`/api/permits/${permit.id}`, {
+          method: 'PATCH',
+          credentials: 'include', // Include cookies for authentication
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(updateData),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to update permit')
+        }
       }
 
       await refreshPermit()

@@ -8,10 +8,8 @@ import { prisma } from '@/lib/prisma'
 import { evaluateReadiness } from '@/lib/readiness-engine'
 
 // GET /api/permits/[id]/readiness — evaluate readiness without triggering a transition
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

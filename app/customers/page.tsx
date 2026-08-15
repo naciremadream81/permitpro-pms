@@ -40,11 +40,12 @@ async function getCustomers(searchParams: { [key: string]: string | string[] | u
   return { customers, total, page, limit, totalPages: Math.ceil(total / limit) }
 }
 
-export default async function CustomersPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined }
-}) {
+export default async function CustomersPage(
+  props: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+  }
+) {
+  const searchParams = await props.searchParams;
   const data = await getCustomers(searchParams)
 
   return (

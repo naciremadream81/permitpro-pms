@@ -12,10 +12,8 @@ import { handleApiError, requirePermission } from '@/lib/api-security'
 import { deleteCustomerIfNoPackages } from '@/lib/safe-parent-delete'
 
 // GET /api/customers/[id] - Get customer by ID
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -52,10 +50,8 @@ export async function GET(
 }
 
 // PATCH /api/customers/[id] - Update customer
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
@@ -82,10 +78,8 @@ export async function PATCH(
 }
 
 // DELETE /api/customers/[id] - Delete customer
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()

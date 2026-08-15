@@ -92,7 +92,10 @@ export async function buildExportZip(
       const fileBuffer = await storage.get(doc.storagePath)
       const archiveName = buildFileName(namingPattern, doc.category, doc.fileName, doc.versionTag)
       const folder = resolveFolder(folderRules, doc.category)
-      const archivePath = folder ? `${folder}/${archiveName}` : archiveName
+      // sanitizeArchivePath strips ../ and absolute segments (Zip Slip).
+      const archivePath = sanitizeArchivePath(
+        folder ? `${folder}/${archiveName}` : archiveName
+      )
       resolvedDocs.push({
         buffer: fileBuffer,
         archivePath,
@@ -240,7 +243,10 @@ export class ExportIncompleteError extends Error {
 
 function resolveFolder(rules: FolderRule[], category: string): string | null {
   if (!rules.length) return null
-  const match = rules.find((r) => r.categories.includes(category))
+  // Malformed profile rows may omit categories — never throw mid-export.
+  const match = rules.find(
+    (r) => Array.isArray(r.categories) && r.categories.includes(category)
+  )
   return match?.folder ?? rules[rules.length - 1]?.folder ?? null
 }
 
@@ -251,10 +257,30 @@ function buildFileName(
   versionTag?: string | null
 ): string {
   const safe = (s: string) => s.replace(/[^a-zA-Z0-9._-]/g, '_')
-  return pattern
-    .replace('{category}', safe(category))
-    .replace('{fileName}', safe(fileName))
-    .replace('{version}', safe(versionTag ?? 'v1'))
+  // Pattern literals are not sanitized by token replacement alone — e.g.
+  // fileNamingPattern "../../../evil_{fileName}" would otherwise embed ../.
+  return sanitizeArchivePath(
+    pattern
+      .replace('{category}', safe(category))
+      .replace('{fileName}', safe(fileName))
+      .replace('{version}', safe(versionTag ?? 'v1'))
+  )
+}
+
+/**
+ * Normalize a ZIP entry path so unzip/county tooling cannot write outside the
+ * extract directory (Zip Slip). Strips absolute roots, `.` / `..` segments,
+ * backslashes, and empty parts.
+ */
+export function sanitizeArchivePath(archivePath: string): string {
+  const normalized = archivePath.replace(/\\/g, '/').replace(/\/+/g, '/')
+  const segments = normalized
+    .split('/')
+    .filter((segment) => segment.length > 0 && segment !== '.' && segment !== '..')
+    .map((segment) => segment.replace(/[^a-zA-Z0-9._-]/g, '_'))
+    .filter((segment) => segment.length > 0 && segment !== '.' && segment !== '..')
+
+  return segments.length > 0 ? segments.join('/') : 'document'
 }
 
 /** Ensure each archive entry path is unique within the ZIP. */

@@ -11,10 +11,8 @@ import { storage, isPreviewable } from '@/lib/storage'
 import { handleApiError, requirePermission, sanitizeContentDispositionFilename } from '@/lib/api-security'
 
 // GET /api/documents/[id]/preview - Preview document (for PDFs and images)
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     // Check authentication
     const session = await getSession()
