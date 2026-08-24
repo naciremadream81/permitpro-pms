@@ -50,7 +50,7 @@ export async function PATCH(
     const body = await request.json()
     const data = exportProfileUpdateSchema.parse(body)
 
-    const current = await prisma.exportProfile.findUnique({ where: { id: params.id } })
+    const current = await prisma.exportProfile.findUnique({ where: { id: (await params).id } })
     if (!current) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 
     if (data.isDefault) {
