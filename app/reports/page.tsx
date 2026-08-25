@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useCallback } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/ui/badge'
 import {
@@ -615,30 +615,29 @@ export default function ReportsPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[22px] font-semibold tracking-tight text-ink">Reports</h1>
-            <p className="text-sm text-muted mt-0.5">Operational analytics and compliance tracking</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setRefreshKey(k => k + 1)}>
-              <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
-            </Button>
-            <a href={`/api/reports/${activeTab}?format=csv`} download>
-              <Button variant="outline" size="sm">
-                <Download className="h-3.5 w-3.5 mr-1" /> Export
+      <div className="mx-auto max-w-6xl">
+        <PageHeader
+          title="Reports"
+          description="Operational analytics and compliance tracking"
+          actions={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setRefreshKey(k => k + 1)}>
+                <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
               </Button>
-            </a>
-          </div>
-        </div>
+              <a href={`/api/reports/${activeTab}?format=csv`} download>
+                <Button variant="outline" size="sm">
+                  <Download className="h-3.5 w-3.5 mr-1" /> Export
+                </Button>
+              </a>
+            </>
+          }
+        />
 
-        <div className="flex gap-6 items-start">
+        <div className="flex gap-8 items-start pt-5">
           {/* Main panel */}
           <div className="flex-1 min-w-0">
             {/* Tabs */}
-            <div className="flex gap-0 border-b mb-4">
+            <div className="flex gap-0 border-b border-border">
               {TABS.map(tab => (
                 <button
                   key={tab.id}
@@ -656,34 +655,30 @@ export default function ReportsPage() {
               ))}
             </div>
 
-            {/* Report card */}
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  {activeTabConfig.icon}
-                  <CardTitle className="text-base">{activeTabConfig.label}</CardTitle>
-                </div>
-                <p className="text-xs text-muted">{activeTabConfig.description}</p>
-              </CardHeader>
-              <CardContent key={`${activeTab}-${refreshKey}`}>
+            {/* Report section */}
+            <section aria-label={activeTabConfig.label} className="pt-5">
+              <div className="flex items-center gap-2">
+                {activeTabConfig.icon}
+                <h2 className="text-xs font-bold uppercase tracking-[0.1em] text-ink">
+                  {activeTabConfig.label}
+                </h2>
+              </div>
+              <p className="mt-1 text-xs text-muted">{activeTabConfig.description}</p>
+              <div className="mt-4 border-t border-border pt-4" key={`${activeTab}-${refreshKey}`}>
                 {activeTab === 'pipeline' && <PipelineReport />}
                 {activeTab === 'stalled' && <StalledReport />}
                 {activeTab === 'contractor-compliance' && <ContractorComplianceReport />}
                 {activeTab === 'review-performance' && <ReviewPerformanceReport />}
-              </CardContent>
-            </Card>
+              </div>
+            </section>
           </div>
 
           {/* Saved views sidebar */}
-          <div className="w-56 flex-shrink-0">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Saved Views</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SavedViewsPanel activeType={activeTab} onLoad={handleLoadSaved} />
-              </CardContent>
-            </Card>
+          <div className="w-56 flex-shrink-0 border-l border-border pl-6">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-ink">Saved Views</p>
+            <div className="mt-4">
+              <SavedViewsPanel activeType={activeTab} onLoad={handleLoadSaved} />
+            </div>
           </div>
         </div>
       </div>

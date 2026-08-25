@@ -9,7 +9,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatDateTime, formatPermitType } from '@/lib/utils'
@@ -139,6 +138,33 @@ interface PermitData {
 
 interface PermitDetailClientProps {
   permit: PermitData
+}
+
+// Ruled full-width section header — replaces the old boxed <CardHeader>/<CardTitle>.
+// `meta` renders inline after the title (e.g. a completion % or a status pill);
+// `action` renders flush right (e.g. a button).
+function SectionHeader({
+  title,
+  meta,
+  action,
+}: {
+  title: React.ReactNode
+  meta?: React.ReactNode
+  action?: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-ink pb-2">
+      <h2 className="text-xs font-bold uppercase tracking-[0.1em] text-ink">
+        {title}
+        {meta && (
+          <span className="ml-2 text-xs font-normal normal-case tracking-normal text-muted">
+            {meta}
+          </span>
+        )}
+      </h2>
+      {action && <div className="flex flex-shrink-0 items-center gap-2">{action}</div>}
+    </div>
+  )
 }
 
 export function PermitDetailClient({ permit: initialPermit }: PermitDetailClientProps) {
@@ -716,11 +742,9 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
       )}
 
       {/* Overview - Editable */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <section aria-label="Overview">
+        <SectionHeader title="Overview" />
+        <div className="mt-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <p className="text-sm font-medium text-muted">Customer</p>
@@ -937,28 +961,26 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* County Checklist — generated from the jurisdiction's requirements */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>
-            County Checklist
-            {checklist.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-muted">{completionPct}% complete</span>
-            )}
-          </CardTitle>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={regenerateChecklist}
-            disabled={regenerating || !permit.jurisdictionId}
-          >
-            {regenerating ? 'Regenerating…' : 'Regenerate'}
-          </Button>
-        </CardHeader>
-        <CardContent>
+      <section aria-label="County Checklist">
+        <SectionHeader
+          title="County Checklist"
+          meta={checklist.length > 0 ? `${completionPct}% complete` : undefined}
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={regenerateChecklist}
+              disabled={regenerating || !permit.jurisdictionId}
+            >
+              {regenerating ? 'Regenerating…' : 'Regenerate'}
+            </Button>
+          }
+        />
+        <div className="mt-4">
           {!permit.jurisdictionId ? (
             <p className="text-sm text-muted">
               No jurisdiction assigned — pick a county in the Overview above to generate the document checklist.
@@ -1042,31 +1064,34 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               ))}
             </ul>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Review — internal QA before county submission */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>
-            Review
-            {latestAssignment && (
+      <section aria-label="Review">
+        <SectionHeader
+          title="Review"
+          meta={
+            latestAssignment && (
               <span
-                className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                   REVIEW_STATUS_STYLES[latestAssignment.status] ?? 'text-muted bg-surface-inset'
                 }`}
               >
                 {latestAssignment.status.replace(/_/g, ' ')}
               </span>
-            )}
-          </CardTitle>
-          {isReadyToSubmit && canSubmit && (
-            <Button size="sm" onClick={submitToCounty} disabled={reviewBusy}>
-              {reviewBusy ? 'Submitting…' : 'Submit to county'}
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent className="space-y-4">
+            )
+          }
+          action={
+            isReadyToSubmit &&
+            canSubmit && (
+              <Button size="sm" onClick={submitToCounty} disabled={reviewBusy}>
+                {reviewBusy ? 'Submitting…' : 'Submit to county'}
+              </Button>
+            )
+          }
+        />
+        <div className="mt-4 space-y-4">
           {isReadyToSubmit && (
             <div className="rounded-lg border border-success bg-surface p-3 text-sm">
               <span className="font-medium text-success">Ready to submit.</span>{' '}
@@ -1192,21 +1217,23 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
           {!isAdmin && !activeAssignment && !isReadyToSubmit && reviewAssignments.length === 0 && (
             <p className="text-sm text-muted">No active review. An admin can send this package to review.</p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Property — FL appraiser roll lookup */}
       <PropertyPanel address={permit.projectAddress} />
 
       {/* Tasks - With Add Functionality */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Tasks</CardTitle>
-          <Button size="sm" onClick={() => setShowTaskForm(!showTaskForm)}>
-            {showTaskForm ? 'Cancel' : 'Add Task'}
-          </Button>
-        </CardHeader>
-        <CardContent>
+      <section aria-label="Tasks">
+        <SectionHeader
+          title="Tasks"
+          action={
+            <Button size="sm" onClick={() => setShowTaskForm(!showTaskForm)}>
+              {showTaskForm ? 'Cancel' : 'Add Task'}
+            </Button>
+          }
+        />
+        <div className="mt-4">
           {/* Add Task Form */}
           {showTaskForm && (
             <form onSubmit={createTask} className="mb-4 p-4 border rounded-md bg-surface-inset">
@@ -1322,15 +1349,16 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
           ) : (
             <p className="text-muted">No tasks. Click &quot;Add Task&quot; to create one.</p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Documents - With Notes/Labels */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Documents ({permit.documents.length})</CardTitle>
-          <div className="flex gap-2">
-            {permit.documents.length > 0 && (
+      <section aria-label="Documents">
+        <SectionHeader
+          title={`Documents (${permit.documents.length})`}
+          action={
+            <>
+              {permit.documents.length > 0 && (
               <Button 
                 size="sm" 
                 variant="default"
@@ -1381,13 +1409,14 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               >
                 {downloadingZip ? 'Creating ZIP...' : 'Download All as ZIP'}
               </Button>
-            )}
-            <Button size="sm" onClick={() => setShowUploadForm(!showUploadForm)}>
-              {showUploadForm ? 'Cancel' : 'Upload Document'}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
+              )}
+              <Button size="sm" onClick={() => setShowUploadForm(!showUploadForm)}>
+                {showUploadForm ? 'Cancel' : 'Upload Document'}
+              </Button>
+            </>
+          }
+        />
+        <div className="mt-4">
           {/* Upload Document Form */}
           {showUploadForm && (
             <form onSubmit={uploadDocument} className="mb-4 p-4 border rounded-md bg-surface-inset">
@@ -1543,15 +1572,13 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
           ) : (
             <p className="text-muted">No documents uploaded yet</p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Activity Log */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Activity Log</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <section aria-label="Activity Log">
+        <SectionHeader title="Activity Log" />
+        <div className="mt-4">
           <div className="space-y-2">
             {permit.activityLogs.map((log) => (
               <div key={log.id} className="border-b pb-2">
@@ -1562,8 +1589,8 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* AI Package Check */}
       <PermitValidator permitId={permit.id} />

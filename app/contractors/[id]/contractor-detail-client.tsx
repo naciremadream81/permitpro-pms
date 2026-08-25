@@ -9,11 +9,39 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatPermitType } from '@/lib/utils'
 import Link from 'next/link'
+
+const thClass =
+  'px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted'
+
+// Ruled full-width section header — replaces the old boxed <CardHeader>/<CardTitle>.
+// `meta` renders inline after the title (e.g. an item count); `action` renders flush right.
+function SectionHeader({
+  title,
+  meta,
+  action,
+}: {
+  title: React.ReactNode
+  meta?: React.ReactNode
+  action?: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-ink pb-2">
+      <h2 className="text-xs font-bold uppercase tracking-[0.1em] text-ink">
+        {title}
+        {meta && (
+          <span className="ml-2 text-xs font-normal normal-case tracking-normal text-muted">
+            {meta}
+          </span>
+        )}
+      </h2>
+      {action && <div className="flex flex-shrink-0 items-center gap-2">{action}</div>}
+    </div>
+  )
+}
 
 interface PermitPackage {
   id: string
@@ -193,8 +221,8 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
+        <div className="min-w-0">
           {editingField === 'companyName' ? (
             <div className="flex items-center gap-2">
               <input
@@ -228,10 +256,10 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
             </div>
           )}
           {contractor.licenseNumber && (
-            <p className="text-muted">License: {contractor.licenseNumber}</p>
+            <p className="text-sm text-muted">License: {contractor.licenseNumber}</p>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-shrink-0 gap-2">
           <Link href="/contractors">
             <Button variant="outline">Back to Contractors</Button>
           </Link>
@@ -239,17 +267,15 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
       </div>
 
       {error && (
-        <div className="rounded-md bg-surface p-4">
-          <p className="text-sm text-destructive">{error}</p>
+        <div className="border border-destructive px-4 py-3">
+          <p className="text-sm font-semibold text-destructive">{error}</p>
         </div>
       )}
 
-      {/* Contractor Information - Editable */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Contractor Information</CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* Contractor Information - Editable (includes specialties and insurance/compliance dates) */}
+      <section aria-label="Contractor information">
+        <SectionHeader title="Contractor Information" />
+        <div className="mt-4">
           <div className="grid gap-4 md:grid-cols-2">
             {/* License Number */}
             <div>
@@ -589,31 +615,32 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Permit Packages */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Permit Packages ({contractor.permitPackages.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <section aria-label="Permit packages">
+        <SectionHeader
+          title="Permit Packages"
+          meta={`${contractor.permitPackages.length} package${contractor.permitPackages.length !== 1 ? 's' : ''}`}
+        />
+        <div className="mt-4">
           {contractor.permitPackages.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b">
-                    <th className="px-4 py-2 text-left text-sm font-medium text-ink">Project Name</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-ink">Customer</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-ink">Type</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-ink">Status</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-ink">Opened Date</th>
+                  <tr className="border-b border-border">
+                    <th className={thClass}>Project Name</th>
+                    <th className={thClass}>Customer</th>
+                    <th className={thClass}>Type</th>
+                    <th className={thClass}>Status</th>
+                    <th className={thClass}>Opened Date</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border">
                   {contractor.permitPackages.map((permit) => (
-                    <tr key={permit.id} className="border-b hover:bg-surface-inset">
-                      <td className="px-4 py-2">
+                    <tr key={permit.id} className="transition-colors hover:bg-surface-inset">
+                      <td className="px-4 py-2.5">
                         <Link
                           href={`/permits/${permit.id}`}
                           className="text-sm text-accent hover:underline"
@@ -621,7 +648,7 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
                           {permit.projectName}
                         </Link>
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-4 py-2.5">
                         <Link
                           href={`/customers/${permit.customer.id}`}
                           className="text-sm text-accent hover:underline"
@@ -629,11 +656,11 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
                           {permit.customer.name}
                         </Link>
                       </td>
-                      <td className="px-4 py-2 text-sm">{formatPermitType(permit.permitType)}</td>
-                      <td className="px-4 py-2">
+                      <td className="px-4 py-2.5 text-muted">{formatPermitType(permit.permitType)}</td>
+                      <td className="px-4 py-2.5">
                         <StatusBadge status={permit.status} />
                       </td>
-                      <td className="px-4 py-2 text-sm">
+                      <td className="px-4 py-2.5 text-xs text-muted">
                         {formatDate(permit.openedDate)}
                       </td>
                     </tr>
@@ -642,10 +669,10 @@ export function ContractorDetailClient({ contractor: initialContractor }: Contra
               </table>
             </div>
           ) : (
-            <p className="text-muted">No permit packages for this contractor</p>
+            <p className="py-8 text-center text-sm text-muted">No permit packages for this contractor</p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </div>
   )
 }
