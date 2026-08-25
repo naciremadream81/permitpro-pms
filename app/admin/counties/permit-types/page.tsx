@@ -108,12 +108,12 @@ export default function PermitTypesPage() {
         />
 
         {error && (
-          <div className="rounded-lg border border-destructive bg-surface p-3 text-sm text-destructive">{error}</div>
+          <div className="border-y border-destructive bg-surface py-3 text-sm text-destructive">{error}</div>
         )}
 
         {showAddForm && (
-          <div className="space-y-4 rounded-lg border border-border bg-surface-inset p-5">
-            <h2 className="text-sm font-semibold text-ink">New Permit Type</h2>
+          <div className="space-y-4 border-y border-border bg-surface-inset py-5">
+            <h2 className="text-xs font-bold uppercase tracking-[0.08em] text-ink">New Permit Type</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="mb-1 block text-xs font-medium text-muted">Code <span className="text-destructive">*</span></label>
@@ -142,19 +142,19 @@ export default function PermitTypesPage() {
         )}
 
         <div>
-          <div className="mb-2 flex items-center gap-2 px-1">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">Built-in Types</h2>
-            <Lock className="h-3 w-3 text-muted" />
+          <div className="mb-1 flex items-center gap-2">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">Built-in Types</h2>
+            <Lock className="h-3 w-3 text-muted" aria-hidden />
           </div>
-          <div className="overflow-hidden rounded-lg border border-border bg-surface">
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-border bg-surface-inset">
-                <tr>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted">Type</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted">Code</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted">Description</th>
-                  <th className="px-4 py-2.5 text-center text-xs font-medium text-muted">Active</th>
-                  <th className="w-16 px-4 py-2.5" />
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Type</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Code</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Description</th>
+                  <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-[0.08em] text-muted">Active</th>
+                  <th className="w-16 px-4 py-2" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -184,22 +184,22 @@ export default function PermitTypesPage() {
 
         {(custom.length > 0 || !loading) && (
           <div>
-            <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted">Custom Types</h2>
+            <h2 className="mb-1 text-xs font-semibold uppercase tracking-[0.08em] text-muted">Custom Types</h2>
             {custom.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border py-10 text-center text-sm text-muted">
+              <div className="border-y border-border py-10 text-center text-sm text-muted">
                 No custom permit types yet.{' '}
                 <button type="button" onClick={() => setShowAddForm(true)} className="font-medium text-accent hover:underline">Add one</button>.
               </div>
             ) : (
-              <div className="overflow-hidden rounded-lg border border-border bg-surface">
+              <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="border-b border-border bg-surface-inset">
-                    <tr>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted">Type</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted">Code</th>
-                      <th className="px-4 py-2.5 text-left text-xs font-medium text-muted">Description</th>
-                      <th className="px-4 py-2.5 text-center text-xs font-medium text-muted">Active</th>
-                      <th className="w-20 px-4 py-2.5" />
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Type</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Code</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Description</th>
+                      <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-[0.08em] text-muted">Active</th>
+                      <th className="w-20 px-4 py-2" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -235,11 +235,11 @@ export default function PermitTypesPage() {
                             <td className="px-4 py-2.5 text-right">
                               <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                                 <button type="button" onClick={() => { setEditingId(t.id); setEditDraft({ label: t.label, description: t.description ?? '' }) }}
-                                  className="rounded-md p-1.5 text-muted hover:bg-accent-muted hover:text-accent">
+                                  className="p-1.5 text-muted hover:bg-accent-muted hover:text-accent">
                                   <Pencil className="h-3.5 w-3.5" />
                                 </button>
                                 <button type="button" onClick={() => deleteType(t.id)}
-                                  className="rounded-md p-1.5 text-muted hover:bg-surface-inset hover:text-destructive">
+                                  className="p-1.5 text-muted hover:bg-surface-inset hover:text-destructive">
                                   <X className="h-3.5 w-3.5" />
                                 </button>
                               </div>

@@ -88,79 +88,65 @@ function seedStatus(reqCount: number): SeedStatus {
 const STATUS_CONFIG: Record<SeedStatus, {
   label: string
   icon: React.ElementType
-  tile: string
-  badge: string
   dot: string
   stat: string
 }> = {
   seeded: {
     label: 'Seeded',
     icon: CheckCircle2,
-    tile: 'border-border bg-surface hover:border-accent/30 hover:bg-accent-muted/50',
-    badge: 'bg-surface text-success ring-1 ring-success',
     dot: 'bg-success',
     stat: 'text-success',
   },
   partial: {
     label: 'Partial',
     icon: AlertTriangle,
-    tile: 'border-border bg-surface hover:border-warning hover:bg-surface-inset',
-    badge: 'bg-surface text-warning ring-1 ring-warning',
     dot: 'bg-warning',
     stat: 'text-warning',
   },
   unseeded: {
     label: 'Unseeded',
     icon: Circle,
-    tile: 'border-border bg-surface-inset hover:border-border hover:bg-surface',
-    badge: 'bg-surface-inset text-muted ring-1 ring-border',
     dot: 'bg-muted',
     stat: 'text-muted',
   },
 }
 
-function CountyTile({ county }: { county: CountyData }) {
+const colHead =
+  'text-[11px] font-medium uppercase tracking-[0.08em] text-muted'
+
+function CountyRow({ county }: { county: CountyData }) {
   const cfg = STATUS_CONFIG[county.status]
   const href = `/admin/counties/${county.code}`
 
   return (
     <Link
       href={href}
-      className={cn(
-        'group relative flex flex-col gap-2 rounded-lg border p-4',
-        'transition-colors duration-150',
-        cfg.tile
-      )}
+      className="group grid grid-cols-[48px_1fr_20px] items-center gap-3 border-b border-border py-3 transition-colors hover:bg-surface-inset focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:grid-cols-[64px_1fr_120px_110px_100px_20px] md:gap-4"
     >
-      <span
-        className="pointer-events-none absolute right-3 top-2 select-none font-mono text-2xl font-black tracking-tighter text-border transition-colors group-hover:text-muted/30"
-        aria-hidden
-      >
-        {county.code}
+      <span className="font-mono text-xs font-bold tracking-tight text-muted">{county.code}</span>
+
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-semibold text-ink">{county.name}</span>
+        <span className="block truncate text-xs text-muted md:hidden">
+          {cfg.label}
+          {county.requirementCount > 0 && ` · ${county.requirementCount} req.`}
+        </span>
       </span>
 
-      <div className="relative flex items-start justify-between gap-2">
-        <span className="text-sm font-semibold leading-tight text-ink">{county.name}</span>
-        <ChevronRight className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-muted transition-colors group-hover:text-ink" />
-      </div>
+      <span className={cn('hidden items-center gap-1.5 text-xs font-bold uppercase tracking-[0.06em] md:flex', cfg.stat)}>
+        <span className={cn('h-1.5 w-1.5 flex-shrink-0', cfg.dot)} aria-hidden />
+        {cfg.label}
+      </span>
 
-      <div className="relative flex items-center gap-1.5">
-        <span className={cn('inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full', cfg.dot)} />
-        <span className={cn('rounded px-1.5 py-0.5 text-xs font-medium', cfg.badge)}>
-          {cfg.label}
-        </span>
-      </div>
+      <span className="hidden text-xs text-muted md:block">
+        {county.requirementCount > 0 ? `${county.requirementCount} req.` : <span className="italic">No requirements</span>}
+      </span>
 
-      <div className="relative flex items-center gap-3 text-xs text-muted">
-        {county.requirementCount > 0 ? (
-          <span>{county.requirementCount} req.</span>
-        ) : (
-          <span className="italic">No requirements</span>
-        )}
-        {county.packageCount > 0 && (
-          <span>{county.packageCount} pkg{county.packageCount !== 1 ? 's' : ''}</span>
-        )}
-      </div>
+      <span className="hidden text-xs text-muted md:block">
+        {county.packageCount > 0 ? `${county.packageCount} pkg${county.packageCount !== 1 ? 's' : ''}` : '—'}
+      </span>
+
+      <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-muted transition-colors group-hover:text-ink" />
     </Link>
   )
 }
@@ -246,7 +232,7 @@ export default function CountiesPage() {
 
   return (
     <AppLayout>
-      <div className="mx-auto max-w-7xl space-y-6">
+      <div className="mx-auto max-w-7xl">
         <PageHeader
           title="Counties"
           description="Florida · 67 counties · Permit checklist management"
@@ -276,18 +262,18 @@ export default function CountiesPage() {
           }
         />
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {STATS.map(({ label, value, color }) => (
-            <div key={label} className="rounded-lg border border-border bg-surface px-4 py-3">
-              <div className={cn('text-2xl font-semibold tabular-nums', color)}>
+        <section aria-label="Seed status" className="flex flex-wrap border-b border-border pt-5">
+          {STATS.map(({ label, value, color }, i) => (
+            <div key={label} className={cn('min-w-[6.5rem] flex-1 px-4 py-3', i !== 0 && 'border-l border-border')}>
+              <div className={cn('text-2xl font-bold tabular-nums', color)}>
                 {loading ? '—' : value}
               </div>
-              <div className="mt-0.5 text-xs text-muted">{label}</div>
+              <div className="mt-0.5 text-xs uppercase tracking-[0.08em] text-muted">{label}</div>
             </div>
           ))}
-        </div>
+        </section>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-b border-border py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:w-72">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <input
@@ -299,26 +285,21 @@ export default function CountiesPage() {
             />
           </div>
 
-          <div className="flex items-center gap-1 rounded-lg bg-surface-inset p-1">
+          <div className="flex items-center gap-4">
             {TABS.map(tab => (
               <button
                 key={tab.key}
                 type="button"
                 onClick={() => setFilter(tab.key)}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'flex items-center gap-1.5 border-b-2 pb-1 text-xs font-bold uppercase tracking-[0.08em] transition-colors',
                   filter === tab.key
-                    ? 'bg-surface text-ink border border-ink'
-                    : 'text-muted hover:text-ink'
+                    ? 'border-ink text-ink'
+                    : 'border-transparent text-muted hover:text-ink'
                 )}
               >
                 {tab.label}
-                <span
-                  className={cn(
-                    'px-1.5 py-0.5 text-xs font-semibold tabular-nums',
-                    filter === tab.key ? 'bg-surface-inset text-muted' : 'text-muted/70'
-                  )}
-                >
+                <span className="text-[11px] font-semibold tabular-nums text-muted">
                   {tab.count}
                 </span>
               </button>
@@ -326,34 +307,49 @@ export default function CountiesPage() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {Array.from({ length: 24 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-24 animate-pulse rounded-lg border border-border bg-surface-inset"
-              />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-24 text-muted">
-            <MapPin className="mb-3 h-10 w-10 opacity-30" />
-            <p className="font-medium text-ink">No counties match</p>
-            <p className="mt-1 text-sm">Try a different search or filter.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {filtered.map(county => (
-              <CountyTile key={county.code} county={county} />
-            ))}
-          </div>
-        )}
+        <section aria-label="County register" className="pt-5">
+          <p className="text-xs font-medium uppercase tracking-[0.08em] text-muted">
+            Register — {loading ? '—' : filtered.length} of 67 counties
+          </p>
+
+          {loading ? (
+            <div className="mt-1 border-t border-border">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="h-11 animate-pulse border-b border-border bg-surface-inset" />
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center border-y border-border py-24 text-center text-muted">
+              <MapPin className="mb-3 h-10 w-10 opacity-30" aria-hidden />
+              <p className="font-semibold text-ink">No counties match</p>
+              <p className="mt-1 text-sm">Try a different search or filter.</p>
+            </div>
+          ) : (
+            <div className="mt-1">
+              <div className="hidden grid-cols-[64px_1fr_120px_110px_100px_20px] gap-4 border-b border-border py-2 md:grid">
+                <span className={colHead}>Code</span>
+                <span className={colHead}>County</span>
+                <span className={colHead}>Status</span>
+                <span className={colHead}>Requirements</span>
+                <span className={colHead}>Packages</span>
+                <span />
+              </div>
+              <div className="border-t border-border md:border-t-0">
+                {filtered.map(county => (
+                  <CountyRow key={county.code} county={county} />
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
 
         {!loading && filtered.length > 0 && (
-          <p className="text-center text-xs text-muted">
-            Showing {filtered.length} of 67 Florida counties
-            {filter !== 'all' && ` · filtered by "${filter}"`}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-xs font-medium text-muted">
+            <span>
+              Showing {filtered.length} of 67 Florida counties
+              {filter !== 'all' && ` · filtered by "${filter}"`}
+            </span>
+          </div>
         )}
       </div>
     </AppLayout>

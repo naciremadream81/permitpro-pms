@@ -176,12 +176,12 @@ function EditableRequirementRow({
       <td className="px-4 py-2.5 text-sm text-muted">{req.documentCategory}</td>
       <td className="px-4 py-2.5 text-center">
         {req.isRequired
-          ? <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-success">Yes</span>
+          ? <span className="text-xs font-bold uppercase tracking-[0.06em] text-success">Yes</span>
           : <span className="text-xs text-muted">Optional</span>}
       </td>
       <td className="px-4 py-2.5 text-center">
         {req.isMandatoryForSubmission
-          ? <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-warning">Blocks</span>
+          ? <span className="text-xs font-bold uppercase tracking-[0.06em] text-warning">Blocks</span>
           : <span className="text-xs text-muted">—</span>}
       </td>
       <td className="px-4 py-2.5 text-center">
@@ -194,15 +194,15 @@ function EditableRequirementRow({
       <td className="px-4 py-2.5">
         <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
           <button type="button" onClick={() => setEditing(true)} title="Edit"
-            className="rounded-md p-1.5 text-muted transition-colors hover:bg-accent-muted hover:text-accent">
+            className="p-1.5 text-muted transition-colors hover:bg-accent-muted hover:text-accent">
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button type="button" onClick={() => onShowHistory(req.id)} title="Version history"
-            className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-inset hover:text-ink">
+            className="p-1.5 text-muted transition-colors hover:bg-surface-inset hover:text-ink">
             <History className="h-3.5 w-3.5" />
           </button>
           <button type="button" onClick={() => onDelete(req.id)} title="Delete"
-            className="rounded-md p-1.5 text-muted transition-colors hover:bg-surface-inset hover:text-destructive">
+            className="p-1.5 text-muted transition-colors hover:bg-surface-inset hover:text-destructive">
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -264,7 +264,7 @@ function HistoryDrawer({
           ) : logs.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted">No history yet.</div>
           ) : logs.map(log => (
-            <div key={log.id} className="space-y-2 rounded-lg border border-border p-3">
+            <div key={log.id} className="space-y-2 border-b border-border py-3">
               <div className="flex items-center justify-between">
                 <span className={cn('px-2 py-0.5 text-xs font-semibold', ACTION_COLORS[log.action] ?? 'bg-surface-inset text-muted')}>
                   {log.action}
@@ -446,10 +446,10 @@ export default function CountyDetailPage() {
         />
         {/* Not seeded warning */}
         {!jurisdiction && (
-          <div className="flex items-start gap-3 rounded-lg border border-warning bg-surface p-5">
-            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" />
+          <div className="flex items-start gap-3 border-y border-warning bg-surface py-4">
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" aria-hidden />
             <div>
-              <p className="text-sm font-medium text-warning">County not seeded yet</p>
+              <p className="text-xs font-bold uppercase tracking-[0.08em] text-warning">County not seeded yet</p>
               <p className="mt-1 text-sm text-warning">
                 Use <strong>Seed All 67 Counties</strong> from the Counties overview, or it will be created automatically on first seed.
               </p>
@@ -458,7 +458,7 @@ export default function CountyDetailPage() {
         )}
 
         {error && (
-          <div className="rounded-lg border border-destructive bg-surface p-3 text-sm text-destructive">{error}</div>
+          <div className="border-y border-destructive bg-surface py-3 text-sm text-destructive">{error}</div>
         )}
 
         {jurisdiction && (
@@ -472,8 +472,8 @@ export default function CountyDetailPage() {
 
         {/* Add form */}
         {showAddForm && jurisdiction && (
-          <div className="space-y-4 rounded-lg border border-border bg-surface-inset p-5">
-            <h2 className="text-sm font-semibold text-ink">New Requirement</h2>
+          <div className="space-y-4 border-y border-border bg-surface-inset py-5">
+            <h2 className="text-xs font-bold uppercase tracking-[0.08em] text-ink">New Requirement</h2>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className="mb-1 block text-xs font-medium text-muted">Document Name <span className="text-destructive">*</span></label>
@@ -489,7 +489,7 @@ export default function CountyDetailPage() {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-muted">Permit Types</label>
-                <div className="max-h-28 space-y-1 overflow-y-auto rounded-md border border-border bg-surface p-2 text-sm text-ink">
+                <div className="max-h-28 space-y-1 overflow-y-auto border border-border bg-surface p-2 text-sm text-ink">
                   <label className="flex cursor-pointer items-center gap-2">
                     <input type="checkbox" checked={newReq.permitTypes.includes('*')}
                       onChange={e => setNewReq({ ...newReq, permitTypes: e.target.checked ? ['*'] : [] })} />
@@ -531,8 +531,8 @@ export default function CountyDetailPage() {
 
         {/* Requirements grouped by permit type */}
         {jurisdiction && filteredReqs.length === 0 && (
-          <div className="rounded-lg border border-dashed border-border py-12 text-center text-muted">
-            <p className="font-medium text-ink">No requirements</p>
+          <div className="border-y border-border py-14 text-center text-muted">
+            <p className="font-semibold text-ink">No requirements</p>
             <p className="mt-1 text-sm">Add requirements above or use Seed All from the Counties overview.</p>
           </div>
         )}
@@ -577,17 +577,17 @@ function RequirementGroup({
 }) {
   return (
     <div>
-      <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted">{label}</h2>
-      <div className="overflow-hidden rounded-lg border border-border bg-surface">
+      <h2 className="mb-1 text-xs font-semibold uppercase tracking-[0.08em] text-muted">{label}</h2>
+      <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="border-b border-border bg-surface-inset">
-            <tr>
-              <th className="px-4 py-2.5 text-left text-xs font-medium text-muted">Document</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium text-muted">Category</th>
-              <th className="px-4 py-2.5 text-center text-xs font-medium text-muted">Required</th>
-              <th className="px-4 py-2.5 text-center text-xs font-medium text-muted">Blocks Gate</th>
-              <th className="px-4 py-2.5 text-center text-xs font-medium text-muted">Active</th>
-              <th className="w-24 px-4 py-2.5" />
+          <thead>
+            <tr className="border-b border-border">
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Document</th>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Category</th>
+              <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-[0.08em] text-muted">Required</th>
+              <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-[0.08em] text-muted">Blocks Gate</th>
+              <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-[0.08em] text-muted">Active</th>
+              <th className="w-24 px-4 py-2" />
             </tr>
           </thead>
           <tbody>
