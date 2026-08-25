@@ -10,10 +10,18 @@ import { StatusBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { prisma } from '@/lib/prisma'
 import { formatDate, formatPermitType, formatStatus } from '@/lib/utils'
-import { COURT_META, courtToStatuses, isCourt } from '@/lib/court'
+import { COURT_META, courtToStatuses, isCourt, type Court } from '@/lib/court'
 import Link from 'next/link'
 
 const STALL_DAYS = 3
+
+const COURT_BALL_TEXT: Record<Court, string> = {
+  us: 'in our court',
+  contractor: 'with the contractor',
+  county: 'with the jurisdiction',
+  field: 'in the field',
+  closed: 'closing out',
+}
 
 const thClass =
   'px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted'
@@ -93,7 +101,16 @@ async function getPermits(searchParams: { [key: string]: string | string[] | und
   if (status && !stalled) {
     where.status = status
   } else if (!stalled && isCourt(court)) {
-    where.status = { in: courtToStatuses(court) }
+    // 'contractor' isn't a real status bucket (see lib/court.ts) — this
+    // list query has no per-package task data to resolve it precisely, so
+    // it falls back to the status-based statuses ('us' + 'field') that are
+    // eligible for the contractor override on the board.
+    where.status = {
+      in:
+        court === 'contractor'
+          ? [...courtToStatuses('us'), ...courtToStatuses('field')]
+          : courtToStatuses(court),
+    }
   }
   if (permitType) where.permitType = permitType
   if (billingStatus) where.billingStatus = billingStatus
@@ -136,6 +153,14 @@ export default async function PermitsPage({
       : undefined
   const courtParam = typeof resolvedSearchParams.court === 'string' ? resolvedSearchParams.court : undefined
   const courtFilter = !statusFilter && !stalledFilter && isCourt(courtParam) ? courtParam : undefined
+  // Mirrors the where.status fallback in getPermits() above — 'contractor'
+  // has no real statuses of its own, so the banner lists the 'us' + 'field'
+  // statuses actually being queried for it.
+  const courtFilterStatuses = courtFilter
+    ? courtFilter === 'contractor'
+      ? [...courtToStatuses('us'), ...courtToStatuses('field')]
+      : courtToStatuses(courtFilter)
+    : []
 
   return (
     <AppLayout>
@@ -204,7 +229,7 @@ export default async function PermitsPage({
                 {COURT_META[courtFilter].label}
               </span>
               <span className="text-ink">
-                Showing packages where the ball is {courtFilter === 'us' ? 'in our court' : courtFilter === 'county' ? 'with the jurisdiction' : courtFilter === 'field' ? 'in the field' : 'closing out'} ({courtToStatuses(courtFilter).map(formatStatus).join(', ')})
+                Showing packages where the ball is {COURT_BALL_TEXT[courtFilter]} ({courtFilterStatuses.map(formatStatus).join(', ')})
               </span>
             </span>
             <Link

@@ -18,9 +18,9 @@ import { PageHeader } from '@/components/layout/page-header'
 import { StatusBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { prisma } from '@/lib/prisma'
-import type { Prisma } from '@/lib/generated/prisma'
+import type { Prisma, PermitStatus } from '@/lib/generated/prisma'
 import { cn } from '@/lib/utils'
-import { statusToCourt, COURT_META, COURT_ORDER, type Court } from '@/lib/court'
+import { statusToCourt, resolveCourt, courtToStatuses, COURT_META, COURT_ORDER, type Court } from '@/lib/court'
 import Link from 'next/link'
 import { getSession } from '@/lib/auth-helpers'
 import { redirect } from 'next/navigation'
@@ -53,6 +53,7 @@ async function getBoardData(userId: string, role: string) {
     teamPackages,
     reviewAssignments,
     permitsByStatus,
+    contractorEligibleByStatus,
   ] = await Promise.all([
     prisma.permitPackage.count({
       where: {
@@ -115,6 +116,20 @@ async function getBoardData(userId: string, role: string) {
       _count: true,
       where: { status: { notIn: ['FinaledClosed', 'Canceled'] } },
     }),
+
+    // Same distribution-bar universe as permitsByStatus, narrowed to the
+    // 'us'/'field' statuses that are eligible to be reassigned to
+    // 'contractor' (see resolveCourt), and to packages with an open task.
+    // Grouped by status so courtCounts can move the right amount out of
+    // each origin bucket rather than just adding a contractor total.
+    prisma.permitPackage.groupBy({
+      by: ['status'],
+      _count: true,
+      where: {
+        status: { in: [...courtToStatuses('us'), ...courtToStatuses('field')] as PermitStatus[] },
+        tasks: { some: { status: { not: 'Completed' } } },
+      },
+    }),
   ])
 
   return {
@@ -125,6 +140,7 @@ async function getBoardData(userId: string, role: string) {
     teamPackages,
     reviewAssignments,
     permitsByStatus,
+    contractorEligibleByStatus,
   }
 }
 
@@ -159,13 +175,13 @@ function nextActionFor(pkg: BoardPackage): string {
 function groupByCourt(packages: BoardPackage[]): Map<Court, BoardPackage[]> {
   const groups = new Map<Court, BoardPackage[]>()
   for (const pkg of packages) {
-    const court = statusToCourt(pkg.status)
+    const court = resolveCourt(pkg.status, pkg.tasks.length > 0)
     const list = groups.get(court) ?? []
     list.push(pkg)
     groups.set(court, list)
   }
-  for (const list of Array.from(groups.values())) {
-    list.sort((a, b) => packageDays(b, statusToCourt(b.status)) - packageDays(a, statusToCourt(a.status)))
+  for (const [court, list] of Array.from(groups.entries())) {
+    list.sort((a, b) => packageDays(b, court) - packageDays(a, court))
   }
   return groups
 }
@@ -261,7 +277,7 @@ const colHead =
 
 function PackageRow({ pkg, court }: { pkg: BoardPackage; court: Court }) {
   const days = packageDays(pkg, court)
-  const stalled = court !== 'closed' && days >= STALL_DAYS && statusToCourt(pkg.status) !== 'field'
+  const stalled = court !== 'closed' && days >= STALL_DAYS && court !== 'field'
   const nextAction = nextActionFor(pkg)
 
   return (
@@ -339,9 +355,17 @@ export default async function DashboardPage() {
   const role = session.user.role ?? 'coordinator'
   const data = await getBoardData(session.user.id, role)
 
-  const courtCounts: Record<Court, number> = { us: 0, county: 0, field: 0, closed: 0 }
+  const courtCounts: Record<Court, number> = { us: 0, contractor: 0, county: 0, field: 0, closed: 0 }
   for (const s of data.permitsByStatus) {
     courtCounts[statusToCourt(s.status)] += s._count
+  }
+  // Move the contractor-eligible slice out of 'us'/'field' and into
+  // 'contractor', mirroring resolveCourt()'s per-package logic above but
+  // for the org-wide distribution counts (which come from a status-only
+  // groupBy with no task data of their own).
+  for (const s of data.contractorEligibleByStatus) {
+    courtCounts[statusToCourt(s.status)] -= s._count
+    courtCounts.contractor += s._count
   }
 
   const usingTeamFallback = role === 'admin' && data.myPackages.length === 0

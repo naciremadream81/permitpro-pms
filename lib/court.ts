@@ -5,11 +5,12 @@
  * Operations Board can group work by ownership. No schema or query-shape
  * changes; this is a pure view-model mapping.
  *
- * Note: a future "contractor" court (waiting on contractor docs/tasks)
- * needs task/document signals, not status alone — deferred to Phase 3.
+ * "contractor" (waiting on contractor docs/tasks) can't be derived from
+ * status alone — statusToCourt() stays pure status->court. See
+ * resolveCourt() below for the task-aware override the board uses.
  */
 
-export type Court = 'us' | 'county' | 'field' | 'closed'
+export type Court = 'us' | 'contractor' | 'county' | 'field' | 'closed'
 
 const STATUS_TO_COURT: Record<string, Court> = {
   New: 'us',
@@ -27,6 +28,24 @@ export function statusToCourt(status: string): Court {
   return STATUS_TO_COURT[status] ?? 'us'
 }
 
+/**
+ * Task-aware override of statusToCourt(), for views that have loaded a
+ * package's open tasks (e.g. the Operations Board). A package whose status
+ * alone would put it in 'us' or 'field' but that still has an incomplete
+ * task gets reassigned to 'contractor' — the coordinator is waiting on
+ * someone else (most plausibly the contractor) to act. 'county' and
+ * 'closed' are never reassigned this way.
+ *
+ * statusToCourt() itself stays pure status->court — courtToStatuses() and
+ * the /permits?court= filter have no task data to give this, so they
+ * continue to use it directly.
+ */
+export function resolveCourt(status: string, hasOpenTask: boolean): Court {
+  const base = statusToCourt(status)
+  if (hasOpenTask && (base === 'us' || base === 'field')) return 'contractor'
+  return base
+}
+
 /** Inverse mapping, for filtering queries by court (e.g. /permits?court=us). */
 export function courtToStatuses(court: Court): string[] {
   return Object.entries(STATUS_TO_COURT)
@@ -35,7 +54,13 @@ export function courtToStatuses(court: Court): string[] {
 }
 
 export function isCourt(value: string | undefined): value is Court {
-  return value === 'us' || value === 'county' || value === 'field' || value === 'closed'
+  return (
+    value === 'us' ||
+    value === 'contractor' ||
+    value === 'county' ||
+    value === 'field' ||
+    value === 'closed'
+  )
 }
 
 export interface CourtMeta {
@@ -49,7 +74,7 @@ export interface CourtMeta {
   daysLabel: string
 }
 
-export const COURT_ORDER: Court[] = ['us', 'county', 'field', 'closed']
+export const COURT_ORDER: Court[] = ['us', 'contractor', 'county', 'field', 'closed']
 
 export const COURT_META: Record<Court, CourtMeta> = {
   us: {
@@ -58,6 +83,13 @@ export const COURT_META: Record<Court, CourtMeta> = {
     barClass: 'bg-court-us',
     textClass: 'text-court-us',
     daysLabel: 'days held',
+  },
+  contractor: {
+    label: 'With contractor',
+    description: 'Waiting on the contractor — open tasks outstanding on the package',
+    barClass: 'bg-court-contractor',
+    textClass: 'text-court-contractor',
+    daysLabel: 'days waiting',
   },
   county: {
     label: 'With jurisdiction',
