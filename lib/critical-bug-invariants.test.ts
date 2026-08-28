@@ -517,6 +517,29 @@ describe('permit detail status edits use gated status route', () => {
   })
 })
 
+describe('Submit to county has a gated API route', () => {
+  it('permit detail posts to /api/permits/:id/submit', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/permits/[id]/permit-detail-client.tsx'),
+      'utf8'
+    )
+    assert.match(source, /\/api\/permits\/\$\{permit\.id\}\/submit/)
+  })
+
+  it('submit route exists, requires ReadyToSubmit, and sets WaitingOnCounty', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/permits/[id]/submit/route.ts'),
+      'utf8'
+    )
+    assert.match(source, /getSession/)
+    assert.match(source, /submit_review/)
+    assert.match(source, /internalStage !== 'ReadyToSubmit'/)
+    assert.match(source, /status:\s*'Submitted'/)
+    assert.match(source, /internalStage:\s*'WaitingOnCounty'/)
+    assert.match(source, /\$transaction/)
+  })
+})
+
 describe('update schemas do not inject create-time defaults', () => {
   it('requirement toggle does not reset order or mandatory flags', () => {
     const parsed = requirementUpdateSchema.parse({ isActive: false })
