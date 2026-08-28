@@ -1,8 +1,11 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Plus, MapPin, CheckCircle2, XCircle, ChevronRight } from 'lucide-react'
+import { AppLayout } from '@/components/layout/app-layout'
+import { PageHeader } from '@/components/layout/page-header'
+import { Button } from '@/components/ui/button'
 
 interface Jurisdiction {
   id: string
@@ -14,12 +17,25 @@ interface Jurisdiction {
   _count: { requirements: number; packages: number }
 }
 
+const thClass =
+  'px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted'
+const thClassRight =
+  'px-4 py-2 text-right text-xs font-medium uppercase tracking-[0.08em] text-muted'
+const thClassCenter =
+  'px-4 py-2 text-center text-xs font-medium uppercase tracking-[0.08em] text-muted'
+const tdLinkClass =
+  'inline-flex items-center gap-1 text-xs font-bold tracking-[0.06em] text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+
 export default function JurisdictionsPage() {
   const [jurisdictions, setJurisdictions] = useState<Jurisdiction[]>([])
   const [loading, setLoading] = useState(true)
   const [showInactive, setShowInactive] = useState(false)
 
-  const fetchJurisdictions = useCallback(async () => {
+  useEffect(() => {
+    fetchJurisdictions()
+  }, [showInactive])
+
+  async function fetchJurisdictions() {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -30,11 +46,7 @@ export default function JurisdictionsPage() {
     } finally {
       setLoading(false)
     }
-  }, [showInactive])
-
-  useEffect(() => {
-    fetchJurisdictions()
-  }, [fetchJurisdictions])
+  }
 
   async function toggleActive(id: string, current: boolean) {
     await fetch(`/api/jurisdictions/${id}`, {
@@ -46,97 +58,95 @@ export default function JurisdictionsPage() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Jurisdictions</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Manage counties and their permit document requirements
-          </p>
-        </div>
-        <Link
-          href="/admin/jurisdictions/new"
-          className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Jurisdiction
-        </Link>
-      </div>
-
-      {/* Filter */}
-      <label className="inline-flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={showInactive}
-          onChange={(e) => setShowInactive(e.target.checked)}
-          className="rounded"
+    <AppLayout>
+      <div className="mx-auto max-w-5xl">
+        <PageHeader
+          title="Jurisdictions"
+          description="Manage counties and their permit document requirements"
+          actions={
+            <Link href="/admin/jurisdictions/new">
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Jurisdiction
+              </Button>
+            </Link>
+          }
         />
-        Show inactive
-      </label>
 
-      {/* Table */}
-      {loading ? (
-        <div className="text-sm text-gray-500">Loading…</div>
-      ) : jurisdictions.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
-          <MapPin className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No jurisdictions configured</p>
-          <p className="text-sm mt-1">Add your first jurisdiction to enable checklist generation.</p>
+        <div className="flex flex-col gap-3 border-b border-border py-4 sm:flex-row sm:items-center">
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-muted">
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+            />
+            Show inactive
+          </label>
         </div>
-      ) : (
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">County</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Code</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">State</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Requirements</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Packages</th>
-                <th className="text-center px-4 py-3 font-medium text-gray-600">Active</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {jurisdictions.map((j) => (
-                <tr key={j.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900">{j.name}</td>
-                  <td className="px-4 py-3 text-gray-600 font-mono">{j.countyCode}</td>
-                  <td className="px-4 py-3 text-gray-600">{j.state}</td>
-                  <td className="px-4 py-3 text-right text-gray-700">
-                    {j._count.requirements}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-700">
-                    {j._count.packages}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <button
-                      onClick={() => toggleActive(j.id, j.isActive)}
-                      title={j.isActive ? 'Click to deactivate' : 'Click to activate'}
-                    >
-                      {j.isActive ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-500 inline" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-gray-300 inline" />
-                      )}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/admin/jurisdictions/${j.id}`}
-                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    >
-                      Manage
-                      <ChevronRight className="w-3 h-3" />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+
+        <section aria-label="Jurisdiction register" className="pt-5">
+          <p className="text-xs font-medium uppercase tracking-[0.08em] text-muted">
+            Register — {jurisdictions.length} jurisdiction{jurisdictions.length !== 1 ? 's' : ''}
+          </p>
+
+          {loading ? (
+            <div className="py-10 text-center text-sm text-muted">Loading…</div>
+          ) : jurisdictions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center border-b border-border py-16 text-center">
+              <MapPin className="mb-3 h-10 w-10 text-muted opacity-30" />
+              <p className="font-medium text-ink">No jurisdictions configured</p>
+              <p className="mt-1 text-sm text-muted">
+                Add your first jurisdiction to enable checklist generation.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-1 overflow-x-auto">
+              <table className="w-full text-sm" aria-label="Jurisdictions">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th scope="col" className={thClass}>County</th>
+                    <th scope="col" className={thClass}>Code</th>
+                    <th scope="col" className={thClass}>State</th>
+                    <th scope="col" className={thClassRight}>Requirements</th>
+                    <th scope="col" className={thClassRight}>Packages</th>
+                    <th scope="col" className={thClassCenter}>Active</th>
+                    <th scope="col" className="px-4 py-2" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {jurisdictions.map((j) => (
+                    <tr key={j.id} className="transition-colors hover:bg-surface-inset">
+                      <td className="px-4 py-3 font-bold text-ink">{j.name}</td>
+                      <td className="px-4 py-3 font-mono text-muted">{j.countyCode}</td>
+                      <td className="px-4 py-3 text-muted">{j.state}</td>
+                      <td className="px-4 py-3 text-right text-ink">{j._count.requirements}</td>
+                      <td className="px-4 py-3 text-right text-ink">{j._count.packages}</td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => toggleActive(j.id, j.isActive)}
+                          title={j.isActive ? 'Click to deactivate' : 'Click to activate'}
+                        >
+                          {j.isActive ? (
+                            <CheckCircle2 className="inline h-4 w-4 text-success" />
+                          ) : (
+                            <XCircle className="inline h-4 w-4 text-border" />
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Link href={`/admin/jurisdictions/${j.id}`} className={tdLinkClass}>
+                          Manage
+                          <ChevronRight className="h-3 w-3" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+    </AppLayout>
   )
 }

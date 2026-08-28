@@ -1,41 +1,122 @@
 /**
  * Permits List Page
- * 
+ *
  * Displays a paginated list of all permit packages with filtering and search capabilities.
- * Provides quick access to permit details and status information.
  */
 
 import { AppLayout } from '@/components/layout/app-layout'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/layout/page-header'
 import { StatusBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { prisma } from '@/lib/prisma'
-import { formatDate, formatPermitType } from '@/lib/utils'
+import { formatDate, formatPermitType, formatStatus } from '@/lib/utils'
+import {
+  COURT_META,
+  courtToStatuses,
+  isCourt,
+  openContractorBlockingTaskFilter,
+  type Court,
+} from '@/lib/court'
 import Link from 'next/link'
+
+const STALL_DAYS = 3
+
+const COURT_BALL_TEXT: Record<Court, string> = {
+  us: 'in our court',
+  contractor: 'with the contractor',
+  county: 'with the jurisdiction',
+  field: 'in the field',
+  closed: 'closing out',
+}
+
+const thClass =
+  'px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted'
+const tdLinkClass =
+  'text-xs font-bold tracking-[0.06em] text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+
+function buildPermitsQuery(
+  searchParams: { [key: string]: string | string[] | undefined },
+  overrides: { page?: number } = {}
+): string {
+  const params = new URLSearchParams()
+
+  const search = typeof searchParams.search === 'string' ? searchParams.search : ''
+  const status = typeof searchParams.status === 'string' ? searchParams.status : ''
+  const court = typeof searchParams.court === 'string' ? searchParams.court : ''
+  const stalled =
+    searchParams.stalled === '1' || searchParams.stalled === 'true'
+  const page =
+    overrides.page ??
+    parseInt(typeof searchParams.page === 'string' ? searchParams.page : '1', 10)
+
+  if (search) params.set('search', search)
+  if (status) params.set('status', status)
+  if (court) params.set('court', court)
+  if (stalled) params.set('stalled', '1')
+  if (page > 1) params.set('page', String(page))
+
+  const query = params.toString()
+  return query ? `?${query}` : ''
+}
 
 async function getPermits(searchParams: { [key: string]: string | string[] | undefined }) {
   const search = typeof searchParams.search === 'string' ? searchParams.search : ''
   const status = typeof searchParams.status === 'string' ? searchParams.status : undefined
   const permitType = typeof searchParams.permitType === 'string' ? searchParams.permitType : undefined
   const billingStatus = typeof searchParams.billingStatus === 'string' ? searchParams.billingStatus : undefined
+  const stalled =
+    searchParams.stalled === '1' ||
+    searchParams.stalled === 'true'
   const page = parseInt(typeof searchParams.page === 'string' ? searchParams.page : '1')
   const limit = 20
   const skip = (page - 1) * limit
 
   const where: Record<string, unknown> = {}
-  
-  // Note: SQLite doesn't support case-insensitive mode, but it's case-insensitive for ASCII by default
-  if (search) {
-    where.OR = [
-      { projectName: { contains: search } },
-      { projectAddress: { contains: search } },
-      { permitNumber: { contains: search } },
-      { customer: { name: { contains: search } } },
-      { contractor: { companyName: { contains: search } } },
-    ]
+  const andClauses: Record<string, unknown>[] = []
+
+  if (stalled) {
+    const stallThreshold = new Date(Date.now() - STALL_DAYS * 24 * 60 * 60 * 1000)
+    andClauses.push({
+      status: { notIn: ['FinaledClosed', 'Canceled', 'Approved'] },
+      OR: [
+        { lastActivityAt: { lt: stallThreshold } },
+        { lastActivityAt: null, openedDate: { lt: stallThreshold } },
+      ],
+    })
   }
-  
-  if (status) where.status = status
+
+  if (search) {
+    andClauses.push({
+      OR: [
+        { projectName: { contains: search } },
+        { projectAddress: { contains: search } },
+        { permitNumber: { contains: search } },
+        { customer: { name: { contains: search } } },
+        { contractor: { companyName: { contains: search } } },
+      ],
+    })
+  }
+
+  if (andClauses.length === 1) {
+    Object.assign(where, andClauses[0])
+  } else if (andClauses.length > 1) {
+    where.AND = andClauses
+  }
+
+  const court = typeof searchParams.court === 'string' ? searchParams.court : undefined
+  if (status && !stalled) {
+    where.status = status
+  } else if (!stalled && isCourt(court)) {
+    if (court === 'contractor') {
+      // Match resolveCourt(): us/field statuses with an open contractor-blocking task.
+      where.status = {
+        in: [...courtToStatuses('us'), ...courtToStatuses('field')],
+      }
+      where.tasks = openContractorBlockingTaskFilter()
+    } else {
+      where.status = { in: courtToStatuses(court) }
+    }
+  }
   if (permitType) where.permitType = permitType
   if (billingStatus) where.billingStatus = billingStatus
 
@@ -66,127 +147,218 @@ export default async function PermitsPage(
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>
   }
 ) {
-  const searchParams = await props.searchParams;
+  const searchParams = await props.searchParams
   const data = await getPermits(searchParams)
+  const stalledFilter =
+    searchParams.stalled === '1' ||
+    searchParams.stalled === 'true'
+  const statusFilter =
+    typeof searchParams.status === 'string' && searchParams.status.length > 0
+      ? searchParams.status
+      : undefined
+  const courtParam = typeof searchParams.court === 'string' ? searchParams.court : undefined
+  const courtFilter = !statusFilter && !stalledFilter && isCourt(courtParam) ? courtParam : undefined
+  // Mirrors the where.status fallback in getPermits() above — 'contractor'
+  // has no real statuses of its own, so the banner lists the 'us' + 'field'
+  // statuses actually being queried for it.
+  const courtFilterStatuses = courtFilter
+    ? courtFilter === 'contractor'
+      ? [...courtToStatuses('us'), ...courtToStatuses('field')]
+      : courtToStatuses(courtFilter)
+    : []
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">Permits</h1>
-          <Link href="/permits/new">
-            <Button>New Permit</Button>
-          </Link>
-        </div>
+      <div className="mx-auto max-w-6xl">
+        <PageHeader
+          title="Permits"
+          description={
+            stalledFilter
+              ? `Stalled packages — no activity in ${STALL_DAYS}+ days`
+              : statusFilter
+                ? `${formatStatus(statusFilter)} packages`
+                : courtFilter
+                  ? `${COURT_META[courtFilter].label} — ${COURT_META[courtFilter].description.toLowerCase()}`
+                  : 'All permit packages'
+          }
+          actions={
+            <Link href="/permits/new">
+              <Button>New permit</Button>
+            </Link>
+          }
+        />
 
-        {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Filters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form method="get" className="flex gap-4">
-              <input
-                type="text"
-                name="search"
-                placeholder="Search permits..."
-                defaultValue={searchParams.search}
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2"
-              />
-              <select
-                name="status"
-                defaultValue={searchParams.status}
-                className="rounded-md border border-gray-300 px-3 py-2"
+        <form
+          method="get"
+          className="flex flex-col gap-3 border-b border-border py-4 sm:flex-row sm:items-center"
+        >
+          {stalledFilter && <input type="hidden" name="stalled" value="1" />}
+          {courtFilter && <input type="hidden" name="court" value={courtFilter} />}
+          <label htmlFor="permits-search" className="sr-only">
+            Search permits
+          </label>
+          <input
+            id="permits-search"
+            type="search"
+            name="search"
+            placeholder="Search permit no., address, customer…"
+            defaultValue={typeof searchParams.search === 'string' ? searchParams.search : ''}
+            className="pp-input flex-1"
+          />
+          <label htmlFor="permits-status" className="sr-only">
+            Filter by status
+          </label>
+          <select
+            id="permits-status"
+            name="status"
+            defaultValue={statusFilter ?? ''}
+            className="pp-input sm:w-48"
+          >
+            <option value="">All statuses</option>
+            <option value="New">New</option>
+            <option value="Submitted">Submitted</option>
+            <option value="InReview">In review</option>
+            <option value="RevisionsNeeded">Revisions needed</option>
+            <option value="Approved">Approved</option>
+            <option value="Issued">Issued</option>
+            <option value="Inspections">Inspections</option>
+            <option value="FinaledClosed">Finaled / closed</option>
+          </select>
+          <Button type="submit">Filter</Button>
+        </form>
+
+        {courtFilter && (
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border py-2.5 text-sm">
+            <span className="flex items-baseline gap-3">
+              <span className={`border px-2 py-0.5 text-xs font-bold uppercase tracking-[0.1em] ${COURT_META[courtFilter].textClass} border-current`}>
+                {COURT_META[courtFilter].label}
+              </span>
+              <span className="text-ink">
+                Showing packages where the ball is {COURT_BALL_TEXT[courtFilter]} ({courtFilterStatuses.map(formatStatus).join(', ')})
+              </span>
+            </span>
+            <Link
+              href="/permits"
+              className="text-xs font-bold uppercase tracking-[0.08em] text-accent hover:underline"
+            >
+              Clear filter
+            </Link>
+          </div>
+        )}
+
+        {(stalledFilter || statusFilter) && (
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border py-2.5 text-sm">
+            <span className="flex items-baseline gap-3">
+              <span
+                className={
+                  stalledFilter
+                    ? 'border border-urgent px-2 py-0.5 text-xs font-bold uppercase tracking-[0.1em] text-urgent'
+                    : 'border border-ink px-2 py-0.5 text-xs font-bold uppercase tracking-[0.1em] text-ink'
+                }
               >
-                <option value="">All Statuses</option>
-                <option value="New">New</option>
-                <option value="Submitted">Submitted</option>
-                <option value="InReview">In Review</option>
-                <option value="RevisionsNeeded">Revisions Needed</option>
-                <option value="Approved">Approved</option>
-                <option value="Issued">Issued</option>
-                <option value="Inspections">Inspections</option>
-                <option value="FinaledClosed">Finaled/Closed</option>
-              </select>
-              <Button type="submit">Filter</Button>
-            </form>
-          </CardContent>
-        </Card>
+                {stalledFilter ? 'Stalled' : 'Filtered'}
+              </span>
+              <span className="text-ink">
+                {stalledFilter
+                  ? 'Showing stalled packages only'
+                  : `Showing ${formatStatus(statusFilter!)} packages only`}
+              </span>
+            </span>
+            <Link
+              href="/permits"
+              className="text-xs font-bold uppercase tracking-[0.08em] text-accent hover:underline"
+            >
+              Clear filter
+            </Link>
+          </div>
+        )}
 
-        {/* Permits Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>All Permits ({data.total})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">ID</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Project</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Customer</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Contractor</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Type</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Status</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Billing</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Opened</th>
+        <section aria-label="Permit register" className="pt-5">
+          <p className="text-xs font-medium uppercase tracking-[0.08em] text-muted">
+            Register — {data.total} permit{data.total !== 1 ? 's' : ''}
+          </p>
+          <div className="mt-1 overflow-x-auto">
+            <table className="w-full text-sm" aria-label="Permit packages">
+              <caption className="sr-only">All permit packages matching current filters</caption>
+              <thead>
+                <tr className="border-b border-border">
+                  <th scope="col" className={thClass}>No.</th>
+                  <th scope="col" className={thClass}>Project</th>
+                  <th scope="col" className={thClass}>Customer</th>
+                  <th scope="col" className={thClass}>Contractor</th>
+                  <th scope="col" className={thClass}>Type</th>
+                  <th scope="col" className={thClass}>Status</th>
+                  <th scope="col" className={thClass}>Billing</th>
+                  <th scope="col" className={thClass}>Opened</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {data.permits.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted">
+                      No permits match the current filters.
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {data.permits.map((permit) => (
-                    <tr key={permit.id} className="border-b hover:bg-gray-50">
-                      <td className="px-4 py-2">
-                        <Link
-                          href={`/permits/${permit.id}`}
-                          className="text-sm text-blue-600 hover:underline"
-                        >
-                          {permit.id.slice(0, 8)}...
+                ) : (
+                  data.permits.map((permit) => (
+                    <tr key={permit.id} className="transition-colors hover:bg-surface-inset">
+                      <td className="whitespace-nowrap px-4 py-2.5">
+                        <Link href={`/permits/${permit.id}`} className={tdLinkClass}>
+                          {permit.permitNumber ?? `${permit.id.slice(0, 8).toUpperCase()}…`}
                         </Link>
                       </td>
-                      <td className="px-4 py-2 text-sm">{permit.projectName}</td>
-                      <td className="px-4 py-2 text-sm">{permit.customer.name}</td>
-                      <td className="px-4 py-2 text-sm">{permit.contractor.companyName}</td>
-                      <td className="px-4 py-2 text-sm">{formatPermitType(permit.permitType)}</td>
-                      <td className="px-4 py-2">
+                      <td className="px-4 py-2.5 font-bold text-ink">
+                        {permit.projectName}
+                        {permit.projectAddress && (
+                          <span className="block text-xs font-normal text-muted">
+                            {permit.projectAddress}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-muted">{permit.customer.name}</td>
+                      <td className="px-4 py-2.5 text-muted">{permit.contractor.companyName}</td>
+                      <td className="px-4 py-2.5 text-muted">{formatPermitType(permit.permitType)}</td>
+                      <td className="px-4 py-2.5">
                         <StatusBadge status={permit.status} />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-4 py-2.5">
                         <StatusBadge status={permit.billingStatus} />
                       </td>
-                      <td className="px-4 py-2 text-sm text-gray-600">
+                      <td className="whitespace-nowrap px-4 py-2.5 text-xs text-muted">
                         {formatDate(permit.openedDate)}
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-            {/* Pagination */}
+          <div className="mt-0 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted">
+              Page {data.page} of {Math.max(data.totalPages, 1)}
+            </p>
             {data.totalPages > 1 && (
-              <div className="mt-4 flex items-center justify-between">
-                <p className="text-sm text-gray-600">
-                  Page {data.page} of {data.totalPages}
-                </p>
-                <div className="flex gap-2">
-                  {data.page > 1 && (
-                    <Link href={`?page=${data.page - 1}`}>
-                      <Button variant="outline" size="sm">Previous</Button>
-                    </Link>
-                  )}
-                  {data.page < data.totalPages && (
-                    <Link href={`?page=${data.page + 1}`}>
-                      <Button variant="outline" size="sm">Next</Button>
-                    </Link>
-                  )}
-                </div>
+              <div className="flex gap-2">
+                {data.page > 1 && (
+                  <Link href={buildPermitsQuery(searchParams, { page: data.page - 1 })}>
+                    <Button variant="outline" size="sm">
+                      ← Previous
+                    </Button>
+                  </Link>
+                )}
+                {data.page < data.totalPages && (
+                  <Link href={buildPermitsQuery(searchParams, { page: data.page + 1 })}>
+                    <Button variant="outline" size="sm">
+                      Next →
+                    </Button>
+                  </Link>
+                )}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       </div>
     </AppLayout>
   )
 }
-

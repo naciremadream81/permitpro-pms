@@ -9,11 +9,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatDateTime, formatPermitType } from '@/lib/utils'
-import { FLORIDA_COUNTIES } from '@/lib/florida-counties'
+import { PropertyPanel } from '@/components/permits/property-panel'
+import { PermitValidator } from '@/components/ai/permit-validator'
 import Link from 'next/link'
 
 // Types
@@ -49,6 +49,69 @@ interface ActivityLog {
   user: { name: string; email: string } | null
 }
 
+interface Jurisdiction {
+  id: string
+  name: string
+  countyCode: string
+}
+
+interface ChecklistItem {
+  id: string
+  status: string
+  requirement: {
+    documentName: string
+    documentCategory: string
+    description: string | null
+    helpText: string | null
+    isRequired: boolean
+    isMandatoryForSubmission: boolean
+    order: number
+  }
+  document: { id: string; fileName: string; status: string } | null
+}
+
+const CHECKLIST_STATUS_STYLES: Record<string, string> = {
+  PENDING: 'text-muted bg-surface-inset',
+  UPLOADED: 'text-accent bg-accent-muted',
+  VERIFIED: 'text-success bg-surface',
+  REJECTED: 'text-destructive bg-surface',
+  WAIVED: 'text-muted bg-surface-inset',
+  NOT_APPLICABLE: 'text-muted bg-surface-inset',
+}
+
+interface ReviewComment {
+  id: string
+  body: string
+  isResolved: boolean
+  createdAt: string
+  author?: { id: string; name: string }
+}
+
+interface ReviewAssignment {
+  id: string
+  status: string
+  assignedAt: string
+  startedAt?: string | null
+  dueDate?: string | null
+  completedAt?: string | null
+  reviewer: { id: string; name: string; email: string }
+  comments: ReviewComment[]
+}
+
+interface ReviewUser {
+  id: string
+  name: string
+  email: string
+  role: string
+}
+
+const REVIEW_STATUS_STYLES: Record<string, string> = {
+  ASSIGNED: 'text-accent bg-accent-muted',
+  IN_REVIEW: 'text-warning bg-surface',
+  APPROVED: 'text-success bg-surface',
+  SENT_BACK: 'text-destructive bg-surface',
+}
+
 interface PermitData {
   id: string
   projectName: string
@@ -64,6 +127,8 @@ interface PermitData {
   targetIssueDate: string | null
   closedDate: string | null
   county: string | null
+  jurisdictionId: string | null
+  jurisdiction: { id: string; name: string; countyCode: string } | null
   jurisdictionNotes: string | null
   billingNotes: string | null
   documents: PermitDocument[]
@@ -73,6 +138,33 @@ interface PermitData {
 
 interface PermitDetailClientProps {
   permit: PermitData
+}
+
+// Ruled full-width section header — replaces the old boxed <CardHeader>/<CardTitle>.
+// `meta` renders inline after the title (e.g. a completion % or a status pill);
+// `action` renders flush right (e.g. a button).
+function SectionHeader({
+  title,
+  meta,
+  action,
+}: {
+  title: React.ReactNode
+  meta?: React.ReactNode
+  action?: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-ink pb-2">
+      <h2 className="text-xs font-bold uppercase tracking-[0.1em] text-ink">
+        {title}
+        {meta && (
+          <span className="ml-2 text-xs font-normal normal-case tracking-normal text-muted">
+            {meta}
+          </span>
+        )}
+      </h2>
+      {action && <div className="flex flex-shrink-0 items-center gap-2">{action}</div>}
+    </div>
+  )
 }
 
 export function PermitDetailClient({ permit: initialPermit }: PermitDetailClientProps) {
@@ -110,6 +202,231 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
   
   // ZIP download state
   const [downloadingZip, setDownloadingZip] = useState(false)
+
+  // Jurisdiction picker + county checklist state
+  const [jurisdictions, setJurisdictions] = useState<Jurisdiction[]>([])
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([])
+  const [completionPct, setCompletionPct] = useState(0)
+  const [checklistLoading, setChecklistLoading] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
+  const [uploadingItemId, setUploadingItemId] = useState<string | null>(null)
+
+  // Review workflow state
+  const [sessionRole, setSessionRole] = useState<string>('')
+  const [reviewAssignments, setReviewAssignments] = useState<ReviewAssignment[]>([])
+  const [reviewers, setReviewers] = useState<ReviewUser[]>([])
+  const [reviewBusy, setReviewBusy] = useState(false)
+  const [reviewBlockers, setReviewBlockers] = useState<string[]>([])
+  const [assignReviewerId, setAssignReviewerId] = useState('')
+  const [assignDueDate, setAssignDueDate] = useState('')
+  const [sendBackNote, setSendBackNote] = useState('')
+  const [showSendBack, setShowSendBack] = useState(false)
+
+  // Fetch the county checklist for this permit
+  const fetchChecklist = async () => {
+    setChecklistLoading(true)
+    try {
+      const res = await fetch(`/api/permits/${permit.id}/checklist`, { credentials: 'include' })
+      if (res.ok) {
+        const d = await res.json()
+        setChecklist(d.data ?? [])
+        setCompletionPct(d.completionPct ?? 0)
+      }
+    } catch (err) {
+      console.error('Error fetching checklist:', err)
+    } finally {
+      setChecklistLoading(false)
+    }
+  }
+
+  // Manually (re)generate the checklist from the jurisdiction's requirements
+  const regenerateChecklist = async () => {
+    setRegenerating(true)
+    try {
+      await fetch(`/api/permits/${permit.id}/checklist`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      await fetchChecklist()
+    } catch (err) {
+      console.error('Error regenerating checklist:', err)
+    } finally {
+      setRegenerating(false)
+    }
+  }
+
+  // Link (or unlink) an existing permit document to a checklist item.
+  // Setting a document marks the item UPLOADED; clearing it resets to PENDING.
+  const linkChecklistItem = async (itemId: string, documentId: string | null) => {
+    await fetch(`/api/permits/${permit.id}/checklist/${itemId}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ documentId, status: documentId ? 'UPLOADED' : 'PENDING' }),
+    })
+    await fetchChecklist()
+  }
+
+  // Upload a file for a checklist item (using the requirement's category),
+  // then link the new document to that item and mark it UPLOADED.
+  const uploadAndLinkChecklistItem = async (item: ChecklistItem, file: File) => {
+    setUploadingItemId(item.id)
+    setError('')
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('category', item.requirement.documentCategory)
+      formData.append('notes', `Checklist: ${item.requirement.documentName}`)
+      formData.append('isRequired', String(item.requirement.isRequired))
+
+      const res = await fetch(`/api/permits/${permit.id}/documents`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error || 'Upload failed')
+      }
+      const { data: doc } = await res.json()
+
+      await linkChecklistItem(item.id, doc.id)
+      // Refresh the permit so the Documents section reflects the new upload too.
+      await refreshPermit()
+    } catch (err) {
+      console.error('Checklist item upload failed:', err)
+      setError(err instanceof Error ? err.message : 'Failed to upload document for checklist item')
+    } finally {
+      setUploadingItemId(null)
+    }
+  }
+
+  // Load the FL jurisdictions for the picker once
+  useEffect(() => {
+    fetch('/api/jurisdictions?state=FL', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : { data: [] }))
+      .then((d) => setJurisdictions(d.data ?? []))
+      .catch(() => {})
+  }, [])
+
+  // Refetch the checklist on mount and whenever the assigned jurisdiction changes
+  // (the PATCH handler syncs items server-side, so it's ready by the time the
+  // refreshed permit reports the new jurisdictionId).
+  useEffect(() => {
+    fetchChecklist()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [permit.jurisdictionId])
+
+  // ── Review workflow ─────────────────────────────────────────────────────────
+  const fetchReview = async () => {
+    try {
+      const res = await fetch(`/api/permits/${permit.id}/review`, { credentials: 'include' })
+      if (res.ok) {
+        const d = await res.json()
+        setReviewAssignments(d.data ?? [])
+      }
+    } catch (err) {
+      console.error('Error fetching review:', err)
+    }
+  }
+
+  // Load session role + reviewer list once
+  useEffect(() => {
+    fetch('/api/auth/session', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((s) => {
+        setSessionRole(s?.user?.role ?? '')
+      })
+      .catch(() => {})
+    fetch('/api/users', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : { data: [] }))
+      .then((d) => setReviewers((d.data ?? d ?? []).filter((u: ReviewUser) => u.role === 'reviewer' || u.role === 'admin')))
+      .catch(() => {})
+    fetchReview()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Assign a reviewer (admin). overrideReadiness bypasses the readiness gate.
+  const assignReviewer = async (overrideReadiness = false) => {
+    if (!assignReviewerId) return
+    setReviewBusy(true)
+    setError('')
+    setReviewBlockers([])
+    try {
+      const res = await fetch(`/api/permits/${permit.id}/review`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reviewerId: assignReviewerId,
+          dueDate: assignDueDate ? new Date(assignDueDate).toISOString() : undefined,
+          ...(overrideReadiness ? { overrideReadiness: true, overrideReason: 'Admin override from permit page' } : {}),
+        }),
+      })
+      const json = await res.json()
+      if (res.status === 422) {
+        // Not ready — surface the readiness blockers so an admin can override.
+        setReviewBlockers((json.blockers ?? []).map((b: { message?: string } | string) =>
+          typeof b === 'string' ? b : b.message ?? JSON.stringify(b)
+        ))
+        return
+      }
+      if (!res.ok) throw new Error(json.error || 'Failed to assign reviewer')
+      setAssignReviewerId('')
+      setAssignDueDate('')
+      await Promise.all([fetchReview(), refreshPermit()])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to assign reviewer')
+    } finally {
+      setReviewBusy(false)
+    }
+  }
+
+  // Reviewer action: start | approve | send_back
+  const reviewAction = async (action: 'start' | 'approve' | 'send_back', note?: string) => {
+    setReviewBusy(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/permits/${permit.id}/review`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, note }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error || `Failed to ${action.replace('_', ' ')}`)
+      }
+      setShowSendBack(false)
+      setSendBackNote('')
+      await Promise.all([fetchReview(), refreshPermit()])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Review action failed')
+    } finally {
+      setReviewBusy(false)
+    }
+  }
+
+  // Submit a Ready-to-Submit package to the county
+  const submitToCounty = async () => {
+    setReviewBusy(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/permits/${permit.id}/submit`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error || 'Failed to submit to county')
+      }
+      await refreshPermit()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to submit to county')
+    } finally {
+      setReviewBusy(false)
+    }
+  }
 
   // Refresh permit data
   const refreshPermit = async () => {
@@ -404,53 +721,69 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
     setDocumentNotes(notes)
   }, [permit.documents])
 
+  // ── Derived review state for the Review panel ──────────────────────────────
+  const latestAssignment = reviewAssignments[0] ?? null
+  const activeAssignment = reviewAssignments.find(
+    (a) => a.status === 'ASSIGNED' || a.status === 'IN_REVIEW'
+  )
+  const isAdmin = sessionRole === 'admin'
+  const canReviewAct = sessionRole === 'admin' || sessionRole === 'reviewer'
+  const canSubmit = sessionRole === 'admin' || sessionRole === 'coordinator' || sessionRole === 'user'
+  const isReadyToSubmit = permit.internalStage === 'ReadyToSubmit'
+  const reviewComments = reviewAssignments.flatMap((a) => a.comments ?? [])
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">{permit.projectName}</h1>
-          <p className="text-gray-600">{permit.projectAddress}</p>
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
+        <div className="min-w-0">
+          {permit.permitNumber && (
+            <p className="text-[11px] font-bold tracking-[0.1em] text-muted">
+              {permit.permitNumber}
+            </p>
+          )}
+          <h1 className="text-[22px] font-semibold tracking-tight text-ink">
+            {permit.projectName}
+          </h1>
+          <p className="text-sm text-muted">{permit.projectAddress}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-shrink-0 gap-2">
           <StatusBadge status={permit.status} />
           <StatusBadge status={permit.billingStatus} />
         </div>
       </div>
 
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="border border-destructive px-4 py-3">
+          <p className="text-sm font-semibold text-destructive">{error}</p>
         </div>
       )}
 
       {/* Overview - Editable */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <section aria-label="Overview">
+        <SectionHeader title="Overview" />
+        <div className="mt-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-sm font-medium text-gray-500">Customer</p>
-              <Link href={`/customers/${permit.customer.id}`} className="text-blue-600 hover:underline">
+              <p className="text-sm font-medium text-muted">Customer</p>
+              <Link href={`/customers/${permit.customer.id}`} className="text-accent hover:underline">
                 {permit.customer.name}
               </Link>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Contractor</p>
-              <Link href={`/contractors/${permit.contractor.id}`} className="text-blue-600 hover:underline">
+              <p className="text-sm font-medium text-muted">Contractor</p>
+              <Link href={`/contractors/${permit.contractor.id}`} className="text-accent hover:underline">
                 {permit.contractor.companyName}
               </Link>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Permit Type</p>
+              <p className="text-sm font-medium text-muted">Permit Type</p>
               {editingField === 'permitType' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <select
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-border px-2 py-1 text-sm"
                     autoFocus
                   >
                     <option value="Building">Building</option>
@@ -474,14 +807,14 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Permit Number</p>
+              <p className="text-sm font-medium text-muted">Permit Number</p>
               {editingField === 'permitNumber' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="text"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-border px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('permitNumber')} disabled={loading}>Save</Button>
@@ -495,13 +828,13 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Status</p>
+              <p className="text-sm font-medium text-muted">Status</p>
               {editingField === 'status' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <select
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-border px-2 py-1 text-sm"
                     autoFocus
                   >
                     <option value="New">New</option>
@@ -525,13 +858,13 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Billing Status</p>
+              <p className="text-sm font-medium text-muted">Billing Status</p>
               {editingField === 'billingStatus' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <select
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-border px-2 py-1 text-sm"
                     autoFocus
                   >
                     <option value="NotSent">Not Sent</option>
@@ -550,18 +883,18 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Opened Date</p>
+              <p className="text-sm font-medium text-muted">Opened Date</p>
               <p className="text-sm">{formatDate(new Date(permit.openedDate))}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">Target Issue Date</p>
+              <p className="text-sm font-medium text-muted">Target Issue Date</p>
               {editingField === 'targetIssueDate' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="date"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-border px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('targetIssueDate')} disabled={loading}>Save</Button>
@@ -575,38 +908,38 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-500">County</p>
-              {editingField === 'county' ? (
+              <p className="text-sm font-medium text-muted">County / Jurisdiction</p>
+              {editingField === 'jurisdictionId' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <select
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-border px-2 py-1 text-sm"
                     autoFocus
                   >
                     <option value="">Select a county...</option>
-                    {FLORIDA_COUNTIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                    {jurisdictions.map((j) => (
+                      <option key={j.id} value={j.id}>{j.name} ({j.countyCode})</option>
                     ))}
                   </select>
-                  <Button size="sm" onClick={() => saveField('county')} disabled={loading}>Save</Button>
+                  <Button size="sm" onClick={() => saveField('jurisdictionId')} disabled={loading}>Save</Button>
                   <Button size="sm" variant="outline" onClick={cancelEdit}>Cancel</Button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <p className="text-sm">{permit.county || 'Not set'}</p>
-                  <Button size="sm" variant="ghost" onClick={() => startEdit('county', permit.county)}>Edit</Button>
+                  <p className="text-sm">{permit.jurisdiction?.name ?? permit.county ?? 'Not set'}</p>
+                  <Button size="sm" variant="ghost" onClick={() => startEdit('jurisdictionId', permit.jurisdictionId)}>Edit</Button>
                 </div>
               )}
             </div>
             <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Jurisdiction Notes</p>
+              <p className="text-sm font-medium text-muted">Jurisdiction Notes</p>
               {editingField === 'jurisdictionNotes' ? (
                 <div className="mt-1">
                   <textarea
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="w-full rounded-md border border-border px-2 py-1 text-sm"
                     rows={3}
                     autoFocus
                   />
@@ -623,13 +956,13 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
             <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Billing Notes</p>
+              <p className="text-sm font-medium text-muted">Billing Notes</p>
               {editingField === 'billingNotes' ? (
                 <div className="mt-1">
                   <textarea
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="w-full rounded-md border border-border px-2 py-1 text-sm"
                     rows={2}
                     autoFocus
                   />
@@ -646,70 +979,331 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
+
+      {/* County Checklist — generated from the jurisdiction's requirements */}
+      <section aria-label="County Checklist">
+        <SectionHeader
+          title="County Checklist"
+          meta={checklist.length > 0 ? `${completionPct}% complete` : undefined}
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={regenerateChecklist}
+              disabled={regenerating || !permit.jurisdictionId}
+            >
+              {regenerating ? 'Regenerating…' : 'Regenerate'}
+            </Button>
+          }
+        />
+        <div className="mt-4">
+          {!permit.jurisdictionId ? (
+            <p className="text-sm text-muted">
+              No jurisdiction assigned — pick a county in the Overview above to generate the document checklist.
+            </p>
+          ) : checklistLoading ? (
+            <p className="text-sm text-muted">Loading checklist…</p>
+          ) : checklist.length === 0 ? (
+            <p className="text-sm text-muted">
+              No requirements found for this county and permit type.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {checklist.map((item) => (
+                <li key={item.id} className="flex items-start justify-between gap-4 py-2.5">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-medium text-ink">{item.requirement.documentName}</p>
+                      {item.requirement.isRequired && (
+                        <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[11px] font-medium text-muted">Required</span>
+                      )}
+                      {item.requirement.isMandatoryForSubmission && (
+                        <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[11px] font-medium text-warning">Blocks gate</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted">
+                      {item.requirement.documentCategory}
+                      {item.document && (
+                        <>
+                          {' · '}
+                          <a
+                            href={`/api/documents/${item.document.id}/download`}
+                            className="text-accent hover:underline"
+                          >
+                            {item.document.fileName}
+                          </a>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                        CHECKLIST_STATUS_STYLES[item.status] ?? 'text-muted bg-surface-inset'
+                      }`}
+                    >
+                      {item.status.replace(/_/g, ' ')}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {/* Link an already-uploaded permit document */}
+                      {permit.documents.length > 0 && (
+                        <select
+                          value={item.document?.id ?? ''}
+                          onChange={(e) => linkChecklistItem(item.id, e.target.value || null)}
+                          disabled={uploadingItemId === item.id}
+                          className="max-w-[9rem] truncate rounded-md border border-border bg-surface px-1.5 py-0.5 text-xs text-ink"
+                          title="Link an existing document"
+                        >
+                          <option value="">Link doc…</option>
+                          {permit.documents.map((d) => (
+                            <option key={d.id} value={d.id}>{d.fileName}</option>
+                          ))}
+                        </select>
+                      )}
+                      {/* Upload a new file for this item */}
+                      <label className="cursor-pointer rounded-md border border-border px-2 py-0.5 text-xs font-medium text-ink transition-colors hover:bg-surface-inset">
+                        <input
+                          type="file"
+                          className="hidden"
+                          disabled={uploadingItemId === item.id}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0]
+                            if (f) uploadAndLinkChecklistItem(item, f)
+                            e.target.value = ''
+                          }}
+                        />
+                        {uploadingItemId === item.id ? 'Uploading…' : item.document ? 'Replace' : 'Upload'}
+                      </label>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      {/* Review — internal QA before county submission */}
+      <section aria-label="Review">
+        <SectionHeader
+          title="Review"
+          meta={
+            latestAssignment && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                  REVIEW_STATUS_STYLES[latestAssignment.status] ?? 'text-muted bg-surface-inset'
+                }`}
+              >
+                {latestAssignment.status.replace(/_/g, ' ')}
+              </span>
+            )
+          }
+          action={
+            isReadyToSubmit &&
+            canSubmit && (
+              <Button size="sm" onClick={submitToCounty} disabled={reviewBusy}>
+                {reviewBusy ? 'Submitting…' : 'Submit to county'}
+              </Button>
+            )
+          }
+        />
+        <div className="mt-4 space-y-4">
+          {isReadyToSubmit && (
+            <div className="rounded-lg border border-success bg-surface p-3 text-sm">
+              <span className="font-medium text-success">Ready to submit.</span>{' '}
+              {canSubmit
+                ? 'Review approved — submit to the county when ready.'
+                : 'Review approved — a coordinator can now submit to the county.'}
+            </div>
+          )}
+
+          {latestAssignment ? (
+            <p className="text-sm text-muted">
+              Reviewer: <span className="text-ink">{latestAssignment.reviewer.name}</span>
+              {latestAssignment.dueDate && <> · Due {formatDate(new Date(latestAssignment.dueDate))}</>}
+            </p>
+          ) : (
+            !isReadyToSubmit && <p className="text-sm text-muted">Not yet in review.</p>
+          )}
+
+          {/* Reviewer actions on the active assignment */}
+          {activeAssignment && canReviewAct && (
+            <div className="flex flex-wrap gap-2">
+              {activeAssignment.status === 'ASSIGNED' && (
+                <Button size="sm" onClick={() => reviewAction('start')} disabled={reviewBusy}>
+                  Start review
+                </Button>
+              )}
+              {activeAssignment.status === 'IN_REVIEW' && (
+                <Button size="sm" onClick={() => reviewAction('approve')} disabled={reviewBusy}>
+                  Approve
+                </Button>
+              )}
+              <Button size="sm" variant="outline" onClick={() => setShowSendBack((v) => !v)} disabled={reviewBusy}>
+                Send back
+              </Button>
+            </div>
+          )}
+
+          {showSendBack && activeAssignment && canReviewAct && (
+            <div className="space-y-2 rounded-lg border border-border bg-surface-inset p-3">
+              <label className="block text-xs font-medium text-muted">Reason for sending back (required)</label>
+              <textarea
+                value={sendBackNote}
+                onChange={(e) => setSendBackNote(e.target.value)}
+                rows={2}
+                className="w-full rounded-md border border-border px-2 py-1 text-sm"
+                placeholder="What needs correction?"
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => reviewAction('send_back', sendBackNote)}
+                  disabled={reviewBusy || sendBackNote.trim().length < 5}
+                >
+                  Send back for corrections
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => { setShowSendBack(false); setSendBackNote('') }}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Assign a reviewer (admin) — only when nothing is in flight */}
+          {isAdmin && !activeAssignment && !isReadyToSubmit && (
+            <div className="space-y-2 rounded-lg border border-border bg-surface-inset p-3">
+              <p className="text-sm font-semibold text-ink">Send to review</p>
+              <div className="flex flex-wrap items-end gap-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted">Reviewer</label>
+                  <select
+                    value={assignReviewerId}
+                    onChange={(e) => setAssignReviewerId(e.target.value)}
+                    className="rounded-md border border-border bg-surface px-2 py-1 text-sm text-ink"
+                  >
+                    <option value="">Select…</option>
+                    {reviewers.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted">Due date (optional)</label>
+                  <input
+                    type="date"
+                    value={assignDueDate}
+                    onChange={(e) => setAssignDueDate(e.target.value)}
+                    className="rounded-md border border-border bg-surface px-2 py-1 text-sm text-ink"
+                  />
+                </div>
+                <Button size="sm" onClick={() => assignReviewer(false)} disabled={reviewBusy || !assignReviewerId}>
+                  {reviewBusy ? 'Assigning…' : 'Send to review'}
+                </Button>
+              </div>
+
+              {reviewBlockers.length > 0 && (
+                <div className="rounded-md border border-warning bg-surface p-2 text-xs">
+                  <p className="font-semibold text-warning">Not ready for review:</p>
+                  <ul className="mt-1 list-disc pl-4 text-warning">
+                    {reviewBlockers.map((b, i) => <li key={i}>{b}</li>)}
+                  </ul>
+                  <Button size="sm" variant="outline" className="mt-2" onClick={() => assignReviewer(true)} disabled={reviewBusy}>
+                    Override &amp; assign anyway
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {reviewComments.length > 0 && (
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted">Review comments</p>
+              <ul className="space-y-1.5">
+                {reviewComments.map((c) => (
+                  <li key={c.id} className="rounded-md border border-border px-2.5 py-1.5 text-sm">
+                    <span className="text-ink">{c.body}</span>
+                    <span className="ml-2 text-xs text-muted">— {c.author?.name ?? 'Reviewer'}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {!isAdmin && !activeAssignment && !isReadyToSubmit && reviewAssignments.length === 0 && (
+            <p className="text-sm text-muted">No active review. An admin can send this package to review.</p>
+          )}
+        </div>
+      </section>
+
+      {/* Property — FL appraiser roll lookup */}
+      <PropertyPanel address={permit.projectAddress} />
 
       {/* Tasks - With Add Functionality */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Tasks</CardTitle>
-          <Button size="sm" onClick={() => setShowTaskForm(!showTaskForm)}>
-            {showTaskForm ? 'Cancel' : 'Add Task'}
-          </Button>
-        </CardHeader>
-        <CardContent>
+      <section aria-label="Tasks">
+        <SectionHeader
+          title="Tasks"
+          action={
+            <Button size="sm" onClick={() => setShowTaskForm(!showTaskForm)}>
+              {showTaskForm ? 'Cancel' : 'Add Task'}
+            </Button>
+          }
+        />
+        <div className="mt-4">
           {/* Add Task Form */}
           {showTaskForm && (
-            <form onSubmit={createTask} className="mb-4 p-4 border rounded-md bg-gray-50">
+            <form onSubmit={createTask} className="mb-4 p-4 border rounded-md bg-surface-inset">
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Task Name *</label>
+                  <label className="block text-sm font-medium text-ink mb-1">Task Name *</label>
                   <input
                     type="text"
                     required
                     value={newTask.name}
                     onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-border px-3 py-2 text-sm"
                     placeholder="e.g., Submit application to county"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <label className="block text-sm font-medium text-ink mb-1">Description</label>
                   <textarea
                     value={newTask.description}
                     onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-border px-3 py-2 text-sm"
                     rows={2}
                     placeholder="Task details..."
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                    <label className="block text-sm font-medium text-ink mb-1">Assigned To</label>
                     <input
                       type="text"
                       value={newTask.assignedTo}
                       onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                      className="w-full rounded-md border border-border px-3 py-2 text-sm"
                       placeholder="Name or email"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                    <label className="block text-sm font-medium text-ink mb-1">Due Date</label>
                     <input
                       type="date"
                       value={newTask.dueDate}
                       onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                      className="w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <label className="block text-sm font-medium text-ink mb-1">Priority</label>
                   <select
                     value={newTask.priority}
                     onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as 'low' | 'medium' | 'high' })}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-border px-3 py-2 text-sm"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -736,13 +1330,13 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                   <div className="flex-1">
                     <p className="font-medium">{task.name}</p>
                     {task.description && (
-                      <p className="text-sm text-gray-600">{task.description}</p>
+                      <p className="text-sm text-muted">{task.description}</p>
                     )}
                     {task.assignedTo && (
-                      <p className="text-xs text-gray-500">Assigned to: {task.assignedTo}</p>
+                      <p className="text-xs text-muted">Assigned to: {task.assignedTo}</p>
                     )}
                     {task.priority && (
-                      <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">
+                      <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded bg-surface-inset text-ink">
                         {task.priority} priority
                       </span>
                     )}
@@ -751,7 +1345,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                     <div>
                       <StatusBadge status={task.status} />
                       {task.dueDate && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-muted mt-1">
                           Due: {formatDate(new Date(task.dueDate))}
                         </p>
                       )}
@@ -759,7 +1353,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                     <select
                       value={task.status}
                       onChange={(e) => updateTask(task.id, { status: e.target.value })}
-                      className="text-sm rounded-md border border-gray-300 px-2 py-1"
+                      className="text-sm rounded-md border border-border px-2 py-1"
                     >
                       <option value="NotStarted">Not Started</option>
                       <option value="InProgress">In Progress</option>
@@ -771,17 +1365,18 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">No tasks. Click &quot;Add Task&quot; to create one.</p>
+            <p className="text-muted">No tasks. Click &quot;Add Task&quot; to create one.</p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Documents - With Notes/Labels */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Documents ({permit.documents.length})</CardTitle>
-          <div className="flex gap-2">
-            {permit.documents.length > 0 && (
+      <section aria-label="Documents">
+        <SectionHeader
+          title={`Documents (${permit.documents.length})`}
+          action={
+            <>
+              {permit.documents.length > 0 && (
               <Button 
                 size="sm" 
                 variant="default"
@@ -832,29 +1427,30 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               >
                 {downloadingZip ? 'Creating ZIP...' : 'Download All as ZIP'}
               </Button>
-            )}
-            <Button size="sm" onClick={() => setShowUploadForm(!showUploadForm)}>
-              {showUploadForm ? 'Cancel' : 'Upload Document'}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
+              )}
+              <Button size="sm" onClick={() => setShowUploadForm(!showUploadForm)}>
+                {showUploadForm ? 'Cancel' : 'Upload Document'}
+              </Button>
+            </>
+          }
+        />
+        <div className="mt-4">
           {/* Upload Document Form */}
           {showUploadForm && (
-            <form onSubmit={uploadDocument} className="mb-4 p-4 border rounded-md bg-gray-50">
+            <form onSubmit={uploadDocument} className="mb-4 p-4 border rounded-md bg-surface-inset">
               {error && (
-                <div className="mb-3 rounded-md bg-red-50 p-3">
-                  <p className="text-sm text-red-800">{error}</p>
+                <div className="mb-3 rounded-md bg-surface p-3">
+                  <p className="text-sm text-destructive">{error}</p>
                 </div>
               )}
               {uploadSuccess && (
-                <div className="mb-3 rounded-md bg-green-50 p-3">
-                  <p className="text-sm text-green-800">Document uploaded successfully!</p>
+                <div className="mb-3 rounded-md bg-surface p-3">
+                  <p className="text-sm text-success">Document uploaded successfully!</p>
                 </div>
               )}
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">File *</label>
+                  <label className="block text-sm font-medium text-ink mb-1">File *</label>
                   <input
                     type="file"
                     required
@@ -863,16 +1459,16 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                       console.log('File selected:', file?.name)
                       setUploadForm({ ...uploadForm, file })
                     }}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-border px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                  <label className="block text-sm font-medium text-ink mb-1">Category *</label>
                   <select
                     required
                     value={uploadForm.category}
                     onChange={(e) => setUploadForm({ ...uploadForm, category: e.target.value })}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-border px-3 py-2 text-sm"
                   >
                     <option value="Application">Application</option>
                     <option value="Plans">Plans</option>
@@ -885,11 +1481,11 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes/Labels</label>
+                  <label className="block text-sm font-medium text-ink mb-1">Notes/Labels</label>
                   <textarea
                     value={uploadForm.notes}
                     onChange={(e) => setUploadForm({ ...uploadForm, notes: e.target.value })}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-border px-3 py-2 text-sm"
                     rows={2}
                     placeholder="Add notes or labels for this document..."
                   />
@@ -900,9 +1496,9 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                       type="checkbox"
                       checked={uploadForm.isRequired}
                       onChange={(e) => setUploadForm({ ...uploadForm, isRequired: e.target.checked })}
-                      className="rounded border-gray-300"
+                      className="rounded border-border"
                     />
-                    <span className="text-sm text-gray-700">Required Document</span>
+                    <span className="text-sm text-ink">Required Document</span>
                   </label>
                 </div>
                 <div className="flex gap-2">
@@ -924,16 +1520,16 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <p className="font-medium">{doc.fileName}</p>
-                        <span className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                        <span className="text-xs px-2 py-0.5 rounded bg-accent-muted text-accent">
                           {doc.category}
                         </span>
                         {doc.versionTag && (
-                          <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">
+                          <span className="text-xs px-2 py-0.5 rounded bg-surface-inset text-ink">
                             {doc.versionTag}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-muted">
                         {formatDateTime(new Date(doc.uploadedAt))} • {doc.uploadedByUser.name}
                       </p>
                     </div>
@@ -952,7 +1548,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                         <textarea
                           value={documentNotes[doc.id] || doc.notes || ''}
                           onChange={(e) => setDocumentNotes({ ...documentNotes, [doc.id]: e.target.value })}
-                          className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                          className="w-full rounded-md border border-border px-2 py-1 text-sm"
                           rows={2}
                           placeholder="Add notes or labels for this document..."
                           autoFocus
@@ -972,8 +1568,8 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                       </div>
                     ) : (
                       <div className="flex items-start gap-2">
-                        <p className="text-sm text-gray-600 flex-1">
-                          {doc.notes || <span className="text-gray-400 italic">No notes</span>}
+                        <p className="text-sm text-muted flex-1">
+                          {doc.notes || <span className="text-muted italic">No notes</span>}
                         </p>
                         <Button
                           size="sm"
@@ -992,30 +1588,30 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">No documents uploaded yet</p>
+            <p className="text-muted">No documents uploaded yet</p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Activity Log */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Activity Log</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <section aria-label="Activity Log">
+        <SectionHeader title="Activity Log" />
+        <div className="mt-4">
           <div className="space-y-2">
             {permit.activityLogs.map((log) => (
               <div key={log.id} className="border-b pb-2">
                 <p className="text-sm">{log.description}</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted">
                   {formatDateTime(new Date(log.createdAt))} • {log.user?.name || 'System'}
                 </p>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
+
+      {/* AI Package Check */}
+      <PermitValidator permitId={permit.id} />
     </div>
   )
 }
-

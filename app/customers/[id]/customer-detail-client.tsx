@@ -9,11 +9,39 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatPermitType } from '@/lib/utils'
 import Link from 'next/link'
+
+const thClass =
+  'px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted'
+
+// Ruled full-width section header — replaces the old boxed <CardHeader>/<CardTitle>.
+// `meta` renders inline after the title (e.g. an item count); `action` renders flush right.
+function SectionHeader({
+  title,
+  meta,
+  action,
+}: {
+  title: React.ReactNode
+  meta?: React.ReactNode
+  action?: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-ink pb-2">
+      <h2 className="text-xs font-bold uppercase tracking-[0.1em] text-ink">
+        {title}
+        {meta && (
+          <span className="ml-2 text-xs font-normal normal-case tracking-normal text-muted">
+            {meta}
+          </span>
+        )}
+      </h2>
+      {action && <div className="flex flex-shrink-0 items-center gap-2">{action}</div>}
+    </div>
+  )
+}
 
 interface PermitPackage {
   id: string
@@ -162,15 +190,15 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border pb-4">
+        <div className="min-w-0">
           {editingField === 'name' ? (
             <div className="flex items-center gap-2">
               <input
                 type="text"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                className="text-3xl font-bold text-gray-900 border-b-2 border-blue-500 px-2 py-1"
+                className="text-[22px] font-semibold tracking-tight text-ink border-b-2 border-accent px-2 py-1"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') saveField('name')
@@ -186,7 +214,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold text-gray-900">{customer.name}</h1>
+              <h1 className="text-[22px] font-semibold tracking-tight text-ink">{customer.name}</h1>
               <Button
                 size="sm"
                 variant="ghost"
@@ -197,10 +225,10 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
             </div>
           )}
           {customer.contactName && (
-            <p className="text-gray-600">Contact: {customer.contactName}</p>
+            <p className="text-muted">Contact: {customer.contactName}</p>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-shrink-0 gap-2">
           <Link href="/customers">
             <Button variant="outline">Back to Customers</Button>
           </Link>
@@ -208,28 +236,26 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
       </div>
 
       {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="border border-destructive px-4 py-3">
+          <p className="text-sm font-semibold text-destructive">{error}</p>
         </div>
       )}
 
       {/* Customer Information - Editable */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Contact Information</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <section aria-label="Contact information">
+        <SectionHeader title="Contact Information" />
+        <div className="mt-4">
           <div className="grid gap-4 md:grid-cols-2">
             {/* Contact Name */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Contact Name</p>
+              <p className="text-sm font-medium text-muted">Contact Name</p>
               {editingField === 'contactName' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="text"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-border px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('contactName')} disabled={loading}>
@@ -255,7 +281,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
 
             {/* Phone */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Phone</p>
+              <p className="text-sm font-medium text-muted">Phone</p>
               {editingField === 'phone' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -265,7 +291,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
                       const formatted = formatPhoneNumber(e.target.value)
                       setEditValue(formatted)
                     }}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-border px-2 py-1 text-sm"
                     placeholder="(555) 123-4567"
                     maxLength={14}
                     autoFocus
@@ -293,14 +319,14 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
 
             {/* Email */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Email</p>
+              <p className="text-sm font-medium text-muted">Email</p>
               {editingField === 'email' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="email"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-border px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('email')} disabled={loading}>
@@ -315,7 +341,7 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
                   {customer.email ? (
                     <a
                       href={`mailto:${customer.email}`}
-                      className="text-sm text-blue-600 hover:underline"
+                      className="text-sm text-accent hover:underline"
                     >
                       {customer.email}
                     </a>
@@ -335,14 +361,14 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
 
             {/* Main Address */}
             <div>
-              <p className="text-sm font-medium text-gray-500">Main Address</p>
+              <p className="text-sm font-medium text-muted">Main Address</p>
               {editingField === 'mainAddress' ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="text"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="flex-1 rounded-md border border-border px-2 py-1 text-sm"
                     autoFocus
                   />
                   <Button size="sm" onClick={() => saveField('mainAddress')} disabled={loading}>
@@ -368,13 +394,13 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
 
             {/* Notes */}
             <div className="md:col-span-2">
-              <p className="text-sm font-medium text-gray-500">Notes</p>
+              <p className="text-sm font-medium text-muted">Notes</p>
               {editingField === 'notes' ? (
                 <div className="mt-1">
                   <textarea
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                    className="w-full rounded-md border border-border px-2 py-1 text-sm"
                     rows={4}
                     autoFocus
                   />
@@ -403,61 +429,52 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* Permit Packages */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Permit Packages ({customer.permitPackages.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <section aria-label="Permit packages">
+        <SectionHeader
+          title="Permit Packages"
+          meta={`${customer.permitPackages.length} package${customer.permitPackages.length !== 1 ? 's' : ''}`}
+        />
+        <div className="mt-4">
           {customer.permitPackages.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b">
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                      Project Name
-                    </th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                      Type
-                    </th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                      Status
-                    </th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                      Contractor
-                    </th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
-                      Opened Date
-                    </th>
+                  <tr className="border-b border-border">
+                    <th className={thClass}>Project Name</th>
+                    <th className={thClass}>Type</th>
+                    <th className={thClass}>Status</th>
+                    <th className={thClass}>Contractor</th>
+                    <th className={thClass}>Opened Date</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border">
                   {customer.permitPackages.map((permit) => (
-                    <tr key={permit.id} className="border-b hover:bg-gray-50">
-                      <td className="px-4 py-2">
+                    <tr key={permit.id} className="transition-colors hover:bg-surface-inset">
+                      <td className="px-4 py-2.5">
                         <Link
                           href={`/permits/${permit.id}`}
-                          className="text-sm text-blue-600 hover:underline"
+                          className="text-sm text-accent hover:underline"
                         >
                           {permit.projectName}
                         </Link>
                       </td>
-                      <td className="px-4 py-2 text-sm">{formatPermitType(permit.permitType)}</td>
-                      <td className="px-4 py-2">
+                      <td className="px-4 py-2.5 text-muted">{formatPermitType(permit.permitType)}</td>
+                      <td className="px-4 py-2.5">
                         <StatusBadge status={permit.status} />
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-4 py-2.5">
                         <Link
                           href={`/contractors/${permit.contractor.id}`}
-                          className="text-sm text-blue-600 hover:underline"
+                          className="text-sm text-accent hover:underline"
                         >
                           {permit.contractor.companyName}
                         </Link>
                       </td>
-                      <td className="px-4 py-2 text-sm">
+                      <td className="px-4 py-2.5 text-xs text-muted">
                         {formatDate(permit.openedDate)}
                       </td>
                     </tr>
@@ -466,10 +483,10 @@ export function CustomerDetailClient({ customer: initialCustomer }: CustomerDeta
               </table>
             </div>
           ) : (
-            <p className="text-gray-500">No permit packages for this customer</p>
+            <p className="py-8 text-center text-sm text-muted">No permit packages for this customer</p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </div>
   )
 }
