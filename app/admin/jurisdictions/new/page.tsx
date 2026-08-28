@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { AppLayout } from '@/components/layout/app-layout'
+import { Button } from '@/components/ui/button'
 
 export default function NewJurisdictionPage() {
   const router = useRouter()
@@ -42,83 +44,82 @@ export default function NewJurisdictionPage() {
   }
 
   return (
-    <div className="p-6 max-w-lg mx-auto">
-      <h1 className="text-2xl font-semibold text-gray-900 mb-6">New Jurisdiction</h1>
+    <AppLayout>
+      <div className="mx-auto max-w-lg">
+        <h1 className="border-b border-border pb-5 text-[22px] font-semibold tracking-tight text-ink">
+          New Jurisdiction
+        </h1>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          {error}
-        </div>
-      )}
+        {error && (
+          <div className="mt-4 flex items-center gap-3 border-b border-destructive py-2.5 text-sm">
+            <span className="border border-destructive px-2 py-0.5 text-xs font-bold uppercase tracking-[0.1em] text-destructive">
+              Error
+            </span>
+            <span className="text-ink">{error}</span>
+          </div>
+        )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            County Name <span className="text-red-500">*</span>
-          </label>
-          <input
-            name="name"
-            required
-            placeholder="Hillsborough County"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-[0.08em] text-muted">
+              County Name <span className="text-destructive">*</span>
+            </label>
+            <input
+              name="name"
+              required
+              placeholder="Hillsborough County"
+              className="pp-input"
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            County Code <span className="text-red-500">*</span>
-          </label>
-          <input
-            name="countyCode"
-            required
-            placeholder="HILLSBOROUGH"
-            maxLength={20}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <p className="text-xs text-gray-400 mt-1">Unique identifier. Cannot be changed after creation.</p>
-        </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-[0.08em] text-muted">
+              County Code <span className="text-destructive">*</span>
+            </label>
+            <input
+              name="countyCode"
+              required
+              placeholder="HILLSBOROUGH"
+              maxLength={20}
+              className="pp-input font-mono"
+            />
+            <p className="mt-1 text-xs text-muted">Unique identifier. Cannot be changed after creation.</p>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            State
-          </label>
-          <input
-            name="state"
-            defaultValue="FL"
-            maxLength={2}
-            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-[0.08em] text-muted">
+              State
+            </label>
+            <input
+              name="state"
+              defaultValue="FL"
+              maxLength={2}
+              className="pp-input w-24 font-mono uppercase"
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Notes
-          </label>
-          <textarea
-            name="notes"
-            rows={3}
-            placeholder="Any notes about this jurisdiction's submission process…"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-[0.08em] text-muted">
+              Notes
+            </label>
+            <textarea
+              name="notes"
+              rows={3}
+              placeholder="Any notes about this jurisdiction's submission process…"
+              className="pp-input"
+            />
+          </div>
 
-        <div className="flex gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            {saving ? 'Creating…' : 'Create Jurisdiction'}
-          </button>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="px-5 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
+          <div className="flex gap-3 border-t border-border pt-5">
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Creating…' : 'Create Jurisdiction'}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => router.back()}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
+    </AppLayout>
   )
 }

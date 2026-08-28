@@ -61,42 +61,58 @@ export function formatFileSize(bytes: number): string {
 export function getStatusColor(status: string): string {
   const statusColors: Record<string, string> = {
     // Permit Status
-    'New': 'bg-gray-100 text-gray-800',
-    'Submitted': 'bg-blue-100 text-blue-800',
-    'InReview': 'bg-yellow-100 text-yellow-800',
-    'RevisionsNeeded': 'bg-orange-100 text-orange-800',
-    'Approved': 'bg-green-100 text-green-800',
-    'Issued': 'bg-green-200 text-green-900',
-    'Inspections': 'bg-purple-100 text-purple-800',
-    'FinaledClosed': 'bg-gray-200 text-gray-900',
-    'Canceled': 'bg-red-100 text-red-800',
+    New: 'bg-status-neutral text-status-neutral-foreground',
+    Submitted: 'bg-status-info text-status-info-foreground',
+    InReview: 'bg-status-warning text-status-warning-foreground',
+    RevisionsNeeded: 'bg-status-warning text-status-warning-foreground',
+    Approved: 'bg-status-success text-status-success-foreground',
+    Issued: 'bg-status-success text-status-success-foreground',
+    Inspections: 'bg-status-review text-status-review-foreground',
+    FinaledClosed: 'bg-status-neutral text-status-neutral-foreground',
+    Canceled: 'bg-status-danger text-status-danger-foreground',
     // Billing Status
-    'NotSent': 'bg-gray-100 text-gray-800',
-    'SentToBilling': 'bg-blue-100 text-blue-800',
-    'Billed': 'bg-yellow-100 text-yellow-800',
-    'Paid': 'bg-green-100 text-green-800',
+    NotSent: 'bg-status-neutral text-status-neutral-foreground',
+    SentToBilling: 'bg-status-info text-status-info-foreground',
+    Billed: 'bg-status-warning text-status-warning-foreground',
+    Paid: 'bg-status-success text-status-success-foreground',
     // Document Status
-    'Pending': 'bg-gray-100 text-gray-800',
-    'Verified': 'bg-green-100 text-green-800',
-    'Rejected': 'bg-red-100 text-red-800',
+    Pending: 'bg-status-neutral text-status-neutral-foreground',
+    Verified: 'bg-status-success text-status-success-foreground',
+    Rejected: 'bg-status-danger text-status-danger-foreground',
     // Task Status
-    'NotStarted': 'bg-gray-100 text-gray-800',
-    'InProgress': 'bg-blue-100 text-blue-800',
-    'Waiting': 'bg-yellow-100 text-yellow-800',
-    'Completed': 'bg-green-100 text-green-800',
+    NotStarted: 'bg-status-neutral text-status-neutral-foreground',
+    InProgress: 'bg-status-info text-status-info-foreground',
+    Waiting: 'bg-status-warning text-status-warning-foreground',
+    Completed: 'bg-status-success text-status-success-foreground',
+    // Review assignment / user roles (fallback labels)
+    ASSIGNED: 'bg-status-info text-status-info-foreground',
+    IN_REVIEW: 'bg-status-warning text-status-warning-foreground',
+    APPROVED: 'bg-status-success text-status-success-foreground',
+    SENT_BACK: 'bg-status-danger text-status-danger-foreground',
+    admin: 'bg-status-review text-status-review-foreground',
+    coordinator: 'bg-status-info text-status-info-foreground',
+    reviewer: 'bg-status-warning text-status-warning-foreground',
   }
-  return statusColors[status] || 'bg-gray-100 text-gray-800'
+  return statusColors[status] ?? 'bg-status-neutral text-status-neutral-foreground'
 }
 
 /**
  * Format status for display (convert camelCase to Title Case)
  */
 export function formatStatus(status: string): string {
+  if (status.includes('_')) {
+    return status
+      .split('_')
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
+  }
+
   return status
     .replace(/([A-Z])/g, ' $1')
     .trim()
     .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ')
 }
 

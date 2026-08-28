@@ -1,8 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, ToggleLeft, ToggleRight, Save, Lock, Pencil, X } from 'lucide-react'
+import Link from 'next/link'
+import { ChevronRight, Plus, ToggleLeft, ToggleRight, Save, Lock, Pencil, X } from 'lucide-react'
+import { AppLayout } from '@/components/layout/app-layout'
+import { PageHeader } from '@/components/layout/page-header'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 interface PermitTypeDefinition {
   id: string
@@ -15,7 +19,6 @@ interface PermitTypeDefinition {
 }
 
 export default function PermitTypesPage() {
-  const router = useRouter()
   const [types, setTypes] = useState<PermitTypeDefinition[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -31,7 +34,6 @@ export default function PermitTypesPage() {
   async function fetchTypes() {
     setLoading(true)
     try {
-      // Trigger seed if empty
       await fetch('/api/admin/counties/seed', { method: 'POST' }).catch(() => {})
       const res = await fetch('/api/admin/permit-types')
       const json = await res.json()
@@ -86,104 +88,92 @@ export default function PermitTypesPage() {
   const custom   = types.filter(t => !t.isBuiltIn)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gray-900 text-white">
-        <div className="max-w-4xl mx-auto px-6 py-5">
-          <button onClick={() => router.push('/admin/counties')}
-            className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-200 mb-3 transition-colors">
-            <ArrowLeft className="w-3 h-3" />All Counties
-          </button>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Permit Types</h1>
-              <p className="text-sm text-gray-400 mt-0.5">Manage permit type definitions used in checklists</p>
-            </div>
-            <button onClick={() => setShowAddForm(true)}
-              className="inline-flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-400 transition-colors">
-              <Plus className="w-4 h-4" />Add Permit Type
-            </button>
-          </div>
-        </div>
-      </div>
+    <AppLayout>
+      <div className="mx-auto max-w-4xl space-y-6">
+        <nav className="flex items-center gap-1.5 text-xs text-muted">
+          <Link href="/admin/counties" className="transition-colors hover:text-ink">Counties</Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-ink">Permit Types</span>
+        </nav>
 
-      <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
+        <PageHeader
+          title="Permit Types"
+          description="Manage permit type definitions used in checklists"
+          actions={
+            <Button onClick={() => setShowAddForm(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Permit Type
+            </Button>
+          }
+        />
+
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>
+          <div className="border-y border-destructive bg-surface py-3 text-sm text-destructive">{error}</div>
         )}
 
-        {/* Add form */}
         {showAddForm && (
-          <div className="border border-blue-200 rounded-xl p-5 bg-blue-50 space-y-4">
-            <h2 className="font-semibold text-gray-900 text-sm">New Permit Type</h2>
+          <div className="space-y-4 border-y border-border bg-surface-inset py-5">
+            <h2 className="text-xs font-bold uppercase tracking-[0.08em] text-ink">New Permit Type</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Code <span className="text-red-500">*</span></label>
+                <label className="mb-1 block text-xs font-medium text-muted">Code <span className="text-destructive">*</span></label>
                 <input value={newType.code} onChange={e => setNewType({ ...newType, code: e.target.value })}
-                  placeholder="e.g. Demolition"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <p className="text-xs text-gray-400 mt-1">Used as internal identifier, auto-slugified</p>
+                  placeholder="e.g. Demolition" className="pp-input" />
+                <p className="mt-1 text-xs text-muted">Used as internal identifier, auto-slugified</p>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Display Label <span className="text-red-500">*</span></label>
+                <label className="mb-1 block text-xs font-medium text-muted">Display Label <span className="text-destructive">*</span></label>
                 <input value={newType.label} onChange={e => setNewType({ ...newType, label: e.target.value })}
-                  placeholder="e.g. Demolition Permit"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  placeholder="e.g. Demolition Permit" className="pp-input" />
               </div>
               <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                <label className="mb-1 block text-xs font-medium text-muted">Description</label>
                 <input value={newType.description} onChange={e => setNewType({ ...newType, description: e.target.value })}
-                  placeholder="Optional description"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  placeholder="Optional description" className="pp-input" />
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={addType} disabled={saving || !newType.code || !newType.label}
-                className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-                <Save className="w-4 h-4" />{saving ? 'Saving…' : 'Save Permit Type'}
-              </button>
-              <button onClick={() => setShowAddForm(false)}
-                className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50">
-                Cancel
-              </button>
+              <Button onClick={addType} disabled={saving || !newType.code || !newType.label} className="gap-2">
+                <Save className="h-4 w-4" />{saving ? 'Saving…' : 'Save Permit Type'}
+              </Button>
+              <Button variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button>
             </div>
           </div>
         )}
 
-        {/* Built-in types */}
         <div>
-          <div className="flex items-center gap-2 mb-2 px-1">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Built-in Types</h2>
-            <Lock className="w-3 h-3 text-gray-400" />
+          <div className="mb-1 flex items-center gap-2">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">Built-in Types</h2>
+            <Lock className="h-3 w-3 text-muted" aria-hidden />
           </div>
-          <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600 text-xs">Type</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600 text-xs">Code</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600 text-xs">Description</th>
-                  <th className="text-center px-4 py-2.5 font-medium text-gray-600 text-xs">Active</th>
-                  <th className="px-4 py-2.5 w-16" />
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Type</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Code</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Description</th>
+                  <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-[0.08em] text-muted">Active</th>
+                  <th className="w-16 px-4 py-2" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {loading ? (
-                  <tr><td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-400">Loading…</td></tr>
+                  <tr><td colSpan={5} className="px-4 py-6 text-center text-sm text-muted">Loading…</td></tr>
                 ) : builtIn.map(t => (
-                  <tr key={t.id} className={`hover:bg-gray-50 transition-colors ${!t.isActive ? 'opacity-50' : ''}`}>
-                    <td className="px-4 py-2.5 font-medium text-gray-900">{t.label}</td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-gray-500 bg-gray-50">{t.code}</td>
-                    <td className="px-4 py-2.5 text-xs text-gray-500">{t.description ?? '—'}</td>
+                  <tr key={t.id} className={cn('transition-colors hover:bg-surface-inset', !t.isActive && 'opacity-50')}>
+                    <td className="px-4 py-2.5 font-medium text-ink">{t.label}</td>
+                    <td className="bg-surface-inset/50 px-4 py-2.5 font-mono text-xs text-muted">{t.code}</td>
+                    <td className="px-4 py-2.5 text-xs text-muted">{t.description ?? '—'}</td>
                     <td className="px-4 py-2.5 text-center">
-                      <button onClick={() => toggleType(t.id, t.isActive)}>
+                      <button type="button" onClick={() => toggleType(t.id, t.isActive)}>
                         {t.isActive
-                          ? <ToggleRight className="w-5 h-5 text-blue-500" />
-                          : <ToggleLeft className="w-5 h-5 text-gray-300" />}
+                          ? <ToggleRight className="inline h-5 w-5 text-accent" />
+                          : <ToggleLeft className="inline h-5 w-5 text-muted" />}
                       </button>
                     </td>
                     <td className="px-4 py-2.5 text-right">
-                      <span title="Built-in — cannot be deleted"><Lock className="w-3.5 h-3.5 text-gray-300 inline" /></span>
+                      <span title="Built-in — cannot be deleted"><Lock className="inline h-3.5 w-3.5 text-muted/50" /></span>
                     </td>
                   </tr>
                 ))}
@@ -192,67 +182,65 @@ export default function PermitTypesPage() {
           </div>
         </div>
 
-        {/* Custom types */}
         {(custom.length > 0 || !loading) && (
           <div>
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">Custom Types</h2>
+            <h2 className="mb-1 text-xs font-semibold uppercase tracking-[0.08em] text-muted">Custom Types</h2>
             {custom.length === 0 ? (
-              <div className="text-center py-10 text-gray-400 border border-dashed border-gray-200 rounded-xl text-sm">
+              <div className="border-y border-border py-10 text-center text-sm text-muted">
                 No custom permit types yet.{' '}
-                <button onClick={() => setShowAddForm(true)} className="text-blue-600 hover:underline">Add one</button>.
+                <button type="button" onClick={() => setShowAddForm(true)} className="font-medium text-accent hover:underline">Add one</button>.
               </div>
             ) : (
-              <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+              <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="text-left px-4 py-2.5 font-medium text-gray-600 text-xs">Type</th>
-                      <th className="text-left px-4 py-2.5 font-medium text-gray-600 text-xs">Code</th>
-                      <th className="text-left px-4 py-2.5 font-medium text-gray-600 text-xs">Description</th>
-                      <th className="text-center px-4 py-2.5 font-medium text-gray-600 text-xs">Active</th>
-                      <th className="px-4 py-2.5 w-20" />
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Type</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Code</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted">Description</th>
+                      <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-[0.08em] text-muted">Active</th>
+                      <th className="w-20 px-4 py-2" />
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-border">
                     {custom.map(t => (
-                      <tr key={t.id} className={`group hover:bg-gray-50 transition-colors ${!t.isActive ? 'opacity-50' : ''}`}>
+                      <tr key={t.id} className={cn('group transition-colors hover:bg-surface-inset', !t.isActive && 'opacity-50')}>
                         {editingId === t.id ? (
-                          <td colSpan={5} className="px-4 py-3 bg-blue-50">
+                          <td colSpan={5} className="bg-accent-muted/40 px-4 py-3">
                             <div className="flex items-center gap-3">
                               <input value={editDraft.label} onChange={e => setEditDraft({ ...editDraft, label: e.target.value })}
-                                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-40" />
+                                className="pp-input w-40" />
                               <input value={editDraft.description} onChange={e => setEditDraft({ ...editDraft, description: e.target.value })}
-                                placeholder="Description"
-                                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1" />
-                              <button onClick={() => saveEdit(t.id)} className="inline-flex items-center gap-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium">
-                                <Save className="w-3 h-3" />Save
-                              </button>
-                              <button onClick={() => setEditingId(null)} className="p-1.5 text-gray-400 hover:text-gray-700">
-                                <X className="w-4 h-4" />
+                                placeholder="Description" className="pp-input flex-1" />
+                              <Button size="sm" onClick={() => saveEdit(t.id)} className="gap-1">
+                                <Save className="h-3 w-3" />Save
+                              </Button>
+                              <button type="button" onClick={() => setEditingId(null)} className="p-1.5 text-muted hover:text-ink">
+                                <X className="h-4 w-4" />
                               </button>
                             </div>
                           </td>
                         ) : (
                           <>
-                            <td className="px-4 py-2.5 font-medium text-gray-900">{t.label}</td>
-                            <td className="px-4 py-2.5 font-mono text-xs text-gray-500">{t.code}</td>
-                            <td className="px-4 py-2.5 text-xs text-gray-500">{t.description ?? '—'}</td>
+                            <td className="px-4 py-2.5 font-medium text-ink">{t.label}</td>
+                            <td className="px-4 py-2.5 font-mono text-xs text-muted">{t.code}</td>
+                            <td className="px-4 py-2.5 text-xs text-muted">{t.description ?? '—'}</td>
                             <td className="px-4 py-2.5 text-center">
-                              <button onClick={() => toggleType(t.id, t.isActive)}>
+                              <button type="button" onClick={() => toggleType(t.id, t.isActive)}>
                                 {t.isActive
-                                  ? <ToggleRight className="w-5 h-5 text-blue-500" />
-                                  : <ToggleLeft className="w-5 h-5 text-gray-300" />}
+                                  ? <ToggleRight className="inline h-5 w-5 text-accent" />
+                                  : <ToggleLeft className="inline h-5 w-5 text-muted" />}
                               </button>
                             </td>
                             <td className="px-4 py-2.5 text-right">
-                              <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => { setEditingId(t.id); setEditDraft({ label: t.label, description: t.description ?? '' }) }}
-                                  className="p-1.5 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50">
-                                  <Pencil className="w-3.5 h-3.5" />
+                              <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                                <button type="button" onClick={() => { setEditingId(t.id); setEditDraft({ label: t.label, description: t.description ?? '' }) }}
+                                  className="p-1.5 text-muted hover:bg-accent-muted hover:text-accent">
+                                  <Pencil className="h-3.5 w-3.5" />
                                 </button>
-                                <button onClick={() => deleteType(t.id)}
-                                  className="p-1.5 rounded text-gray-400 hover:text-red-500 hover:bg-red-50">
-                                  <X className="w-3.5 h-3.5" />
+                                <button type="button" onClick={() => deleteType(t.id)}
+                                  className="p-1.5 text-muted hover:bg-surface-inset hover:text-destructive">
+                                  <X className="h-3.5 w-3.5" />
                                 </button>
                               </div>
                             </td>
@@ -267,6 +255,6 @@ export default function PermitTypesPage() {
           </div>
         )}
       </div>
-    </div>
+    </AppLayout>
   )
 }

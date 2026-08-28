@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Plus, Trash2, ToggleLeft, ToggleRight, ArrowLeft, Save } from 'lucide-react'
+import { AppLayout } from '@/components/layout/app-layout'
+import { Button } from '@/components/ui/button'
 
 type DocumentCategory =
   | 'Application' | 'Plans' | 'Specifications' | 'Engineering'
@@ -41,6 +43,8 @@ interface Jurisdiction {
   requirements: Requirement[]
 }
 
+const labelClass = 'mb-1 block text-xs font-medium uppercase tracking-[0.08em] text-muted'
+
 export default function JurisdictionDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -62,7 +66,11 @@ export default function JurisdictionDetailPage() {
     order: 0,
   })
 
-  const fetchJurisdiction = useCallback(async () => {
+  useEffect(() => {
+    fetchJurisdiction()
+  }, [id])
+
+  async function fetchJurisdiction() {
     setLoading(true)
     try {
       const res = await fetch(`/api/jurisdictions/${id}`)
@@ -71,11 +79,7 @@ export default function JurisdictionDetailPage() {
     } finally {
       setLoading(false)
     }
-  }, [id])
-
-  useEffect(() => {
-    fetchJurisdiction()
-  }, [fetchJurisdiction])
+  }
 
   async function addRequirement() {
     setSaving(true)
@@ -132,198 +136,210 @@ export default function JurisdictionDetailPage() {
     try { return JSON.parse(json) } catch { return [json] }
   }
 
-  if (loading) return <div className="p-6 text-sm text-gray-500">Loading…</div>
-  if (!jurisdiction) return <div className="p-6 text-sm text-red-500">Jurisdiction not found</div>
+  if (loading) return <div className="p-6 text-sm text-muted">Loading…</div>
+  if (!jurisdiction) return (
+    <AppLayout>
+      <p className="text-sm text-destructive">Jurisdiction not found</p>
+    </AppLayout>
+  )
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <button
-            onClick={() => router.push('/admin/jurisdictions')}
-            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-2"
-          >
-            <ArrowLeft className="w-3 h-3" />
-            Jurisdictions
-          </button>
-          <h1 className="text-2xl font-semibold text-gray-900">{jurisdiction.name}</h1>
-          <p className="text-sm text-gray-500">
-            {jurisdiction.countyCode} · {jurisdiction.state} ·{' '}
-            <span className={jurisdiction.isActive ? 'text-green-600' : 'text-red-500'}>
-              {jurisdiction.isActive ? 'Active' : 'Inactive'}
+    <AppLayout>
+      <div className="mx-auto max-w-5xl">
+        {/* Header */}
+        <div className="flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <button
+              onClick={() => router.push('/admin/jurisdictions')}
+              className="mb-2 inline-flex items-center gap-1 text-xs font-bold uppercase tracking-[0.08em] text-muted hover:text-ink"
+            >
+              <ArrowLeft className="h-3 w-3" />
+              Jurisdictions
+            </button>
+            <h1 className="text-[22px] font-semibold leading-tight tracking-tight text-ink">
+              {jurisdiction.name}
+            </h1>
+            <p className="mt-1 text-sm text-muted">
+              {jurisdiction.countyCode} · {jurisdiction.state} ·{' '}
+              <span className={jurisdiction.isActive ? 'text-success' : 'text-destructive'}>
+                {jurisdiction.isActive ? 'Active' : 'Inactive'}
+              </span>
+            </p>
+          </div>
+          <div className="flex flex-shrink-0 items-center gap-2">
+            <Button onClick={() => setShowAddForm(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Requirement
+            </Button>
+          </div>
+        </div>
+
+        {error && (
+          <div className="flex items-center gap-3 border-b border-destructive py-2.5 text-sm">
+            <span className="border border-destructive px-2 py-0.5 text-xs font-bold uppercase tracking-[0.1em] text-destructive">
+              Error
             </span>
-          </p>
-        </div>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Requirement
-        </button>
-      </div>
+            <span className="text-ink">{error}</span>
+          </div>
+        )}
 
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          {error}
-        </div>
-      )}
+        {/* Add Requirement Form */}
+        {showAddForm && (
+          <section aria-label="New requirement" className="border-b border-border py-5">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-ink">New Requirement</p>
 
-      {/* Add Requirement Form */}
-      {showAddForm && (
-        <div className="border border-blue-200 rounded-xl p-5 bg-blue-50 space-y-4">
-          <h2 className="font-medium text-gray-900 text-sm">New Requirement</h2>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Document Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                value={newReq.documentName}
-                onChange={(e) => setNewReq({ ...newReq, documentName: e.target.value })}
-                placeholder="Site Plan"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
-              <select
-                value={newReq.documentCategory}
-                onChange={(e) => setNewReq({ ...newReq, documentCategory: e.target.value as DocumentCategory })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {DOC_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Applies to Permit Types</label>
-              <div className="space-y-1 max-h-28 overflow-y-auto border border-gray-300 rounded-lg p-2 bg-white text-sm">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={newReq.permitTypes.includes('*')}
-                    onChange={(e) => setNewReq({
-                      ...newReq,
-                      permitTypes: e.target.checked ? ['*'] : [],
-                    })}
-                  />
-                  <span className="font-medium">All types</span>
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className={labelClass}>
+                  Document Name <span className="text-destructive">*</span>
                 </label>
-                {!newReq.permitTypes.includes('*') && PERMIT_TYPES.map((pt) => (
-                  <label key={pt} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  value={newReq.documentName}
+                  onChange={(e) => setNewReq({ ...newReq, documentName: e.target.value })}
+                  placeholder="Site Plan"
+                  className="pp-input"
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Category</label>
+                <select
+                  value={newReq.documentCategory}
+                  onChange={(e) => setNewReq({ ...newReq, documentCategory: e.target.value as DocumentCategory })}
+                  className="pp-input"
+                >
+                  {DOC_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClass}>Applies to Permit Types</label>
+                <div className="max-h-28 space-y-1 overflow-y-auto border border-border bg-surface p-2 text-sm">
+                  <label className="flex cursor-pointer items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={newReq.permitTypes.includes(pt)}
-                      onChange={(e) => {
-                        const updated = e.target.checked
-                          ? [...newReq.permitTypes.filter(t => t !== '*'), pt]
-                          : newReq.permitTypes.filter(t => t !== pt)
-                        setNewReq({ ...newReq, permitTypes: updated })
-                      }}
+                      checked={newReq.permitTypes.includes('*')}
+                      onChange={(e) => setNewReq({
+                        ...newReq,
+                        permitTypes: e.target.checked ? ['*'] : [],
+                      })}
                     />
-                    {pt}
+                    <span className="font-medium text-ink">All types</span>
                   </label>
-                ))}
+                  {!newReq.permitTypes.includes('*') && PERMIT_TYPES.map((pt) => (
+                    <label key={pt} className="flex cursor-pointer items-center gap-2 text-ink">
+                      <input
+                        type="checkbox"
+                        checked={newReq.permitTypes.includes(pt)}
+                        onChange={(e) => {
+                          const updated = e.target.checked
+                            ? [...newReq.permitTypes.filter(t => t !== '*'), pt]
+                            : newReq.permitTypes.filter(t => t !== pt)
+                          setNewReq({ ...newReq, permitTypes: updated })
+                        }}
+                      />
+                      {pt}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="col-span-2">
+                <label className={labelClass}>Description</label>
+                <input
+                  value={newReq.description}
+                  onChange={(e) => setNewReq({ ...newReq, description: e.target.value })}
+                  placeholder="What this document is for"
+                  className="pp-input"
+                />
+              </div>
+
+              <div className="col-span-2 flex items-center gap-6 text-sm text-ink">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={newReq.isRequired}
+                    onChange={(e) => setNewReq({ ...newReq, isRequired: e.target.checked })}
+                  />
+                  Required
+                </label>
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={newReq.isMandatoryForSubmission}
+                    onChange={(e) => setNewReq({ ...newReq, isMandatoryForSubmission: e.target.checked })}
+                  />
+                  Mandatory for submission (blocks readiness gate if missing)
+                </label>
               </div>
             </div>
 
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
-              <input
-                value={newReq.description}
-                onChange={(e) => setNewReq({ ...newReq, description: e.target.value })}
-                placeholder="What this document is for"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+            <div className="mt-4 flex gap-3">
+              <Button
+                onClick={addRequirement}
+                disabled={saving || !newReq.documentName || newReq.permitTypes.length === 0}
+                className="gap-2"
+              >
+                <Save className="h-4 w-4" />
+                {saving ? 'Saving…' : 'Save Requirement'}
+              </Button>
+              <Button variant="outline" onClick={() => setShowAddForm(false)}>
+                Cancel
+              </Button>
             </div>
+          </section>
+        )}
 
-            <div className="col-span-2 flex items-center gap-6 text-sm">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={newReq.isRequired}
-                  onChange={(e) => setNewReq({ ...newReq, isRequired: e.target.checked })}
-                />
-                Required
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={newReq.isMandatoryForSubmission}
-                  onChange={(e) => setNewReq({ ...newReq, isMandatoryForSubmission: e.target.checked })}
-                />
-                Mandatory for submission (blocks readiness gate if missing)
-              </label>
-            </div>
+        {/* Requirements by permit type */}
+        {jurisdiction.requirements.length === 0 ? (
+          <div className="border-b border-border py-14 text-center text-muted">
+            <p className="font-medium text-ink">No requirements defined</p>
+            <p className="mt-1 text-sm">Add requirements to enable automatic checklist generation.</p>
           </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={addRequirement}
-              disabled={saving || !newReq.documentName || newReq.permitTypes.length === 0}
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              <Save className="w-4 h-4" />
-              {saving ? 'Saving…' : 'Save Requirement'}
-            </button>
-            <button
-              onClick={() => setShowAddForm(false)}
-              className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
+        ) : (
+          <div>
+            {/* All-types requirements first */}
+            {(() => {
+              const allTypes = jurisdiction.requirements.filter(r =>
+                parsePermitTypes(r.permitTypes).includes('*')
+              )
+              if (allTypes.length === 0) return null
+              return (
+                <RequirementGroup
+                  label="All Permit Types"
+                  requirements={allTypes}
+                  onToggle={toggleRequirement}
+                  onDelete={deleteRequirement}
+                />
+              )
+            })()}
+            {PERMIT_TYPES.map((pt) => {
+              const reqs = jurisdiction.requirements.filter(r => {
+                const types = parsePermitTypes(r.permitTypes)
+                return !types.includes('*') && types.includes(pt)
+              })
+              if (reqs.length === 0) return null
+              return (
+                <RequirementGroup
+                  key={pt}
+                  label={pt}
+                  requirements={reqs}
+                  onToggle={toggleRequirement}
+                  onDelete={deleteRequirement}
+                />
+              )
+            })}
           </div>
-        </div>
-      )}
-
-      {/* Requirements by permit type */}
-      {jurisdiction.requirements.length === 0 ? (
-        <div className="text-center py-12 text-gray-400 border border-dashed border-gray-200 rounded-xl">
-          <p className="font-medium">No requirements defined</p>
-          <p className="text-sm mt-1">Add requirements to enable automatic checklist generation.</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {/* All-types requirements first */}
-          {(() => {
-            const allTypes = jurisdiction.requirements.filter(r =>
-              parsePermitTypes(r.permitTypes).includes('*')
-            )
-            if (allTypes.length === 0) return null
-            return (
-              <RequirementGroup
-                label="All Permit Types"
-                requirements={allTypes}
-                onToggle={toggleRequirement}
-                onDelete={deleteRequirement}
-              />
-            )
-          })()}
-          {PERMIT_TYPES.map((pt) => {
-            const reqs = jurisdiction.requirements.filter(r => {
-              const types = parsePermitTypes(r.permitTypes)
-              return !types.includes('*') && types.includes(pt)
-            })
-            if (reqs.length === 0) return null
-            return (
-              <RequirementGroup
-                key={pt}
-                label={pt}
-                requirements={reqs}
-                onToggle={toggleRequirement}
-                onDelete={deleteRequirement}
-              />
-            )
-          })}
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </AppLayout>
   )
 }
+
+const thClass =
+  'px-4 py-2 text-left text-xs font-medium uppercase tracking-[0.08em] text-muted'
+const thClassCenter =
+  'px-4 py-2 text-center text-xs font-medium uppercase tracking-[0.08em] text-muted'
 
 function RequirementGroup({
   label,
@@ -337,68 +353,67 @@ function RequirementGroup({
   onDelete: (id: string) => void
 }) {
   return (
-    <div>
-      <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-2">
-        {label}
-      </h2>
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Document</th>
-              <th className="text-left px-4 py-2 font-medium text-gray-600">Category</th>
-              <th className="text-center px-4 py-2 font-medium text-gray-600">Required</th>
-              <th className="text-center px-4 py-2 font-medium text-gray-600">Blocks Gate</th>
-              <th className="text-center px-4 py-2 font-medium text-gray-600">Active</th>
-              <th className="px-4 py-2" />
+    <section className="pt-6" aria-label={label}>
+      <p className="text-xs font-bold uppercase tracking-[0.1em] text-muted">{label}</p>
+      <div className="mt-1 overflow-x-auto">
+        <table className="w-full text-sm" aria-label={`${label} requirements`}>
+          <thead>
+            <tr className="border-b border-border">
+              <th scope="col" className={thClass}>Document</th>
+              <th scope="col" className={thClass}>Category</th>
+              <th scope="col" className={thClassCenter}>Required</th>
+              <th scope="col" className={thClassCenter}>Blocks Gate</th>
+              <th scope="col" className={thClassCenter}>Active</th>
+              <th scope="col" className="px-4 py-2" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border">
             {requirements.map((req) => (
               <tr
                 key={req.id}
-                className={`hover:bg-gray-50 transition-colors ${!req.isActive ? 'opacity-50' : ''}`}
+                className={`transition-colors hover:bg-surface-inset ${!req.isActive ? 'opacity-50' : ''}`}
               >
-                <td className="px-4 py-2">
-                  <div className="font-medium text-gray-900">{req.documentName}</div>
+                <td className="px-4 py-3">
+                  <div className="font-bold text-ink">{req.documentName}</div>
                   {req.description && (
-                    <div className="text-xs text-gray-400 mt-0.5">{req.description}</div>
+                    <div className="mt-0.5 text-xs text-muted">{req.description}</div>
                   )}
                 </td>
-                <td className="px-4 py-2 text-gray-600">{req.documentCategory}</td>
-                <td className="px-4 py-2 text-center">
+                <td className="px-4 py-3 text-muted">{req.documentCategory}</td>
+                <td className="px-4 py-3 text-center">
                   {req.isRequired ? (
-                    <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
-                      Yes
+                    <span className="border border-success px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-success">
+                      Required
                     </span>
                   ) : (
-                    <span className="text-xs text-gray-400">Optional</span>
+                    <span className="text-xs text-muted">Optional</span>
                   )}
                 </td>
-                <td className="px-4 py-2 text-center">
+                <td className="px-4 py-3 text-center">
                   {req.isMandatoryForSubmission ? (
-                    <span className="text-xs font-medium text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">
+                    <span className="border border-warning px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-warning">
                       Blocks
                     </span>
                   ) : (
-                    <span className="text-xs text-gray-400">—</span>
+                    <span className="text-xs text-muted">—</span>
                   )}
                 </td>
-                <td className="px-4 py-2 text-center">
+                <td className="px-4 py-3 text-center">
                   <button onClick={() => onToggle(req.id, req.isActive)}>
                     {req.isActive ? (
-                      <ToggleRight className="w-5 h-5 text-blue-500" />
+                      <ToggleRight className="h-5 w-5 text-accent" />
                     ) : (
-                      <ToggleLeft className="w-5 h-5 text-gray-300" />
+                      <ToggleLeft className="h-5 w-5 text-border" />
                     )}
                   </button>
                 </td>
-                <td className="px-4 py-2 text-right">
+                <td className="px-4 py-3 text-right">
                   <button
                     onClick={() => onDelete(req.id)}
-                    className="text-gray-400 hover:text-red-500 transition-colors"
+                    className="text-muted transition-colors hover:text-destructive"
+                    aria-label={`Remove ${req.documentName}`}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </td>
               </tr>
@@ -406,6 +421,6 @@ function RequirementGroup({
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   )
 }

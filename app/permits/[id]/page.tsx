@@ -17,6 +17,7 @@ async function getPermit(id: string) {
     include: {
       customer: true,
       contractor: true,
+      jurisdiction: { select: { id: true, name: true, countyCode: true } },
       documents: {
         include: {
           uploadedByUser: { select: { id: true, name: true, email: true } },
@@ -42,13 +43,13 @@ async function getPermit(id: string) {
   return permit
 }
 
-export default async function PermitDetailPage(
-  props: {
-    params: Promise<{ id: string }>
-  }
-) {
-  const params = await props.params;
-  const permit = await getPermit(params.id)
+export default async function PermitDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  const permit = await getPermit(id)
 
   if (!permit) {
     notFound()

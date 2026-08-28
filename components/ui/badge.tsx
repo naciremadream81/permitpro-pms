@@ -1,12 +1,5 @@
-/**
- * Badge Component
- * 
- * A badge component for displaying status indicators and labels.
- * Used throughout the application for status badges, tags, and labels.
- */
-
 import React from 'react'
-import { cn, getStatusColor } from '@/lib/utils'
+import { cn, formatStatus, getStatusColor } from '@/lib/utils'
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: 'default' | 'outline'
@@ -18,11 +11,12 @@ export function Badge({
   children,
   ...props
 }: BadgeProps) {
-  const baseStyles = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium'
-  
+  const baseStyles =
+    'inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium leading-none whitespace-nowrap'
+
   const variants = {
-    default: 'bg-gray-100 text-gray-800',
-    outline: 'border border-gray-300 text-gray-700',
+    default: 'bg-status-neutral text-status-neutral-foreground',
+    outline: 'border border-border text-muted bg-surface',
   }
 
   return (
@@ -35,11 +29,6 @@ export function Badge({
   )
 }
 
-/**
- * StatusBadge Component
- * 
- * A specialized badge that automatically applies color based on status value.
- */
 export function StatusBadge({
   status,
   className,
@@ -47,8 +36,7 @@ export function StatusBadge({
 }: { status: string } & React.HTMLAttributes<HTMLSpanElement>) {
   return (
     <Badge className={cn(getStatusColor(status), className)} {...props}>
-      {status.replace(/([A-Z])/g, ' $1').trim()}
+      {formatStatus(status)}
     </Badge>
   )
 }
-
