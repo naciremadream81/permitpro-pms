@@ -123,15 +123,15 @@ export async function DELETE(request: NextRequest, props: { params: Promise<{ id
     // ghost rows when Prisma rejected the delete (checklist/review/version FKs).
     await prisma.$transaction(async (tx) => {
       await tx.checklistItem.updateMany({
-        where: { documentId: params.id },
+        where: { documentId: { equals: params.id } },
         data: { documentId: null },
       })
       await tx.reviewComment.updateMany({
-        where: { documentId: params.id },
+        where: { documentId: { equals: params.id } },
         data: { documentId: null },
       })
       await tx.permitDocument.updateMany({
-        where: { parentDocumentId: params.id },
+        where: { parentDocumentId: { equals: params.id } },
         data: { parentDocumentId: null },
       })
       await tx.permitDocument.delete({
