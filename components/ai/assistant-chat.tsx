@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { SparklesIcon, XIcon, SendIcon, GlobeIcon, RotateCcwIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { AiDataNotice } from '@/components/legal/ai-data-notice'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -165,7 +166,7 @@ export function AssistantChat() {
           open && 'rotate-90'
         )}
       >
-        {open ? <XIcon className="h-5 w-5" /> : <SparklesIcon className="h-5 w-5" />}
+        {open ? <XIcon className="h-5 w-5" aria-hidden /> : <SparklesIcon className="h-5 w-5" aria-hidden />}
       </button>
 
       {/* Panel */}
@@ -208,7 +209,11 @@ export function AssistantChat() {
           <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
             {messages.length === 0 && (
               <div className="space-y-2 pt-2">
-                <p className="text-center text-[12px] text-muted">Ask me anything about PermitPro or finding permit forms.</p>
+                <AiDataNotice compact />
+                <p className="text-center text-[12px] text-muted">
+                  Ask questions about using PermitPro or locating permit forms. Answers are
+                  suggestions only—verify with your jurisdiction.
+                </p>
                 {[
                   'Where do I upload documents?',
                   'How do I assign a reviewer?',
@@ -251,7 +256,9 @@ export function AssistantChat() {
                 Web search {webSearch ? 'on' : 'off'}
               </button>
               {webSearch && (
-                <span className="text-[11px] text-muted">for finding forms online</span>
+                <span className="text-[11px] text-muted">
+                  Web search may send your query to external services
+                </span>
               )}
             </div>
 
@@ -271,7 +278,7 @@ export function AssistantChat() {
                 type="button"
                 onClick={() => void send()}
                 disabled={busy || !input.trim()}
-                aria-label="Send"
+                aria-label="Send message to assistant"
                 className="flex h-9 w-9 flex-shrink-0 items-center justify-center bg-accent text-accent-foreground hover:bg-accent-hover disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
               >
                 <SendIcon className="h-4 w-4" aria-hidden />

@@ -266,7 +266,8 @@ export function SettingsClient() {
                   onChange={handleChange}
                   className="pp-input"
                 >
-                  <option value="user">User</option>
+                  <option value="coordinator">Coordinator</option>
+                  <option value="reviewer">Reviewer</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>

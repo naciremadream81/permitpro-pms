@@ -178,10 +178,11 @@ export function VaultPanel({ contractorId }: Props) {
             </h2>
 
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                File <span className="text-red-500">*</span>
+              <label htmlFor="vault-upload-file" className="block text-xs font-medium text-gray-700 mb-1">
+                File <span className="text-red-600">*</span>
               </label>
               <input
+                id="vault-upload-file"
                 type="file"
                 ref={fileRef}
                 accept=".pdf,.jpg,.jpeg,.png"
@@ -192,8 +193,9 @@ export function VaultPanel({ contractorId }: Props) {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Issue Date</label>
+                <label htmlFor="vault-issue-date" className="block text-xs font-medium text-gray-700 mb-1">Issue Date</label>
                 <input
+                  id="vault-issue-date"
                   type="date"
                   value={issueDate}
                   onChange={(e) => setIssueDate(e.target.value)}
@@ -201,8 +203,9 @@ export function VaultPanel({ contractorId }: Props) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Expiration Date</label>
+                <label htmlFor="vault-expiration-date" className="block text-xs font-medium text-gray-700 mb-1">Expiration Date</label>
                 <input
+                  id="vault-expiration-date"
                   type="date"
                   value={expirationDate}
                   onChange={(e) => setExpirationDate(e.target.value)}

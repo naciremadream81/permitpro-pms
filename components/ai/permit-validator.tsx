@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { SparklesIcon, RefreshCwIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { AiDataNotice } from '@/components/legal/ai-data-notice'
 
 interface Props {
   permitId: string
@@ -124,9 +125,9 @@ export function PermitValidator({ permitId }: Props) {
             </button>
           )}
           {state === 'idle' && (
-            <Button size="sm" onClick={runCheck}>
+            <Button size="sm" onClick={runCheck} aria-label="Run AI document check">
               <SparklesIcon className="h-3.5 w-3.5" aria-hidden />
-              Run Check
+              Run document check
             </Button>
           )}
         </div>
@@ -134,10 +135,13 @@ export function PermitValidator({ permitId }: Props) {
 
       {/* Body */}
       {state === 'idle' && (
-        <div className="px-4 py-5 text-center">
-          <p className="text-[13px] text-muted">
-            Run an AI review to check this package for missing documents, checklist gaps, and next steps.
+        <div className="space-y-3 px-4 py-5">
+          <p className="text-center text-[13px] text-muted">
+            Optional AI-assisted review may flag possible missing documents or checklist
+            gaps. Results are suggestions only—not a substitute for human review or
+            jurisdiction requirements.
           </p>
+          <AiDataNotice compact />
         </div>
       )}
 
