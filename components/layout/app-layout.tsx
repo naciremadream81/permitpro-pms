@@ -5,11 +5,12 @@ import { MobileNav } from './mobile-nav'
 import { SidebarPanel } from './sidebar'
 import { BandHeader } from './band-header'
 import { AssistantChat } from '@/components/ai/assistant-chat'
+import { SiteFooter } from '@/components/legal/site-footer'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <NavProvider>
-      <div className="flex h-screen flex-col bg-canvas">
+      <div className="flex min-h-screen flex-col bg-canvas">
         <a href="#main-content" className="pp-skip-link">
           Skip to main content
         </a>
@@ -28,6 +29,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
 
+        <SiteFooter />
         <AssistantChat />
       </div>
     </NavProvider>
