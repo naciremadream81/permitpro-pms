@@ -10,11 +10,15 @@
 
 import { SessionProvider } from 'next-auth/react'
 import { ThemeProvider } from 'next-themes'
+import { CookieConsentBanner } from '@/components/legal/cookie-consent-banner'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-      <SessionProvider>{children}</SessionProvider>
+      <SessionProvider>
+        {children}
+        <CookieConsentBanner />
+      </SessionProvider>
     </ThemeProvider>
   )
 }

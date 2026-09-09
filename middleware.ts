@@ -9,7 +9,14 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
-const PUBLIC_PREFIXES = ['/login', '/api/auth']
+const PUBLIC_PREFIXES = [
+  '/login',
+  '/api/auth',
+  '/privacy',
+  '/terms',
+  '/cookies',
+  '/refund',
+]
 
 export async function middleware(request: NextRequest) {
   const { nextUrl } = request

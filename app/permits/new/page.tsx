@@ -13,6 +13,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { FormDataNotice } from '@/components/legal/form-data-notice'
 import { FLORIDA_COUNTIES } from '@/lib/florida-counties'
 
 interface Customer {
@@ -397,7 +398,12 @@ export default function NewPermitPage() {
               </div>
 
               {/* Form Actions */}
-              <div className="flex items-center justify-end gap-4 pt-4 border-t">
+              <FormDataNotice
+                purpose="Project and customer information is stored to prepare and track permit packages."
+                thirdParty="Project addresses may be sent to Esri ArcGIS for geocoding and Florida property parcel lookup when you use property lookup features."
+              />
+
+              <div className="flex items-center justify-end gap-4 border-t pt-4">
                 <Link href="/permits">
                   <Button type="button" variant="outline" disabled={loading}>
                     Cancel

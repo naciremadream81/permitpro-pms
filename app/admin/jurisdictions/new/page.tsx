@@ -61,10 +61,11 @@ export default function NewJurisdictionPage() {
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-[0.08em] text-muted">
+            <label htmlFor="jurisdiction-name" className="mb-1 block text-xs font-medium uppercase tracking-[0.08em] text-muted">
               County Name <span className="text-destructive">*</span>
             </label>
             <input
+              id="jurisdiction-name"
               name="name"
               required
               placeholder="Hillsborough County"
@@ -73,10 +74,11 @@ export default function NewJurisdictionPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-[0.08em] text-muted">
+            <label htmlFor="jurisdiction-county-code" className="mb-1 block text-xs font-medium uppercase tracking-[0.08em] text-muted">
               County Code <span className="text-destructive">*</span>
             </label>
             <input
+              id="jurisdiction-county-code"
               name="countyCode"
               required
               placeholder="HILLSBOROUGH"
@@ -87,10 +89,11 @@ export default function NewJurisdictionPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-[0.08em] text-muted">
+            <label htmlFor="jurisdiction-state" className="mb-1 block text-xs font-medium uppercase tracking-[0.08em] text-muted">
               State
             </label>
             <input
+              id="jurisdiction-state"
               name="state"
               defaultValue="FL"
               maxLength={2}
@@ -99,10 +102,11 @@ export default function NewJurisdictionPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-[0.08em] text-muted">
+            <label htmlFor="jurisdiction-notes" className="mb-1 block text-xs font-medium uppercase tracking-[0.08em] text-muted">
               Notes
             </label>
             <textarea
+              id="jurisdiction-notes"
               name="notes"
               rows={3}
               placeholder="Any notes about this jurisdiction's submission process…"

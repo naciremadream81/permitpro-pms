@@ -13,6 +13,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { FormDataNotice } from '@/components/legal/form-data-notice'
 
 export default function NewCustomerPage() {
   const router = useRouter()
@@ -242,6 +243,10 @@ export default function NewCustomerPage() {
                   placeholder="Additional notes about the customer..."
                 />
               </div>
+
+              <FormDataNotice
+                purpose="Customer contact and address information is stored in your organization's PermitPro account to manage permit packages."
+              />
 
               <div className="flex gap-2 pt-4">
                 <Button type="submit" disabled={loading}>
