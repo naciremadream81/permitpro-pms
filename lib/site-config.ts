@@ -4,25 +4,25 @@
  */
 
 export const siteConfig = {
-  productName: process.env.NEXT_PUBLIC_PRODUCT_NAME ?? 'PermitPro',
+  productName: process.env.NEXT_PUBLIC_PRODUCT_NAME || 'PermitPro',
   productTagline:
-    process.env.NEXT_PUBLIC_PRODUCT_TAGLINE ??
+    process.env.NEXT_PUBLIC_PRODUCT_TAGLINE ||
     'Permit Processing & Document Management',
 
   legalName:
-    process.env.NEXT_PUBLIC_BUSINESS_LEGAL_NAME ??
-    'PermitPro LLC',
+    process.env.NEXT_PUBLIC_BUSINESS_LEGAL_NAME ||
+    'PermitPro',
   address:
-    process.env.NEXT_PUBLIC_BUSINESS_ADDRESS ??
-    '123 Business Plaza, Suite 100, Miami, FL 33101, United States',
+    process.env.NEXT_PUBLIC_BUSINESS_ADDRESS ||
+    'Business address not provided',
   email:
-    process.env.NEXT_PUBLIC_BUSINESS_EMAIL ?? 'legal@permitpro.icu',
-  phone: process.env.NEXT_PUBLIC_BUSINESS_PHONE ?? '+1 (305) 555-0100',
+    process.env.NEXT_PUBLIC_BUSINESS_EMAIL || 'legal@permitpro.icu',
+  phone: process.env.NEXT_PUBLIC_BUSINESS_PHONE || '',
   supportEmail:
-    process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? 'support@permitpro.icu',
+    process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@permitpro.icu',
 
   /** Primary jurisdiction for governing law (Florida-focused product). */
-  governingLawState: process.env.NEXT_PUBLIC_GOVERNING_LAW_STATE ?? 'Florida',
+  governingLawState: process.env.NEXT_PUBLIC_GOVERNING_LAW_STATE || 'Florida',
   governingLawCountry: 'United States',
 
   /** Set NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS=true only in local/dev demos. */

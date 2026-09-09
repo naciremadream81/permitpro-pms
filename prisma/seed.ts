@@ -42,7 +42,7 @@ async function main() {
       email: 'user@permitco.com',
       name: 'Regular User',
       passwordHash: await hashPassword('user123'),
-      role: 'user',
+      role: 'coordinator',
     },
   })
 

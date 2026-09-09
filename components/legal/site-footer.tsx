@@ -18,13 +18,17 @@ export function SiteFooter() {
             >
               {siteConfig.supportEmail}
             </a>
-            {' · '}
-            <a
-              href={`tel:${siteConfig.phone.replace(/\D/g, '')}`}
-              className="underline-offset-2 hover:text-ink hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
-            >
-              {siteConfig.phone}
-            </a>
+            {siteConfig.phone && (
+              <>
+                {' · '}
+                <a
+                  href={`tel:${siteConfig.phone.replace(/\D/g, '')}`}
+                  className="underline-offset-2 hover:text-ink hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
+                >
+                  {siteConfig.phone}
+                </a>
+              </>
+            )}
           </p>
           <p className="mt-2">
             © {siteConfig.copyrightYear} {siteConfig.legalName}. All rights

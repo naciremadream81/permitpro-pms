@@ -61,13 +61,17 @@ export function LegalPageLayout({
             >
               {siteConfig.email}
             </a>
-            {' · '}
-            <a
-              href={`tel:${siteConfig.phone.replace(/\D/g, '')}`}
-              className="underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
-            >
-              {siteConfig.phone}
-            </a>
+            {siteConfig.phone && (
+              <>
+                {' · '}
+                <a
+                  href={`tel:${siteConfig.phone.replace(/\D/g, '')}`}
+                  className="underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
+                >
+                  {siteConfig.phone}
+                </a>
+              </>
+            )}
           </p>
         </div>
       </footer>

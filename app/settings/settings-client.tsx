@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/ui/badge'
-import type { UserRole } from '@/lib/permissions'
+import { normalizeRole, type UserRole } from '@/lib/permissions'
 import { formatDate } from '@/lib/utils'
 
 interface User {
@@ -144,7 +144,7 @@ export function SettingsClient() {
       email: user.email,
       name: user.name,
       password: '', // Don't pre-fill password
-      role: user.role,
+      role: normalizeRole(user.role),
     })
     setShowUserForm(true)
   }
