@@ -80,3 +80,12 @@ firestore-debug.log*
 database-debug.log*
 ui-debug.log*
 *-debug.log
+
+# Claude Code machine-local settings (host-absolute paths, per-machine MCP toggles)
+.claude/settings.local.json
+
+# graphify scan output (regenerate with /graphify)
+graphify-out/
+
+# Scratch archive dirs for downloaded tooling binaries
+archive-*/
