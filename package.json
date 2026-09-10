@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
-    "@prisma/client": "^7.10.0",
+    "@prisma/client": "^6.9.0",
     "@types/archiver": "^7.0.0",
     "@types/better-sqlite3": "^7.6.13",
     "archiver": "^7.0.1",

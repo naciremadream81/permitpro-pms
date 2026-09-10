@@ -540,6 +540,65 @@ describe('Submit to county has a gated API route', () => {
   })
 })
 
+describe('Prisma CLI and client stay on the same major', () => {
+  it('does not allow a lone @prisma/client 7 bump without the v7 adapter migration', () => {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8')
+    ) as {
+      dependencies: Record<string, string>
+    }
+    const lock = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), 'package-lock.json'), 'utf8')
+    ) as {
+      packages: Record<string, { version?: string }>
+    }
+    const schema = fs.readFileSync(
+      path.join(process.cwd(), 'prisma/schema.prisma'),
+      'utf8'
+    )
+    const prismaSingleton = fs.readFileSync(
+      path.join(process.cwd(), 'lib/prisma.ts'),
+      'utf8'
+    )
+
+    const clientRange = pkg.dependencies['@prisma/client']
+    const cliRange = pkg.dependencies.prisma
+    const clientMajor = Number(/^[\^~]?(\d+)/.exec(clientRange)?.[1])
+    const cliMajor = Number(/^[\^~]?(\d+)/.exec(cliRange)?.[1])
+    const lockedClient = lock.packages['node_modules/@prisma/client']?.version ?? ''
+    const lockedCli = lock.packages['node_modules/prisma']?.version ?? ''
+
+    assert.equal(
+      clientMajor,
+      cliMajor,
+      `@prisma/client ${clientRange} must share a major with prisma ${cliRange}`
+    )
+    assert.equal(
+      clientMajor,
+      6,
+      'Prisma 7 drops runtime/library.js and requires a driver adapter; do not bump the client alone'
+    )
+    assert.equal(
+      Number(lockedClient.split('.')[0]),
+      6,
+      `lockfile @prisma/client is ${lockedClient}`
+    )
+    assert.equal(
+      Number(lockedCli.split('.')[0]),
+      6,
+      `lockfile prisma CLI is ${lockedCli}`
+    )
+    assert.match(schema, /provider\s*=\s*"prisma-client-js"/)
+    assert.match(schema, /url\s*=\s*env\("DATABASE_URL"\)/)
+    assert.match(prismaSingleton, /from '@prisma\/client'/)
+    assert.doesNotMatch(
+      prismaSingleton,
+      /\badapter\s*:/,
+      'v6 PrismaClient is constructed without a driver adapter'
+    )
+  })
+})
+
 describe('update schemas do not inject create-time defaults', () => {
   it('requirement toggle does not reset order or mandatory flags', () => {
     const parsed = requirementUpdateSchema.parse({ isActive: false })

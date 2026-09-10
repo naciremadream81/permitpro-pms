@@ -11,6 +11,11 @@ updates:
     labels:
       - dependencies
       - security
+    groups:
+      prisma:
+        patterns:
+          - "prisma"
+          - "@prisma/client"
 
   - package-ecosystem: docker
     directory: /
