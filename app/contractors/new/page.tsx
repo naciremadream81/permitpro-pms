@@ -13,6 +13,7 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { FormDataNotice } from '@/components/legal/form-data-notice'
 
 export default function NewContractorPage() {
   const router = useRouter()
@@ -395,6 +396,10 @@ export default function NewContractorPage() {
                   placeholder="Add any additional notes about this contractor..."
                 />
               </div>
+
+              <FormDataNotice
+                purpose="Contractor license, insurance, and contact details are stored to manage compliance documents and permit assignments."
+              />
 
               <div className="flex gap-2 pt-4">
                 <Button type="submit" disabled={loading}>

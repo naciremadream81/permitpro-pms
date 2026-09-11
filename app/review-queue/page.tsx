@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Clock, CheckCircle2, ChevronRight, MessageSquare } from 'lucide-react'
+import { AppLayout } from '@/components/layout/app-layout'
 
 interface ReviewAssignment {
   id: string
@@ -25,11 +26,17 @@ interface ReviewAssignment {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  ASSIGNED:   'bg-blue-100 text-blue-700',
-  IN_REVIEW:  'bg-purple-100 text-purple-700',
-  APPROVED:   'bg-green-100 text-green-700',
-  SENT_BACK:  'bg-red-100 text-red-700',
+  ASSIGNED: 'bg-blue-100 text-blue-800',
+  IN_REVIEW: 'bg-purple-100 text-purple-800',
+  APPROVED: 'bg-green-100 text-green-800',
+  SENT_BACK: 'bg-red-100 text-red-800',
 }
+
+const FILTER_TABS = [
+  { value: 'active', label: 'Active reviews' },
+  { value: 'completed', label: 'Completed reviews' },
+  { value: 'all', label: 'All reviews' },
+] as const
 
 function daysSince(date: string) {
   return Math.floor((Date.now() - new Date(date).getTime()) / (1000 * 60 * 60 * 24))
@@ -66,123 +73,140 @@ export default function ReviewQueuePage() {
   ).length
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Review Queue</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {activeCount} active review{activeCount !== 1 ? 's' : ''} awaiting action
-        </p>
-      </div>
-
-      {/* Filter tabs */}
-      <div className="flex gap-1 border-b border-gray-200">
-        {[
-          { value: 'active', label: 'Active' },
-          { value: 'completed', label: 'Completed' },
-          { value: 'all', label: 'All' },
-        ].map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setFilterStatus(tab.value)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              filterStatus === tab.value
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* List */}
-      {loading ? (
-        <div className="text-sm text-gray-400">Loading…</div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
-          <CheckCircle2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">Queue is clear</p>
-          <p className="text-sm mt-1">No reviews in this category.</p>
+    <AppLayout>
+      <div className="mx-auto max-w-5xl space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-ink">Review Queue</h1>
+          <p className="mt-1 text-sm text-muted">
+            {activeCount} active review{activeCount !== 1 ? 's' : ''} awaiting action
+          </p>
         </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((assignment) => {
-            const openComments = assignment.comments.filter((c) => !c.isResolved).length
-            const age = daysSince(assignment.assignedAt)
-            const isOverdue =
-              assignment.dueDate && new Date(assignment.dueDate) < new Date()
 
+        <div
+          role="tablist"
+          aria-label="Filter reviews by status"
+          className="flex gap-1 border-b border-border"
+        >
+          {FILTER_TABS.map((tab) => {
+            const selected = filterStatus === tab.value
             return (
-              <div
-                key={assignment.id}
-                className={`border rounded-xl p-4 hover:border-gray-300 transition-colors ${
-                  isOverdue ? 'border-red-200 bg-red-50/30' : 'border-gray-200 bg-white'
+              <button
+                key={tab.value}
+                type="button"
+                role="tab"
+                id={`review-tab-${tab.value}`}
+                aria-selected={selected}
+                aria-controls="review-queue-panel"
+                onClick={() => setFilterStatus(tab.value)}
+                className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] ${
+                  selected
+                    ? 'border-[var(--focus-ring)] text-[var(--focus-ring)]'
+                    : 'border-transparent text-muted hover:text-ink'
                 }`}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-gray-900 truncate">
-                        {assignment.package.projectName}
-                      </span>
-                      <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          STATUS_COLOR[assignment.status] ?? 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {assignment.status.replace('_', ' ')}
-                      </span>
-                      {isOverdue && (
-                        <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
-                          Overdue
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="mt-1 flex items-center gap-3 text-xs text-gray-500 flex-wrap">
-                      <span>{assignment.package.permitType}</span>
-                      <span>·</span>
-                      <span>
-                        {assignment.package.jurisdiction?.name ?? assignment.package.county ?? 'No jurisdiction'}
-                      </span>
-                      <span>·</span>
-                      <span>{assignment.package.customer.name}</span>
-                    </div>
-
-                    <div className="mt-2 flex items-center gap-4 text-xs text-gray-400">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        Assigned {age}d ago
-                      </span>
-                      {assignment.dueDate && (
-                        <span className={isOverdue ? 'text-red-500' : ''}>
-                          Due {new Date(assignment.dueDate).toLocaleDateString()}
-                        </span>
-                      )}
-                      {openComments > 0 && (
-                        <span className="flex items-center gap-1 text-orange-500">
-                          <MessageSquare className="w-3 h-3" />
-                          {openComments} open comment{openComments !== 1 ? 's' : ''}
-                        </span>
-                      )}
-                      <span>Reviewer: {assignment.reviewer.name}</span>
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/permits/${assignment.package.id}`}
-                    className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 font-medium shrink-0"
-                  >
-                    Open
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
+                {tab.label}
+              </button>
             )
           })}
         </div>
-      )}
-    </div>
+
+        <div
+          id="review-queue-panel"
+          role="tabpanel"
+          aria-labelledby={`review-tab-${filterStatus}`}
+        >
+          {loading ? (
+            <div className="text-sm text-muted" aria-live="polite">Loading review queue…</div>
+          ) : filtered.length === 0 ? (
+            <div className="py-16 text-center text-muted">
+              <CheckCircle2 className="mx-auto mb-3 h-10 w-10 opacity-30" aria-hidden />
+              <p className="font-medium text-ink">Queue is clear</p>
+              <p className="mt-1 text-sm">No reviews in this category.</p>
+            </div>
+          ) : (
+            <ul className="m-0 list-none space-y-3 p-0">
+              {filtered.map((assignment) => {
+                const openComments = assignment.comments.filter((c) => !c.isResolved).length
+                const age = daysSince(assignment.assignedAt)
+                const isOverdue =
+                  assignment.dueDate && new Date(assignment.dueDate) < new Date()
+
+                return (
+                  <li
+                    key={assignment.id}
+                    className={`rounded-xl border p-4 transition-colors ${
+                      isOverdue
+                        ? 'border-red-200 bg-red-50/30'
+                        : 'border-border bg-surface hover:border-muted'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="truncate font-medium text-ink">
+                            {assignment.package.projectName}
+                          </span>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                              STATUS_COLOR[assignment.status] ?? 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {assignment.status.replace('_', ' ')}
+                          </span>
+                          {isOverdue && (
+                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                              Overdue
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted">
+                          <span>{assignment.package.permitType}</span>
+                          <span aria-hidden>·</span>
+                          <span>
+                            {assignment.package.jurisdiction?.name ??
+                              assignment.package.county ??
+                              'No jurisdiction'}
+                          </span>
+                          <span aria-hidden>·</span>
+                          <span>{assignment.package.customer.name}</span>
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" aria-hidden />
+                            Assigned {age}d ago
+                          </span>
+                          {assignment.dueDate && (
+                            <span className={isOverdue ? 'text-red-600' : ''}>
+                              Due {new Date(assignment.dueDate).toLocaleDateString()}
+                            </span>
+                          )}
+                          {openComments > 0 && (
+                            <span className="flex items-center gap-1 text-[var(--warning)]">
+                              <MessageSquare className="h-3 w-3" aria-hidden />
+                              {openComments} open comment{openComments !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                          <span>Reviewer: {assignment.reviewer.name}</span>
+                        </div>
+                      </div>
+
+                      <Link
+                        href={`/permits/${assignment.package.id}`}
+                        className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-[var(--focus-ring)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
+                      >
+                        Open permit package
+                        <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                      </Link>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+    </AppLayout>
   )
 }
