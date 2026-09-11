@@ -7,6 +7,7 @@ import { getSession, ForbiddenError } from '@/lib/auth-helpers'
 import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { checklistItemUpdateSchema, checklistItemWaiveSchema } from '@/lib/validations'
+import { syncChecklistItemsForDocumentVerification } from '@/lib/checklist-engine'
 
 // PATCH /api/permits/[id]/checklist/[itemId]
 export async function PATCH(
@@ -85,6 +86,13 @@ export async function PATCH(
       ? data.documentId ?? undefined
       : existingItem.documentId ?? undefined
 
+    let linkedDoc: {
+      id: string
+      category: string
+      isVerified: boolean
+      status: string
+    } | null = null
+
     if (requiresLinkedDocument) {
       if (!targetDocumentId) {
         return NextResponse.json(
@@ -92,9 +100,9 @@ export async function PATCH(
           { status: 400 }
         )
       }
-      const linkedDoc = await prisma.permitDocument.findFirst({
+      linkedDoc = await prisma.permitDocument.findFirst({
         where: { id: targetDocumentId, permitPackageId: params.id },
-        select: { id: true, category: true },
+        select: { id: true, category: true, isVerified: true, status: true },
       })
       if (!linkedDoc) {
         return NextResponse.json(
@@ -112,18 +120,55 @@ export async function PATCH(
       }
     }
 
-    const item = await prisma.checklistItem.update({
-      where: { id: params.itemId, packageId: params.id },
-      data: {
-        ...(data.status ? { status: data.status } : {}),
-        ...(data.documentId !== undefined ? { documentId: data.documentId } : {}),
-        ...(data.notes !== undefined ? { notes: data.notes } : {}),
+    const liveVerified =
+      !!linkedDoc && linkedDoc.isVerified && linkedDoc.status === 'Verified'
+
+    // Linking an already-verified document (or explicitly marking VERIFIED)
+    // must land on VERIFIED so ReadyToSubmit is reachable from the UI path
+    // that otherwise only sends UPLOADED.
+    let nextStatus = data.status
+    if (
+      targetDocumentId &&
+      liveVerified &&
+      (nextStatus === 'UPLOADED' || nextStatus === undefined)
+    ) {
+      nextStatus = 'VERIFIED'
+    }
+
+    const itemInclude = {
+      requirement: { select: { documentName: true } },
+      document: {
+        select: { id: true, fileName: true, status: true, isVerified: true, category: true },
       },
-      include: {
-        requirement: { select: { documentName: true } },
-        document: { select: { id: true, fileName: true, status: true, isVerified: true, category: true } },
-      },
-    })
+    } as const
+
+    const itemData = {
+      ...(nextStatus ? { status: nextStatus } : {}),
+      ...(data.documentId !== undefined ? { documentId: data.documentId } : {}),
+      ...(data.notes !== undefined ? { notes: data.notes } : {}),
+    }
+
+    const item =
+      nextStatus === 'VERIFIED' && targetDocumentId
+        ? await prisma.$transaction(async (tx) => {
+            if (!liveVerified) {
+              await tx.permitDocument.update({
+                where: { id: targetDocumentId },
+                data: { isVerified: true, status: 'Verified' },
+              })
+            }
+            await syncChecklistItemsForDocumentVerification(targetDocumentId, true, tx)
+            return tx.checklistItem.update({
+              where: { id: params.itemId, packageId: params.id },
+              data: itemData,
+              include: itemInclude,
+            })
+          })
+        : await prisma.checklistItem.update({
+            where: { id: params.itemId, packageId: params.id },
+            data: itemData,
+            include: itemInclude,
+          })
 
     await prisma.activityLog.create({
       data: {
