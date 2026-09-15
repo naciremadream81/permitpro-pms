@@ -84,7 +84,7 @@ export default function CookiePolicyPage() {
                   permitpro-cookie-consent (localStorage)
                 </td>
                 <td className="py-2 pr-4 align-top">
-                  Records dismissal of the cookie information notice
+                  Stores your cookie preference choice
                 </td>
                 <td className="py-2 pr-4 align-top">Until cleared</td>
                 <td className="py-2 align-top">
@@ -119,7 +119,7 @@ export default function CookiePolicyPage() {
         </p>
         <p className="mt-2">
           {siteConfig.cdnAnalyticsEnabled
-            ? 'The application notice cannot control analytics injected by a hosting provider. Optional tracking must remain disabled until the deployment provides a separate consent mechanism that prevents tracking before consent and honors refusal.'
+            ? 'If optional CDN analytics are enabled at deployment, we display a cookie banner so you can accept or limit non-essential cookies where required by law (e.g. UK/EU GDPR, some US state laws).'
             : 'We do not currently load optional analytics cookies in the application. If your hosting provider adds analytics at the CDN level, enable NEXT_PUBLIC_CDN_ANALYTICS_ENABLED and the consent banner will reflect that.'}
         </p>
       </section>
@@ -128,7 +128,7 @@ export default function CookiePolicyPage() {
         <h2 className="text-lg font-semibold text-ink">5. Managing cookies</h2>
         <p className="mt-2">
           You can clear cookies through your browser settings. Clearing authentication
-          cookies will sign you out. To show the cookie notice again, clear site data for this
+          cookies will sign you out. To reset your consent choice, clear site data for this
           domain or remove the <code className="text-[11px]">permitpro-cookie-consent</code>{' '}
           entry from localStorage.
         </p>

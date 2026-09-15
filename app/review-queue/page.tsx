@@ -88,7 +88,7 @@ export default function ReviewQueuePage() {
         </div>
 
         <div
-          role="group"
+          role="tablist"
           aria-label="Filter reviews by status"
           className="flex gap-1 border-b border-border"
         >
@@ -98,8 +98,9 @@ export default function ReviewQueuePage() {
               <button
                 key={tab.value}
                 type="button"
+                role="tab"
                 id={`review-tab-${tab.value}`}
-                aria-pressed={selected}
+                aria-selected={selected}
                 aria-controls="review-queue-panel"
                 onClick={() => setFilterStatus(tab.value)}
                 className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] ${
@@ -116,12 +117,10 @@ export default function ReviewQueuePage() {
 
         <div
           id="review-queue-panel"
-          role="region"
+          role="tabpanel"
           aria-labelledby={`review-tab-${filterStatus}`}
         >
-          {error ? (
-            <p role="alert" className="text-sm text-urgent">{error} <button type="button" className="underline" onClick={() => void fetchQueue()}>Retry</button></p>
-          ) : loading ? (
+          {loading ? (
             <div className="text-sm text-muted" aria-live="polite">Loading review queue…</div>
           ) : filtered.length === 0 ? (
             <div className="py-16 text-center text-muted">

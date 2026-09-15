@@ -1,7 +1,7 @@
 # Compliance & Legal Risk Register
 
-**Last reviewed:** September 7, 2026
-**Product:** PermitPro — B2B permit coordination platform
+**Last reviewed:** September 7, 2026  
+**Product:** PermitPro — B2B permit coordination platform  
 **Primary jurisdiction:** Florida, United States
 
 This document summarizes legal/compliance posture after the September 2026 audit. **It is not legal advice.** Have qualified counsel review before production launch.
@@ -16,7 +16,7 @@ This document summarizes legal/compliance posture after the September 2026 audit
 | Terms & Conditions (`/terms`) | ✅ Added — public route |
 | Cookie Policy (`/cookies`) | ✅ Added — public route |
 | Refund Policy (`/refund`) | ✅ Added — public route |
-| Cookie information notice | ✅ Added — dismissal only; does not control CDN-injected tracking |
+| Cookie consent banner | ✅ Added — essential-only default; optional analytics if `NEXT_PUBLIC_CDN_ANALYTICS_ENABLED=true` |
 | Business details in footer | ✅ Added — configurable via env vars |
 | Form data collection notices | ✅ Added on customer, contractor, permit create forms |
 | AI data disclosures | ✅ Added on assistant + permit validator |
@@ -34,7 +34,7 @@ This document summarizes legal/compliance posture after the September 2026 audit
 | Vercel Analytics | ❌ Not present | None needed |
 | Mixpanel / Hotjar / PostHog | ❌ Not present | None needed |
 | NextAuth session cookies | ✅ Required | Disclosed in Cookie Policy |
-| Cloudflare Web Analytics (CDN) | ⚠️ Deployment-level only | Disable optional tracking until a deployment-level consent mechanism gates it; the notice is informational only |
+| Cloudflare Web Analytics (CDN) | ⚠️ Deployment-level only | Set `NEXT_PUBLIC_CDN_ANALYTICS_ENABLED=true` if enabled; consent banner reflects this |
 
 **Conclusion:** No in-app behavioral analytics. Cookie consent is required for optional CDN analytics only; strictly necessary auth cookies do not need opt-in.
 
@@ -75,7 +75,7 @@ This document summarizes legal/compliance posture after the September 2026 audit
 
 ### EU/UK (if EEA/UK users)
 - **GDPR** — lawful basis, DPA with customers as controllers for end-customer PII, subprocessors list, international transfers.
-- **ePrivacy** — essential cookies exempt; optional analytics need consent enforced by deployment-level controls; the in-app notice does not provide those controls.
+- **ePrivacy** — essential cookies exempt; optional analytics need consent (banner supports this).
 
 ### B2B SaaS
 - **Refund/chargeback** — Refund Policy added; align with actual billing.
@@ -155,5 +155,3 @@ NEXT_PUBLIC_CDN_ANALYTICS_ENABLED=false
 - [ ] Demo credentials disabled in production
 - [ ] Full accessibility audit completed
 - [ ] Incident response / breach notification process documented
-
-Docker Compose passes the public settings above as build arguments. After changing them, rebuild the application image (`docker compose build permitpro-pms`) and recreate the service; changing runtime environment variables alone does not update Next.js public settings. Do not put secrets in `NEXT_PUBLIC_*` values.

@@ -6,15 +6,12 @@ import { legalRoutes, siteConfig } from '@/lib/site-config'
 
 const STORAGE_KEY = 'permitpro-cookie-consent'
 
-type ConsentState = 'pending' | 'essential-only'
+type ConsentState = 'pending' | 'essential-only' | 'all'
 
 function readConsent(): ConsentState {
   if (typeof window === 'undefined') return 'pending'
-  try {
-    if (localStorage.getItem(STORAGE_KEY) === 'essential-only') return 'essential-only'
-  } catch {
-    // Storage can be unavailable in private or restricted browsers.
-  }
+  const stored = localStorage.getItem(STORAGE_KEY)
+  if (stored === 'essential-only' || stored === 'all') return stored
   return 'pending'
 }
 
@@ -26,11 +23,7 @@ export function CookieConsentBanner() {
   }, [])
 
   function save(value: ConsentState) {
-    try {
-      localStorage.setItem(STORAGE_KEY, value)
-    } catch {
-      // Dismiss for this visit even when preferences cannot be persisted.
-    }
+    localStorage.setItem(STORAGE_KEY, value)
     setVisible(false)
   }
 
@@ -46,12 +39,12 @@ export function CookieConsentBanner() {
       <div className="mx-auto flex max-w-5xl flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="max-w-2xl">
           <h2 id="cookie-consent-title" className="text-sm font-semibold text-ink">
-            Cookie information
+            Cookie preferences
           </h2>
           <p id="cookie-consent-desc" className="mt-1 text-xs leading-relaxed text-muted">
             We use strictly necessary session cookies to keep you signed in.{' '}
             {siteConfig.cdnAnalyticsEnabled
-              ? 'Our hosting provider may use analytics. This notice does not control tracking added by the hosting provider.'
+              ? 'Our hosting provider may also set optional analytics cookies to measure site performance.'
               : 'We do not load marketing or behavioral analytics cookies in this application.'}{' '}
             See our{' '}
             <Link
@@ -76,9 +69,17 @@ export function CookieConsentBanner() {
             onClick={() => save('essential-only')}
             className="border border-border bg-canvas px-4 py-2 text-xs font-medium text-ink hover:bg-surface-inset focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
           >
-            Dismiss notice
+            Essential cookies only
           </button>
-
+          {siteConfig.cdnAnalyticsEnabled && (
+            <button
+              type="button"
+              onClick={() => save('all')}
+              className="bg-accent px-4 py-2 text-xs font-medium text-accent-foreground hover:bg-accent-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
+            >
+              Accept all cookies
+            </button>
+          )}
         </div>
       </div>
     </div>
