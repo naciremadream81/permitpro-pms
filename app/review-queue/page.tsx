@@ -45,7 +45,7 @@ function daysSince(date: string) {
 export default function ReviewQueuePage() {
   const [assignments, setAssignments] = useState<ReviewAssignment[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [, setError] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('active')
 
   useEffect(() => {
