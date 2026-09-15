@@ -24,7 +24,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "archiver": "^8.0.0",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.5.0",
+    "better-sqlite3": "^13.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
