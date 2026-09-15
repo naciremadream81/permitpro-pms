@@ -67,7 +67,12 @@ interface ChecklistItem {
     isMandatoryForSubmission: boolean
     order: number
   }
-  document: { id: string; fileName: string; status: string } | null
+  document: {
+    id: string
+    fileName: string
+    status: string
+    isVerified: boolean
+  } | null
 }
 
 const CHECKLIST_STATUS_STYLES: Record<string, string> = {
@@ -210,6 +215,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
   const [checklistLoading, setChecklistLoading] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
   const [uploadingItemId, setUploadingItemId] = useState<string | null>(null)
+  const [verifyingItemId, setVerifyingItemId] = useState<string | null>(null)
 
   // Review workflow state
   const [sessionRole, setSessionRole] = useState<string>('')
@@ -298,6 +304,32 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
       setError(err instanceof Error ? err.message : 'Failed to upload document for checklist item')
     } finally {
       setUploadingItemId(null)
+    }
+  }
+
+  // Verify (or unverify) the document linked to a checklist item. The verify
+  // API also promotes/demotes the checklist row so ReadyToSubmit can complete.
+  const verifyChecklistDocument = async (item: ChecklistItem, isVerified: boolean) => {
+    if (!item.document) return
+    setVerifyingItemId(item.id)
+    setError('')
+    try {
+      const res = await fetch(`/api/documents/${item.document.id}/verify`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isVerified }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error || 'Failed to update verification')
+      }
+      await Promise.all([fetchChecklist(), refreshPermit()])
+    } catch (err) {
+      console.error('Checklist document verify failed:', err)
+      setError(err instanceof Error ? err.message : 'Failed to update document verification')
+    } finally {
+      setVerifyingItemId(null)
     }
   }
 
@@ -729,6 +761,11 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
   const isAdmin = sessionRole === 'admin'
   const canReviewAct = sessionRole === 'admin' || sessionRole === 'reviewer'
   const canSubmit = sessionRole === 'admin' || sessionRole === 'coordinator' || sessionRole === 'user'
+  const canVerify =
+    sessionRole === 'admin' ||
+    sessionRole === 'coordinator' ||
+    sessionRole === 'reviewer' ||
+    sessionRole === 'user'
   const isReadyToSubmit = permit.internalStage === 'ReadyToSubmit'
   const reviewComments = reviewAssignments.flatMap((a) => a.comments ?? [])
 
@@ -1052,7 +1089,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                         <select
                           value={item.document?.id ?? ''}
                           onChange={(e) => linkChecklistItem(item.id, e.target.value || null)}
-                          disabled={uploadingItemId === item.id}
+                          disabled={uploadingItemId === item.id || verifyingItemId === item.id}
                           className="max-w-[9rem] truncate rounded-md border border-border bg-surface px-1.5 py-0.5 text-xs text-ink"
                           title="Link an existing document"
                         >
@@ -1067,7 +1104,7 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                         <input
                           type="file"
                           className="hidden"
-                          disabled={uploadingItemId === item.id}
+                          disabled={uploadingItemId === item.id || verifyingItemId === item.id}
                           onChange={(e) => {
                             const f = e.target.files?.[0]
                             if (f) uploadAndLinkChecklistItem(item, f)
@@ -1076,6 +1113,33 @@ export function PermitDetailClient({ permit: initialPermit }: PermitDetailClient
                         />
                         {uploadingItemId === item.id ? 'Uploading…' : item.document ? 'Replace' : 'Upload'}
                       </label>
+                      {canVerify &&
+                        item.document &&
+                        item.status !== 'WAIVED' &&
+                        item.status !== 'NOT_APPLICABLE' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentlyVerified =
+                                item.status === 'VERIFIED' &&
+                                item.document?.isVerified === true &&
+                                item.document.status === 'Verified'
+                              void verifyChecklistDocument(item, !currentlyVerified)
+                            }}
+                            disabled={
+                              uploadingItemId === item.id || verifyingItemId === item.id
+                            }
+                            className="rounded-md border border-border px-2 py-0.5 text-xs font-medium text-ink transition-colors hover:bg-surface-inset disabled:opacity-50"
+                          >
+                            {verifyingItemId === item.id
+                              ? 'Saving…'
+                              : item.status === 'VERIFIED' &&
+                                  item.document.isVerified &&
+                                  item.document.status === 'Verified'
+                                ? 'Unverify'
+                                : 'Verify'}
+                          </button>
+                        )}
                     </div>
                   </div>
                 </li>
