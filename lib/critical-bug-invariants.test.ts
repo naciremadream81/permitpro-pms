@@ -541,7 +541,7 @@ describe('Submit to county has a gated API route', () => {
 })
 
 describe('Prisma CLI and client stay on the same major', () => {
-  it('does not allow a lone @prisma/client 7 bump without the v7 adapter migration', () => {
+  it('requires a complete Prisma 7 adapter migration when on major 7', () => {
     const pkg = JSON.parse(
       fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8')
     ) as {
@@ -554,6 +554,10 @@ describe('Prisma CLI and client stay on the same major', () => {
     }
     const schema = fs.readFileSync(
       path.join(process.cwd(), 'prisma/schema.prisma'),
+      'utf8'
+    )
+    const prismaConfig = fs.readFileSync(
+      path.join(process.cwd(), 'prisma.config.ts'),
       'utf8'
     )
     const prismaSingleton = fs.readFileSync(
@@ -575,26 +579,35 @@ describe('Prisma CLI and client stay on the same major', () => {
     )
     assert.equal(
       clientMajor,
-      6,
-      'Prisma 7 drops runtime/library.js and requires a driver adapter; do not bump the client alone'
+      7,
+      'Prisma 7 requires the better-sqlite3 adapter migration in this repo'
     )
     assert.equal(
       Number(lockedClient.split('.')[0]),
-      6,
+      7,
       `lockfile @prisma/client is ${lockedClient}`
     )
     assert.equal(
       Number(lockedCli.split('.')[0]),
-      6,
+      7,
       `lockfile prisma CLI is ${lockedCli}`
     )
     assert.match(schema, /provider\s*=\s*"prisma-client-js"/)
-    assert.match(schema, /url\s*=\s*env\("DATABASE_URL"\)/)
-    assert.match(prismaSingleton, /from '@prisma\/client'/)
     assert.doesNotMatch(
+      schema,
+      /url\s*=\s*env\("DATABASE_URL"\)/,
+      'Prisma 7 datasource URL must live in prisma.config.ts'
+    )
+    assert.match(prismaConfig, /datasource:\s*\{\s*url:\s*databaseUrl\(\)/)
+    assert.match(prismaSingleton, /from '@prisma\/client'/)
+    assert.match(
       prismaSingleton,
-      /\badapter\s*:/,
-      'v6 PrismaClient is constructed without a driver adapter'
+      /adapter:\s*new PrismaBetterSqlite3/,
+      'Prisma 7 must construct PrismaClient with the SQLite driver adapter'
+    )
+    assert.ok(
+      pkg.dependencies['@prisma/adapter-better-sqlite3'],
+      'missing @prisma/adapter-better-sqlite3 dependency'
     )
   })
 })
