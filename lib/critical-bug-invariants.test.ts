@@ -537,6 +537,11 @@ describe('Submit to county has a gated API route', () => {
     assert.match(source, /status:\s*'Submitted'/)
     assert.match(source, /internalStage:\s*'WaitingOnCounty'/)
     assert.match(source, /\$transaction/)
+    assert.match(
+      source,
+      /evaluateReadiness/,
+      'Submit must re-check live readiness; ReadyToSubmit can go stale after unlink/unverify'
+    )
   })
 })
 
@@ -655,5 +660,78 @@ describe('update schemas do not inject create-time defaults', () => {
       notFoundIdx < unsetIdx,
       'must 404 on a missing id before updateMany clears sibling defaults'
     )
+  })
+})
+
+describe('document verification promotes linked checklist items', () => {
+  it('verify route syncs checklist status inside the same transaction', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/documents/[id]/verify/route.ts'),
+      'utf8'
+    )
+    const postFn = source.slice(source.indexOf('export async function POST'))
+    assert.match(postFn, /\$transaction/)
+    assert.match(postFn, /syncChecklistItemsForDocumentVerification/)
+    const txIdx = postFn.indexOf('$transaction')
+    const syncIdx = postFn.indexOf('syncChecklistItemsForDocumentVerification')
+    const docUpdateIdx = postFn.indexOf('permitDocument.update')
+    assert.ok(txIdx >= 0 && syncIdx >= 0 && docUpdateIdx >= 0)
+    assert.ok(
+      docUpdateIdx < syncIdx,
+      'document must be verified before checklist rows are promoted'
+    )
+  })
+
+  it('document PATCH also syncs checklist when isVerified changes', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/documents/[id]/route.ts'),
+      'utf8'
+    )
+    const patchFn = source.slice(source.indexOf('export async function PATCH'))
+    assert.match(patchFn, /syncChecklistItemsForDocumentVerification/)
+    assert.match(patchFn, /verificationChanged/)
+  })
+
+  it('promotes PENDING/UPLOADED to VERIFIED and demotes VERIFIED to UPLOADED', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'lib/checklist-engine.ts'),
+      'utf8'
+    )
+    const helper = source.slice(
+      source.indexOf('export async function syncChecklistItemsForDocumentVerification')
+    )
+    assert.match(helper, /status:\s*\{\s*in:\s*\['PENDING',\s*'UPLOADED'\]/)
+    assert.match(helper, /status:\s*'VERIFIED'/)
+    assert.match(helper, /status:\s*'UPLOADED'/)
+    assert.doesNotMatch(
+      helper,
+      /WAIVED/,
+      'Waived items must not be rewritten by document verify'
+    )
+  })
+
+  it('linking a live-verified document marks the checklist item VERIFIED', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/api/permits/[id]/checklist/[itemId]/route.ts'),
+      'utf8'
+    )
+    const patchFn = source.slice(source.indexOf('export async function PATCH'))
+    assert.match(patchFn, /liveVerified/)
+    assert.match(patchFn, /nextStatus = 'VERIFIED'/)
+    assert.match(patchFn, /isVerified:\s*true,\s*status:\s*'Verified'/)
+    assert.match(
+      patchFn,
+      /syncChecklistItemsForDocumentVerification/,
+      'Marking one item VERIFIED must promote sibling rows that share the document'
+    )
+  })
+
+  it('permit detail verifies via the document verify API', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/permits/[id]/permit-detail-client.tsx'),
+      'utf8'
+    )
+    assert.match(source, /\/api\/documents\/\$\{item\.document\.id\}\/verify/)
+    assert.match(source, /verifyChecklistDocument/)
   })
 })

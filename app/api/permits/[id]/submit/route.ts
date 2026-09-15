@@ -15,6 +15,7 @@ import { getSession, ForbiddenError } from '@/lib/auth-helpers'
 import { enforce, normalizeRole } from '@/lib/permissions'
 import { prisma } from '@/lib/prisma'
 import { handleApiError } from '@/lib/api-security'
+import { evaluateReadiness } from '@/lib/readiness-engine'
 
 export async function POST(
   _request: NextRequest,
@@ -40,6 +41,22 @@ export async function POST(
     if (permit.internalStage !== 'ReadyToSubmit') {
       return NextResponse.json(
         { error: 'Package is not ready to submit — it must pass review first' },
+        { status: 422 }
+      )
+    }
+
+    // Re-check live readiness. Documents can be unlinked, unverified, or replaced
+    // after approve; trusting the stale ReadyToSubmit flag would mark incomplete
+    // packages Submitted / WaitingOnCounty.
+    const readiness = await evaluateReadiness(params.id)
+    if (!readiness.isReady) {
+      return NextResponse.json(
+        {
+          error: 'Package is no longer ready to submit',
+          blockers: readiness.blockers,
+          warnings: readiness.warnings,
+          checklistPct: readiness.checklistPct,
+        },
         { status: 422 }
       )
     }

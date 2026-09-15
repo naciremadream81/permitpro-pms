@@ -9,6 +9,7 @@ import { getSession } from '@/lib/auth-helpers'
 import { prisma } from '@/lib/prisma'
 import { documentVerifySchema } from '@/lib/validations'
 import { handleApiError, requirePermission } from '@/lib/api-security'
+import { syncChecklistItemsForDocumentVerification } from '@/lib/checklist-engine'
 
 // POST /api/documents/[id]/verify - Verify or unverify a document
 export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -35,24 +36,35 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // Update document verification status
-    const document = await prisma.permitDocument.update({
-      where: { id: params.id },
-      data: {
-        isVerified: validatedData.isVerified,
-        status: validatedData.isVerified ? 'Verified' : 'Pending',
-        notes: validatedData.notes || currentDocument.notes,
-      },
-    })
+    // Update document + linked checklist rows together. Readiness requires both
+    // a Verified document and ChecklistItem.status VERIFIED; verifying only the
+    // document left packages permanently blocked from review approve.
+    const document = await prisma.$transaction(async (tx) => {
+      const updated = await tx.permitDocument.update({
+        where: { id: params.id },
+        data: {
+          isVerified: validatedData.isVerified,
+          status: validatedData.isVerified ? 'Verified' : 'Pending',
+          notes: validatedData.notes || currentDocument.notes,
+        },
+      })
 
-    // Create activity log entry
-    await prisma.activityLog.create({
-      data: {
-        permitPackageId: document.permitPackageId,
-        userId: session.user.id,
-        activityType: 'DocumentVerified',
-        description: `Document "${document.fileName}" ${validatedData.isVerified ? 'verified' : 'unverified'}${validatedData.notes ? `: ${validatedData.notes}` : ''}`,
-      },
+      await syncChecklistItemsForDocumentVerification(
+        params.id,
+        validatedData.isVerified,
+        tx
+      )
+
+      await tx.activityLog.create({
+        data: {
+          permitPackageId: updated.permitPackageId,
+          userId: session.user.id,
+          activityType: 'DocumentVerified',
+          description: `Document "${updated.fileName}" ${validatedData.isVerified ? 'verified' : 'unverified'}${validatedData.notes ? `: ${validatedData.notes}` : ''}`,
+        },
+      })
+
+      return updated
     })
 
     return NextResponse.json({ data: document })

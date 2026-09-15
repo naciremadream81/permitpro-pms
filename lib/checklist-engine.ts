@@ -202,6 +202,43 @@ export async function checklistCompletionPct(packageId: string): Promise<number>
   return Math.round((done.length / required.length) * 100)
 }
 
+/**
+ * Keep checklist item status in lockstep with document verification.
+ *
+ * ReadyToSubmit requires both `ChecklistItem.status === VERIFIED` and a live
+ * Verified document. The permit-detail UI verifies documents (not checklist
+ * rows), so without this cascade packages stay UNVERIFIED forever and review
+ * approve can never set ReadyToSubmit.
+ *
+ * WAIVED / NOT_APPLICABLE are left untouched — those skip readiness by design.
+ * REJECTED is not auto-promoted; a reviewer rejection must be cleared explicitly.
+ */
+export async function syncChecklistItemsForDocumentVerification(
+  documentId: string,
+  isVerified: boolean,
+  db: DbClient = prisma
+): Promise<number> {
+  if (isVerified) {
+    const result = await db.checklistItem.updateMany({
+      where: {
+        documentId: { equals: documentId },
+        status: { in: ['PENDING', 'UPLOADED'] },
+      },
+      data: { status: 'VERIFIED' },
+    })
+    return result.count
+  }
+
+  const result = await db.checklistItem.updateMany({
+    where: {
+      documentId: { equals: documentId },
+      status: 'VERIFIED',
+    },
+    data: { status: 'UPLOADED' },
+  })
+  return result.count
+}
+
 // ============================================================================
 // Shared helpers
 // ============================================================================

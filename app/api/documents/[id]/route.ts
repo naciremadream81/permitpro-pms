@@ -10,6 +10,7 @@ import { prisma } from '@/lib/prisma'
 import { storage } from '@/lib/storage'
 import { documentUpdateSchema } from '@/lib/validations'
 import { handleApiError, requirePermission } from '@/lib/api-security'
+import { syncChecklistItemsForDocumentVerification } from '@/lib/checklist-engine'
 
 // GET /api/documents/[id] - Get document by ID
 export async function GET(request: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -76,23 +77,39 @@ export async function PATCH(request: NextRequest, props: { params: Promise<{ id:
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    // Update document
-    const document = await prisma.permitDocument.update({
-      where: { id: params.id },
-      data: validatedData,
-    })
+    const verificationChanged =
+      validatedData.isVerified !== undefined &&
+      validatedData.isVerified !== currentDocument.isVerified
 
-    // Create activity log entry if verification status changed
-    if (validatedData.isVerified !== undefined && validatedData.isVerified !== currentDocument.isVerified) {
-      await prisma.activityLog.create({
-        data: {
-          permitPackageId: document.permitPackageId,
-          userId: session.user.id,
-          activityType: 'DocumentVerified',
-          description: `Document "${document.fileName}" ${validatedData.isVerified ? 'verified' : 'unverified'}`,
-        },
-      })
+    const data = { ...validatedData }
+    if (verificationChanged) {
+      data.status = validatedData.isVerified ? 'Verified' : 'Pending'
     }
+
+    const document = await prisma.$transaction(async (tx) => {
+      const updated = await tx.permitDocument.update({
+        where: { id: params.id },
+        data,
+      })
+
+      if (verificationChanged && validatedData.isVerified !== undefined) {
+        await syncChecklistItemsForDocumentVerification(
+          params.id,
+          validatedData.isVerified,
+          tx
+        )
+        await tx.activityLog.create({
+          data: {
+            permitPackageId: updated.permitPackageId,
+            userId: session.user.id,
+            activityType: 'DocumentVerified',
+            description: `Document "${updated.fileName}" ${validatedData.isVerified ? 'verified' : 'unverified'}`,
+          },
+        })
+      }
+
+      return updated
+    })
 
     return NextResponse.json({ data: document })
   } catch (error) {
