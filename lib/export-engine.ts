@@ -6,7 +6,7 @@
  * generation. Falls back to flat structure when no profile is provided.
  */
 
-import archiver from 'archiver'
+import { ZipArchive } from 'archiver'
 import { prisma } from '@/lib/prisma'
 import { storage } from '@/lib/storage'
 import { createHash } from 'crypto'
@@ -118,7 +118,7 @@ export async function buildExportZip(
   }
 
   // Build archive
-  const archive = archiver('zip', { zlib: { level: 6 } })
+  const archive = new ZipArchive({ zlib: { level: 6 } })
   const chunks: Buffer[] = []
   archive.on('data', (c: Buffer) => chunks.push(c))
 

@@ -6,7 +6,7 @@ echo "Starting PermitPro PMS..."
 # Run database migrations — fail closed so the app never serves against a
 # drifted schema (swallowed migrate failures cause write errors / data loss).
 echo "Running database migrations..."
-prisma migrate deploy
+node node_modules/prisma/build/index.js migrate deploy
 
 # Start the application
 echo "Starting Next.js application..."

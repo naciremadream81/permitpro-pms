@@ -8,10 +8,9 @@
  * Or: npm run seed
  */
 
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '../lib/prisma'
 import { hashPassword } from '../lib/auth'
 
-const prisma = new PrismaClient()
 
 async function main() {
   console.log('🌱 Starting database seed...')
@@ -43,7 +42,7 @@ async function main() {
       email: 'user@permitco.com',
       name: 'Regular User',
       passwordHash: await hashPassword('user123'),
-      role: 'user',
+      role: 'coordinator',
     },
   })
 

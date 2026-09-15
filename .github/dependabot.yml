@@ -8,14 +8,13 @@ updates:
       time: "08:00"
       timezone: America/New_York
     open-pull-requests-limit: 5
-    labels:
-      - dependencies
-      - security
     groups:
+      framework:
+        patterns: [next, eslint, eslint-config-next, react, react-dom, '@types/react', '@types/react-dom']
       prisma:
-        patterns:
-          - "prisma"
-          - "@prisma/client"
+        patterns: [prisma, '@prisma/*']
+      archives:
+        patterns: [archiver, '@types/archiver']
 
   - package-ecosystem: docker
     directory: /
@@ -25,8 +24,6 @@ updates:
       time: "08:30"
       timezone: America/New_York
     open-pull-requests-limit: 3
-    labels:
-      - dependencies
 
   - package-ecosystem: github-actions
     directory: /
@@ -36,5 +33,3 @@ updates:
       time: "09:00"
       timezone: America/New_York
     open-pull-requests-limit: 5
-    labels:
-      - dependencies

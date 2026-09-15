@@ -10,11 +10,23 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json package-lock.json* ./
-RUN npm install --frozen-lockfile 2>/dev/null || npm install
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
+
+# Next.js inlines public settings at build time; these are not secrets.
+ARG NEXT_PUBLIC_PRODUCT_NAME
+ARG NEXT_PUBLIC_PRODUCT_TAGLINE
+ARG NEXT_PUBLIC_BUSINESS_LEGAL_NAME
+ARG NEXT_PUBLIC_BUSINESS_ADDRESS
+ARG NEXT_PUBLIC_BUSINESS_EMAIL
+ARG NEXT_PUBLIC_BUSINESS_PHONE
+ARG NEXT_PUBLIC_SUPPORT_EMAIL
+ARG NEXT_PUBLIC_GOVERNING_LAW_STATE
+ARG NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS
+ARG NEXT_PUBLIC_CDN_ANALYTICS_ENABLED
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -42,20 +54,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Install Prisma CLI for running migrations at container startup
-# Pre-download engines and set permissions so nextjs user can run migrations
-RUN npm install -g prisma@6.19.2 --ignore-scripts \
-    && prisma version || true \
-    && chown -R nextjs:nodejs /usr/local/lib/node_modules/prisma
-
 # Copy necessary files
 # Next.js standalone output includes public files, so we don't need to copy it separately
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/lib/database-url.ts ./lib/database-url.ts
+# Include the matching CLI and its dependencies for startup migrations.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/docker-entrypoint.sh ./docker-entrypoint.sh
 
 # Create storage and data directories

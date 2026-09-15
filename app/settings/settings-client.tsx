@@ -11,13 +11,14 @@ import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/ui/badge'
+import { normalizeRole, type UserRole } from '@/lib/permissions'
 import { formatDate } from '@/lib/utils'
 
 interface User {
   id: string
   email: string
   name: string
-  role: 'user' | 'admin'
+  role: UserRole
   createdAt: string
   updatedAt: string
   _count: {
@@ -39,7 +40,7 @@ export function SettingsClient() {
     email: '',
     name: '',
     password: '',
-    role: 'user' as 'user' | 'admin',
+    role: 'coordinator' as UserRole,
   })
 
   // Fetch users
@@ -128,7 +129,7 @@ export function SettingsClient() {
       }
 
       // Reset form and refresh users
-      setFormData({ email: '', name: '', password: '', role: 'user' })
+      setFormData({ email: '', name: '', password: '', role: 'coordinator' })
       setShowUserForm(false)
       setEditingUser(null)
       await fetchUsers()
@@ -143,7 +144,7 @@ export function SettingsClient() {
       email: user.email,
       name: user.name,
       password: '', // Don't pre-fill password
-      role: user.role,
+      role: normalizeRole(user.role),
     })
     setShowUserForm(true)
   }
@@ -173,7 +174,7 @@ export function SettingsClient() {
   const handleCancel = () => {
     setShowUserForm(false)
     setEditingUser(null)
-    setFormData({ email: '', name: '', password: '', role: 'user' })
+    setFormData({ email: '', name: '', password: '', role: 'coordinator' })
   }
 
   if (loading) {

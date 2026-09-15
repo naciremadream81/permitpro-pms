@@ -45,6 +45,7 @@ function daysSince(date: string) {
 export default function ReviewQueuePage() {
   const [assignments, setAssignments] = useState<ReviewAssignment[]>([])
   const [loading, setLoading] = useState(true)
+  const [, setError] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('active')
 
   useEffect(() => {
@@ -53,10 +54,14 @@ export default function ReviewQueuePage() {
 
   async function fetchQueue() {
     setLoading(true)
+    setError('')
     try {
       const res = await fetch('/api/review-queue')
+      if (!res.ok) throw new Error('Unable to load reviews. Please try again.')
       const json = await res.json()
       setAssignments(json.data ?? [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to load reviews.')
     } finally {
       setLoading(false)
     }
